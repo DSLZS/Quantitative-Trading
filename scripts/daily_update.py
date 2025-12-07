@@ -5,6 +5,7 @@ import os
 import argparse
 import logging
 from datetime import datetime, timedelta
+from typing import List
 import pandas as pd
 
 # 添加项目根目录到Python路径
@@ -17,24 +18,24 @@ from config.settings import MYSQL_CONFIG
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # 定义日志输出格式 %(asctime)s时间戳 %(name)s记录器名称 %(levelname)s日志级别 %(message)s日志消息
     handlers=[
-        logging.FileHandler('logs/daily_update.log'),
-        logging.StreamHandler()
+        logging.FileHandler('logs/daily_update.log'),  # 日志输出到文件
+        logging.StreamHandler()  # 日志输出到控制台
     ]
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # 创建日志记录器实例
 
-def update_single_stock(symbol: str, days: int = 30):
+def update_single_stock(symbol: str, days: int = 30):  # 给默认值30天
     """更新单只股票数据"""
     logger.info(f"开始更新股票: {symbol}")
     
     # 获取最近日期
     end_date = datetime.now().strftime('%Y-%m-%d')
-    start_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+    start_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')  # 第二个days为传参，此处传入的是30天
     
     # 获取数据
-    fetcher = DataFetcher()
+    fetcher = DataFetcher()  # 创建获取器实例
     df = fetcher.fetch_stock_daily(symbol, start_date, end_date)
     
     if df.empty:
