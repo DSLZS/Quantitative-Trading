@@ -1,0 +1,252 @@
+# src/data/data_fetcher.py
+import akshare as ak
+import pandas as pd
+from datetime import datetime, timedelta
+from typing import List, Tuple, Optional, Dict
+import logging
+import time
+from enum import Enum
+
+logger = logging.getLogger(__name__)
+
+class Market(Enum):
+    """市场枚举"""
+    SSE = "SSE"      # 上海证券交易所
+    SZSE = "SZSE"    # 深圳证券交易所
+    BSE = "BSE"      # 北京证券交易所
+
+class DataFetcher:
+    """数据获取类"""
+    
+    def __init__(self, source='akshare'):
+        self.source = source
+        
+        # 市场代码映射
+        self.market_mapping = {
+            'sh': Market.SSE.value,    # 上海
+            'sz': Market.SZSE.value,   # 深圳
+            'bj': Market.BSE.value,    # 北京
+        }
+    
+    def fetch_stock_daily(self, symbol: str, start_date: str = None, 
+                          end_date: str = None, adjust: str = "qfq") -> pd.DataFrame:
+        """
+        获取单只股票的日线数据
+        
+        Args:
+            symbol: 股票代码（带市场前缀，如'sh000001'或'sz000001'）
+            start_date: 开始日期，格式'YYYY-MM-DD'
+            end_date: 结束日期，格式'YYYY-MM-DD'
+            adjust: 复权类型 'qfq': 前复权, 'hfq': 后复权, None: 不复权
+            
+        Returns:
+            DataFrame 包含日线数据
+        """
+        try:
+            # 解析市场和代码
+            market_code = symbol[:2].lower()
+            stock_code = symbol[2:]
+            
+            if market_code not in self.market_mapping:
+                logger.error(f"不支持的市场代码: {market_code}")
+                return pd.DataFrame()
+            
+            market = self.market_mapping[market_code]
+            
+            # 设置默认日期
+            if end_date is None:
+                end_date = datetime.now().strftime('%Y-%m-%d')
+            if start_date is None:
+                start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
+            
+            logger.info(f"正在获取 {symbol} 从 {start_date} 到 {end_date} 的数据")
+            
+            # 使用akshare获取数据
+            if market_code == 'sh':
+                # 上海交易所
+                if stock_code.startswith('000') or stock_code.startswith('001'):
+                    df = ak.stock_zh_a_hist(
+                        symbol=stock_code, period="daily", 
+                        start_date=start_date.replace('-', ''), 
+                        end_date=end_date.replace('-', ''),
+                        adjust=adjust
+                    )
+                elif stock_code.startswith('688'):
+                    # 科创板
+                    df = ak.stock_zh_kcb_daily(symbol=stock_code)
+                elif stock_code.startswith('50') or stock_code.startswith('51'):
+                    # ETF/LOF
+                    df = ak.fund_etf_hist_sina(symbol=f"sh{stock_code}")
+                else:
+                    logger.error(f"不支持的上海股票代码: {stock_code}")
+                    return pd.DataFrame()
+                    
+            elif market_code == 'sz':
+                # 深圳交易所
+                if stock_code.startswith('000') or stock_code.startswith('001') or stock_code.startswith('002'):
+                    df = ak.stock_zh_a_hist(
+                        symbol=stock_code, period="daily", 
+                        start_date=start_date.replace('-', ''), 
+                        end_date=end_date.replace('-', ''),
+                        adjust=adjust
+                    )
+                elif stock_code.startswith('300'):
+                    # 创业板
+                    df = ak.stock_zh_a_hist(
+                        symbol=stock_code, period="daily", 
+                        start_date=start_date.replace('-', ''), 
+                        end_date=end_date.replace('-', ''),
+                        adjust=adjust
+                    )
+                elif stock_code.startswith('15') or stock_code.startswith('16'):
+                    # ETF/LOF
+                    df = ak.fund_etf_hist_sina(symbol=f"sz{stock_code}")
+                else:
+                    logger.error(f"不支持的深圳股票代码: {stock_code}")
+                    return pd.DataFrame()
+                    
+            elif market_code == 'bj':
+                # 北京交易所
+                df = ak.stock_bj_a_hist(symbol=stock_code)
+            
+            else:
+                logger.error(f"不支持的市场: {market_code}")
+                return pd.DataFrame()
+            
+            # 重命名列
+            df = self._standardize_columns(df, market_code)
+            
+            # 添加额外字段
+            df['symbol'] = stock_code
+            df['market'] = market
+            
+            # 计算涨跌幅
+            df = self._calculate_change(df)
+            
+            logger.info(f"成功获取 {symbol} 共 {len(df)} 条数据")
+            return df
+            
+        except Exception as e:
+            logger.error(f"获取 {symbol} 数据失败: {e}")
+            return pd.DataFrame()
+    
+    def fetch_stock_list(self, market: str = None) -> List[str]:
+        """
+        获取股票列表
+        
+        Args:
+            market: 市场代码 'sh', 'sz', 'bj' 或 None（全部）
+            
+        Returns:
+            股票代码列表
+        """
+        try:
+            if market is None:
+                # 获取全部A股
+                df = ak.stock_zh_a_spot()
+            elif market == 'sh':
+                df = ak.stock_sh_a_spot()
+            elif market == 'sz':
+                df = ak.stock_sz_a_spot()
+            elif market == 'bj':
+                df = ak.stock_bj_a_spot()
+            else:
+                logger.error(f"不支持的市场: {market}")
+                return []
+            
+            # 提取代码列表
+            codes = df['代码'].tolist()
+            # 添加市场前缀
+            market_prefix = market if market else ''
+            stock_list = [f"{market_prefix}{code}" for code in codes]
+            
+            logger.info(f"成功获取 {market or '全部'} 共 {len(stock_list)} 只股票")
+            return stock_list
+            
+        except Exception as e:
+            logger.error(f"获取股票列表失败: {e}")
+            return []
+    
+    def _standardize_columns(self, df: pd.DataFrame, market_code: str) -> pd.DataFrame:
+        """标准化列名和格式"""
+        column_mapping = {
+            '日期': 'trade_date',
+            '开盘': 'open',
+            '收盘': 'close',
+            '最高': 'high',
+            '最低': 'low',
+            '成交量': 'volume',
+            '成交额': 'amount',
+            '涨跌幅': 'pct_change',
+            '涨跌额': 'change',
+            '换手率': 'turnover_rate',
+            '振幅': 'amplitude',
+            '成交额': 'amount',
+        }
+        
+        df = df.rename(columns=column_mapping)
+        
+        # 转换数据类型
+        if 'trade_date' in df.columns:
+            df['trade_date'] = pd.to_datetime(df['trade_date']).dt.strftime('%Y-%m-%d')
+        
+        numeric_columns = ['open', 'high', 'low', 'close', 'volume', 'amount', 
+                          'pct_change', 'change', 'turnover_rate', 'amplitude']
+        
+        for col in numeric_columns:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        return df
+    
+    def _calculate_change(self, df: pd.DataFrame) -> pd.DataFrame:
+        """计算涨跌幅（如果数据源未提供）"""
+        if 'pct_change' not in df.columns and 'close' in df.columns:
+            df['pct_change'] = df['close'].pct_change() * 100
+        
+        if 'change' not in df.columns and 'close' in df.columns:
+            df['change'] = df['close'].diff()
+        
+        return df
+    
+    def fetch_multiple_stocks(self, symbols: List[str], start_date: str = None, 
+                             end_date: str = None, batch_size: int = 10, 
+                             delay: float = 0.5) -> pd.DataFrame:
+        """
+        批量获取多只股票的日线数据
+        
+        Args:
+            symbols: 股票代码列表
+            start_date: 开始日期
+            end_date: 结束日期
+            batch_size: 每批处理的数量
+            delay: 请求间隔（秒），避免被封
+            
+        Returns:
+            合并后的DataFrame
+        """
+        all_data = []
+        
+        for i, symbol in enumerate(symbols):
+            try:
+                logger.info(f"正在获取第 {i+1}/{len(symbols)} 只股票: {symbol}")
+                df = self.fetch_stock_daily(symbol, start_date, end_date)
+                
+                if not df.empty:
+                    all_data.append(df)
+                
+                # 控制请求频率
+                if i < len(symbols) - 1:
+                    time.sleep(delay)
+                    
+            except Exception as e:
+                logger.error(f"获取 {symbol} 失败: {e}")
+                continue
+        
+        if all_data:
+            result = pd.concat(all_data, ignore_index=True)
+            logger.info(f"批量获取完成，共获取 {len(result)} 条数据")
+            return result
+        else:
+            logger.warning("未获取到任何数据")
+            return pd.DataFrame()
