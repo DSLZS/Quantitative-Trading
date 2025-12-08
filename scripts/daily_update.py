@@ -15,6 +15,27 @@ from src.data.data_fetcher import DataFetcher
 from src.data.database_manager import DatabaseManager
 from config.settings import MYSQL_CONFIG
 
+'''
+运行示例
+更新上证指数最近30天数据
+python scripts/daily_update.py --symbol sh000001 --days 30
+更新较长时间 更新贵州茅台1年数据
+python scripts/daily_update.py --symbol sh600519 --days 365
+
+
+从文件更新
+# 股票列表文件stock_list.txt，每行一个股票代码
+sh000001  # 上证指数
+sz000001  # 深证成指
+sh600519  # 贵州茅台
+sz000858  # 五粮液
+sh601318  # 中国平安
+sz000002  # 万科A
+sh600036  # 招商银行
+sz300750  # 宁德时代
+python scripts/daily_update.py --file stock_list.txt --days 60
+'''
+
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
