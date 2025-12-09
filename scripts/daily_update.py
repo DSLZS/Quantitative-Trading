@@ -21,10 +21,10 @@ from config.settings import MYSQL_CONFIG
 python scripts/daily_update.py --symbol sh000001 --days 30
 更新较长时间 更新贵州茅台1年数据
 python scripts/daily_update.py --symbol sh600519 --days 365
-
-
+'''
+'''
 从文件更新
-# 股票列表文件stock_list.txt，每行一个股票代码
+股票列表文件stock_list.txt，每行一个股票代码
 sh000001  # 上证指数
 sz000001  # 深证成指
 sh600519  # 贵州茅台

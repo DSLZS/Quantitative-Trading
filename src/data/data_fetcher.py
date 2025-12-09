@@ -27,6 +27,13 @@ class DataFetcher:
             'sz': Market.SZSE.value,   # 深圳
             'bj': Market.BSE.value,    # 北京
         }
+        
+        # 定义数据库表所需的完整列结构
+        self.expected_columns = [
+            'symbol', 'market', 'trade_date', 'open', 'high', 'low', 'close',
+            'volume', 'amount', 'adjust_factor_back', 'adjust_factor_forward',
+            'change', 'pct_change', 'turnover_rate'
+        ]
     
     def fetch_stock_daily(self, symbol: str, start_date: str = None, 
                           end_date: str = None, adjust: str = "qfq") -> pd.DataFrame:
@@ -40,7 +47,7 @@ class DataFetcher:
             adjust: 复权类型 'qfq': 前复权, 'hfq': 后复权, None: 不复权
             
         Returns:
-            DataFrame 包含日线数据
+            DataFrame 包含日线数据，包含所有数据库表需要的列
         """
         try:
             # 解析市场和代码
@@ -62,6 +69,7 @@ class DataFetcher:
             logger.info(f"正在获取 {symbol} 从 {start_date} 到 {end_date} 的数据")
             
             # 使用akshare获取数据
+            df = pd.DataFrame()
             if market_code == 'sh':
                 # 上海交易所
                 if stock_code.startswith('000') or stock_code.startswith('001'):
@@ -113,15 +121,22 @@ class DataFetcher:
                 logger.error(f"不支持的市场: {market_code}")
                 return pd.DataFrame()
             
+            if df.empty:
+                logger.warning(f"未获取到 {symbol} 的数据")
+                return pd.DataFrame()
+            
             # 重命名列
             df = self._standardize_columns(df, market_code)
             
-            # 添加额外字段
+            # 添加股票基本信息
             df['symbol'] = stock_code
             df['market'] = market
             
-            # 计算涨跌幅
-            df = self._calculate_change(df)
+            # 确保所有需要的列都存在
+            df = self._ensure_all_columns(df, adjust)
+            
+            # 格式化数据
+            df = self._format_data(df)
             
             logger.info(f"成功获取 {symbol} 共 {len(df)} 条数据")
             return df
@@ -129,6 +144,87 @@ class DataFetcher:
         except Exception as e:
             logger.error(f"获取 {symbol} 数据失败: {e}")
             return pd.DataFrame()
+    
+    def _standardize_columns(self, df: pd.DataFrame, market_code: str) -> pd.DataFrame:
+        """标准化列名和格式"""
+        column_mapping = {
+            '日期': 'trade_date',
+            'date': 'trade_date',
+            '开盘': 'open',
+            '开盘价': 'open',
+            '收盘': 'close',
+            '收盘价': 'close',
+            '最高': 'high',
+            '最高价': 'high',
+            '最低': 'low',
+            '最低价': 'low',
+            '成交量': 'volume',
+            '成交额': 'amount',
+            '涨跌幅': 'pct_change',
+            '涨跌额': 'change',
+            '换手率': 'turnover_rate',
+            '振幅': 'amplitude',
+        }
+        
+        df = df.rename(columns={k: v for k, v in column_mapping.items() if k in df.columns})
+        return df
+    
+    def _ensure_all_columns(self, df: pd.DataFrame, adjust: str) -> pd.DataFrame:
+        """确保DataFrame包含所有需要的列"""
+        
+        # 检查并添加缺失的列
+        for col in self.expected_columns:
+            if col not in df.columns:
+                # 根据列名设置默认值
+                if col == 'adjust_factor_back':
+                    # 后复权因子：如果是后复权，可能是1.0；其他情况可能需要计算
+                    df[col] = 1.0 if adjust != 'hfq' else 1.0
+                elif col == 'adjust_factor_forward':
+                    # 前复权因子：如果是前复权，可能是1.0；其他情况可能需要计算
+                    df[col] = 1.0 if adjust != 'qfq' else 1.0
+                elif col == 'change':
+                    # 涨跌额：如果close存在，计算差值
+                    if 'close' in df.columns:
+                        df[col] = df['close'].diff()
+                    else:
+                        df[col] = None
+                elif col == 'pct_change':
+                    # 涨跌幅：如果change和close存在，计算百分比
+                    if 'change' in df.columns and 'close' in df.columns:
+                        df[col] = df['change'] / df['close'].shift(1) * 100
+                    else:
+                        df[col] = None
+                elif col == 'turnover_rate':
+                    # 换手率：如果不存在，设为None
+                    df[col] = None
+                else:
+                    # 其他缺失的数值列设为None
+                    df[col] = None
+        
+        # 确保列的顺序一致
+        df = df[self.expected_columns]
+        return df
+    
+    def _format_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """格式化数据"""
+        # 格式化日期
+        if 'trade_date' in df.columns:
+            df['trade_date'] = pd.to_datetime(df['trade_date']).dt.strftime('%Y-%m-%d')
+        
+        # 确保数值类型
+        numeric_cols = ['open', 'high', 'low', 'close', 'volume', 'amount',
+                       'adjust_factor_back', 'adjust_factor_forward',
+                       'change', 'pct_change', 'turnover_rate']
+        
+        for col in numeric_cols:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # 确保volume是整数类型
+        if 'volume' in df.columns:
+            df['volume'] = df['volume'].astype('Int64')
+        
+        return df
     
     def fetch_stock_list(self, market: str = None) -> List[str]:
         """
@@ -167,48 +263,6 @@ class DataFetcher:
             logger.error(f"获取股票列表失败: {e}")
             return []
     
-    def _standardize_columns(self, df: pd.DataFrame, market_code: str) -> pd.DataFrame:
-        """标准化列名和格式"""
-        column_mapping = {
-            '日期': 'trade_date',
-            '开盘': 'open',
-            '收盘': 'close',
-            '最高': 'high',
-            '最低': 'low',
-            '成交量': 'volume',
-            '成交额': 'amount',
-            '涨跌幅': 'pct_change',
-            '涨跌额': 'change',
-            '换手率': 'turnover_rate',
-            '振幅': 'amplitude',
-            '成交额': 'amount',
-        }
-        
-        df = df.rename(columns=column_mapping)
-        
-        # 转换数据类型
-        if 'trade_date' in df.columns:
-            df['trade_date'] = pd.to_datetime(df['trade_date']).dt.strftime('%Y-%m-%d')
-        
-        numeric_columns = ['open', 'high', 'low', 'close', 'volume', 'amount', 
-                          'pct_change', 'change', 'turnover_rate', 'amplitude']
-        
-        for col in numeric_columns:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-        
-        return df
-    
-    def _calculate_change(self, df: pd.DataFrame) -> pd.DataFrame:
-        """计算涨跌幅（如果数据源未提供）"""
-        if 'pct_change' not in df.columns and 'close' in df.columns:
-            df['pct_change'] = df['close'].pct_change() * 100
-        
-        if 'change' not in df.columns and 'close' in df.columns:
-            df['change'] = df['close'].diff()
-        
-        return df
-    
     def fetch_multiple_stocks(self, symbols: List[str], start_date: str = None, 
                              end_date: str = None, batch_size: int = 10, 
                              delay: float = 0.5) -> pd.DataFrame:
@@ -234,6 +288,8 @@ class DataFetcher:
                 
                 if not df.empty:
                     all_data.append(df)
+                else:
+                    logger.warning(f"股票 {symbol} 数据为空")
                 
                 # 控制请求频率
                 if i < len(symbols) - 1:
