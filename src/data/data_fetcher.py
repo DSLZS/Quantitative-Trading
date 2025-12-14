@@ -72,18 +72,18 @@ class DataFetcher:
             df = pd.DataFrame()
             if market_code == 'sh':
                 # 上海交易所
-                if stock_code.startswith('000') or stock_code.startswith('001'):
+                if stock_code.startswith('000') or stock_code.startswith('001'): # 上证主板
                     df = ak.stock_zh_a_hist(
                         symbol=stock_code, period="daily", 
                         start_date=start_date.replace('-', ''), 
                         end_date=end_date.replace('-', ''),
                         adjust=adjust
                     )
-                elif stock_code.startswith('688'):
-                    # 科创板
+                elif stock_code.startswith('688'):  
+                    # 科创板 不支持日期传参
                     df = ak.stock_zh_kcb_daily(symbol=stock_code)
                 elif stock_code.startswith('50') or stock_code.startswith('51'):
-                    # ETF/LOF
+                    # ETF/LOF 不支持日期传参
                     df = ak.fund_etf_hist_sina(symbol=f"sh{stock_code}")
                 else:
                     logger.error(f"不支持的上海股票代码: {stock_code}")
@@ -107,7 +107,7 @@ class DataFetcher:
                         adjust=adjust
                     )
                 elif stock_code.startswith('15') or stock_code.startswith('16'):
-                    # ETF/LOF
+                    # ETF/LOF 不支持日期传参
                     df = ak.fund_etf_hist_sina(symbol=f"sz{stock_code}")
                 else:
                     logger.error(f"不支持的深圳股票代码: {stock_code}")
