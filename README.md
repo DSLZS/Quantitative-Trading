@@ -2,15 +2,19 @@
 quant_trader/
 ├── config/
 │   └── settings.py
-├── outputs/                    # 【新增】存放回测结果和图表
+├── outputs/                      # 存放运行结果和图表
 ├── scripts/
-│   ├── daily_update.py         # 已有，我们将修改它
-│   └── run_backtest.py         # 【新增】本次策略回测的启动脚本
+│   ├── daily_update.py           # 拉取股票数据启动脚本
+│   ├── run_backtest.py           # 策略回测的启动脚本
+|   └── run_factor_analysis.py    # 因子批量测试启动脚本
 └── src/
-    ├── backtest/               # 【新增】回测层（简单的回测引擎）
+    ├── backtest/                 # 回测层（简单的回测引擎）
     │   └── engine.py
-    ├── data/                  # 已有，数据层
-    │   ├── database_manager.py # 已有，适配了你的表结构，需小改
-    │   └── data_fetcher.py     # 已有
-    └── strategies/               # 【新增】策略层（仅放一个双均线策略）
-        └── dual_ma.py
+    ├── data/                  
+    │   ├── database_manager.py   # 数据库相关操作
+    │   └── data_fetcher.py       # 数据读取
+    ├── strategies/               # 策略层
+    |   └── dual_ma.py            # 双均线策略
+    └── factors/
+        ├── factor_analyzer.py    # 因子测试
+        └── factor_library.py     # 因子工厂
