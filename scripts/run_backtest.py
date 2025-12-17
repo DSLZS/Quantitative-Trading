@@ -2,10 +2,20 @@
 # scripts/run_backtest.py
 """
 双均线策略本地回测 - 主启动脚本
-运行方式：python scripts/run_backtest.py
+运行方式
+python scripts/run_backtest.py
+python scripts/run_backtest.py --symbol 510300.SH
+args:
+    symbol: 股票代码，如 '510300.SH' 或纯代码 '510300' 510300.SH
+    start_date: 开始日期，格式 'YYYY-MM-DD'
+    end_date: 结束日期，格式 'YYYY-MM-DD'
+    fields: 需要获取的字段列表，如果为None则获取所有字段
+    use_adj: 复权类型 'forward' (前复权), 'back' (后复权), 'none' (不复权)
 """
+import argparse
 import sys
 from pathlib import Path
+import matplotlib
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -21,18 +31,28 @@ def main():
     print("=" * 60)
     print("双均线策略本地回测")
     print("=" * 60)
+
+    # 获取传参
+    parser = argparse.ArgumentParser(description='回测策略传参')
+    parser.add_argument('--symbol', type=str, help='单只股票代码，如 510300.SH')
+    parser.add_argument('--start_date', type=str, default="2020-01-01", help='回测开始日期 yyyy-mm-dd')
+    parser.add_argument('--end_date', type=str, default="2024-01-01", help='回测结束日期 yyyy-mm-dd')
+    parser.add_argument('--use_adj', type=str, default='forward', help='前后复权')
+
+    args = parser.parse_args()
     
     # 1. 获取数据
     print("\n1. 从数据库获取数据...")
     db = DatabaseManager()
-    symbol = "510300.SH"
     
+
     # 获取数据（使用前复权价格）
+    symbol=args.symbol
     data = db.fetch_stock_data(
         symbol=symbol,
-        start_date="2020-01-01",
-        end_date="2024-01-01",
-        use_adj='forward'  # 使用前复权
+        start_date=args.start_date,
+        end_date=args.end_date,
+        use_adj=args.use_adj  # 使用前复权
     )
     
     if data.empty:
@@ -42,7 +62,7 @@ def main():
     print(f"获取到 {len(data)} 条数据，时间范围: {data['trade_date'].min()} 到 {data['trade_date'].max()}")
     
     # 2. 运行策略
-    print("\n2. 运行双均线策略...")
+    print("\n2. 运行策略...")
     strategy = DualMAStrategy(fast_period=10, slow_period=30)
     data_with_signals = strategy.generate_signals(data)
     
@@ -97,6 +117,9 @@ def main():
 
 def plot_results(backtest_result, data_with_signals, symbol):
     """绘制回测结果图表"""
+    matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'DejaVu Sans']  # Windows
+    matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+
     fig, axes = plt.subplots(3, 1, figsize=(14, 12))
     
     # 1. 价格与均线

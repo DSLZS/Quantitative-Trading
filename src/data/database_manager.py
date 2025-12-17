@@ -272,8 +272,8 @@ class DatabaseManager:
         """
         从stock_daily表获取股票日线数据
         
-        Args:
-            symbol: 股票代码，如 '510300.SH' 或纯代码 '510300'
+        args:
+            symbol: 股票代码，如 '510300.SH' 或纯代码 '510300' 510300.SH
             start_date: 开始日期，格式 'YYYY-MM-DD'
             end_date: 结束日期，格式 'YYYY-MM-DD'
             fields: 需要获取的字段列表，如果为None则获取所有字段
@@ -309,9 +309,8 @@ class DatabaseManager:
             
             price_column = price_column_map[use_adj]
             
-            # 构建查询字段
+            # fields为要获取的字段 为空则默认获取所有字段
             if fields is None:
-                # 默认获取常用字段 + 复权价格
                 fields = [
                     'symbol', 'market', 'trade_date',
                     'open', 'high', 'low', 'close',
@@ -333,36 +332,39 @@ class DatabaseManager:
             # 构建WHERE条件
             where_conditions = []
             params = []
+
+            # 简单化逻辑处理，暂时只支持510030.SH的传入
+            symbol_code, market_code = symbol.split('.')[0], symbol.split('.')[1]
             
-            # 处理symbol条件
-            if isinstance(symbol, str):
-                # 解析完整代码
-                symbol_code, market_code = self.parse_stock_code(symbol)
-                logger.debug(f"解析结果: symbol={symbol_code}, market={market_code}")
+            # # 处理symbol条件
+            # if isinstance(symbol, str):
+            #     # 解析完整代码
+            #     symbol_code, market_code = self.parse_stock_code(symbol)
+            #     logger.debug(f"解析结果: symbol={symbol_code}, market={market_code}")
                 
-                if market_code:
-                    # 如果能够解析出市场代码
-                    where_conditions.append("symbol = %s AND market = %s")
-                    params.extend([symbol_code, market_code])
-                else:
-                    # 如果不能解析出市场代码，只使用symbol
-                    where_conditions.append("symbol = %s")
-                    params.append(symbol_code)
+            #     if market_code:
+            #         # 如果能够解析出市场代码
+            #         where_conditions.append("symbol = %s AND market = %s")
+            #         params.extend([symbol_code, market_code])
+            #     else:
+            #         # 如果不能解析出市场代码，只使用symbol
+            #         where_conditions.append("symbol = %s")
+            #         params.append(symbol_code)
                     
-            elif isinstance(symbol, list):
-                # 处理多个股票代码
-                symbol_conditions = []
-                for s in symbol:
-                    symbol_code, market_code = self.parse_stock_code(s)
-                    if market_code:
-                        symbol_conditions.append("(symbol = %s AND market = %s)")
-                        params.extend([symbol_code, market_code])
-                    else:
-                        symbol_conditions.append("symbol = %s")
-                        params.append(symbol_code)
+            # elif isinstance(symbol, list):
+            #     # 处理多个股票代码
+            #     symbol_conditions = []
+            #     for s in symbol:
+            #         symbol_code, market_code = self.parse_stock_code(s)
+            #         if market_code:
+            #             symbol_conditions.append("(symbol = %s AND market = %s)")
+            #             params.extend([symbol_code, market_code])
+            #         else:
+            #             symbol_conditions.append("symbol = %s")
+            #             params.append(symbol_code)
                 
-                if symbol_conditions:
-                    where_conditions.append(f"({' OR '.join(symbol_conditions)})")
+            #     if symbol_conditions:
+            #         where_conditions.append(f"({' OR '.join(symbol_conditions)})")
             
             # 日期条件
             where_conditions.append("trade_date BETWEEN %s AND %s")
