@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 # scripts/daily_update.py
+'''
+daily_update.py代码用于拉取股票数据
+'''
 import sys
 import os
 import argparse
