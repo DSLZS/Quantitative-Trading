@@ -6,7 +6,7 @@
 python scripts/run_backtest.py
 python scripts/run_backtest.py --symbol 510300.SH
 args:
-    symbol: 股票代码，如 '510300.SH' 或纯代码 '510300' 510300.SH
+    symbol: 股票代码，标准格式如 '510300.SH'
     start_date: 开始日期，格式 'YYYY-MM-DD'
     end_date: 结束日期，格式 'YYYY-MM-DD'
     fields: 需要获取的字段列表，如果为None则获取所有字段

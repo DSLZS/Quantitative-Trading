@@ -20,56 +20,62 @@ from config.settings import MYSQL_CONFIG
 
 '''
 运行示例
+# 支持多种输入格式
+python scripts/daily_update.py --symbol 510300.SH
+python scripts/daily_update.py --symbol sh510300
+python scripts/daily_update.py --symbol 510300
 更新上证指数最近30天数据
-python scripts/daily_update.py --symbol sh000001 --days 30
+python scripts/daily_update.py --symbol 000001.SH --days 30
 更新较长时间 更新贵州茅台1年数据
-python scripts/daily_update.py --symbol sh600519 --days 365
+python scripts/daily_update.py --symbol 600519.SH --days 365
 '''
 '''
 从文件更新
-股票列表文件stock_list.txt，每行一个股票代码
-sh000001  # 上证指数
-sz000001  # 深证成指
-sh600519  # 贵州茅台
-sz000858  # 五粮液
-sh601318  # 中国平安
-sz000002  # 万科A
-sh600036  # 招商银行
-sz300750  # 宁德时代
+股票列表文件stock_list.txt，每行一个股票代码（标准格式）
+000001.SH  # 上证指数
+399001.SZ  # 深证成指
+600519.SH  # 贵州茅台
+000858.SZ  # 五粮液
+601318.SH  # 中国平安
+000002.SZ  # 万科A
+600036.SH  # 招商银行
+300750.SZ  # 宁德时代
 python scripts/daily_update.py --file stock_list.txt --days 60
 '''
 
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # 定义日志输出格式 %(asctime)s时间戳 %(name)s记录器名称 %(levelname)s日志级别 %(message)s日志消息
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('logs/daily_update.log'),  # 日志输出到文件
-        logging.StreamHandler()  # 日志输出到控制台
+        logging.FileHandler('logs/daily_update.log'),
+        logging.StreamHandler()
     ]
 )
-logger = logging.getLogger(__name__)  # 创建日志记录器实例
+logger = logging.getLogger(__name__)
 
-def update_single_stock(symbol: str, days: int = 30):  # 给默认值30天
+def update_single_stock(symbol: str, days: int = 30):
     """更新单只股票数据"""
-    logger.info(f"开始更新股票: {symbol}")
+    # 标准化输入符号
+    fetcher = DataFetcher()
+    normalized_symbol = fetcher.normalize_symbol(symbol)
+    logger.info(f"开始更新股票: {normalized_symbol} (原始输入: {symbol})")
     
     # 获取最近日期
     end_date = datetime.now().strftime('%Y-%m-%d')
-    start_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')  # 第二个days为传参，此处传入的是30天
+    start_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
     
-    # 获取数据
-    fetcher = DataFetcher()  # 创建获取器实例
-    df = fetcher.fetch_stock_daily(symbol, start_date, end_date)
+    # 获取数据（使用标准化后的符号）
+    df = fetcher.fetch_stock_daily(normalized_symbol, start_date, end_date)
     
     if df.empty:
-        logger.error(f"未获取到 {symbol} 的数据")
+        logger.error(f"未获取到 {normalized_symbol} 的数据")
         return False
     
     # 保存到数据库
     with DatabaseManager(MYSQL_CONFIG) as db:
         affected_rows = db.insert_stock_daily(df, replace=True)
-        logger.info(f"{symbol} 更新完成，影响行数: {affected_rows}")
+        logger.info(f"{normalized_symbol} 更新完成，影响行数: {affected_rows}")
     
     return True
 
@@ -105,20 +111,20 @@ def update_all_a_shares(days: int = 30):
     """更新全部A股"""
     logger.info("开始更新全部A股数据")
     
-    # 获取股票列表
+    # 获取股票列表（返回标准格式）
     fetcher = DataFetcher()
     all_symbols = fetcher.fetch_stock_list()
     
-    # 只取前100只作为示例（实际使用时可以全部更新）
+    # 只取前100只作为示例
     sample_symbols = all_symbols[:100]
     
     return update_stock_list(sample_symbols, days)
 
 def main():
     parser = argparse.ArgumentParser(description='股票日数据更新脚本')
-    parser.add_argument('--symbol', type=str, help='单只股票代码，如 sh000001')
+    parser.add_argument('--symbol', type=str, help='单只股票代码，如 000001.SH 或 sh000001')
     parser.add_argument('--file', type=str, help='股票代码列表文件路径')
-    parser.add_argument('--market', type=str, choices=['sh', 'sz', 'bj'], help='更新指定市场')
+    parser.add_argument('--market', type=str, choices=['SH', 'SZ', 'BJ'], help='更新指定市场')
     parser.add_argument('--days', type=int, default=30, help='更新最近多少天的数据')
     parser.add_argument('--all', action='store_true', help='更新全部A股')
     
@@ -129,28 +135,50 @@ def main():
     
     try:
         if args.symbol:
-            # 更新单只股票
-            update_single_stock(args.symbol, args.days)
+            # 直接使用标准化函数
+            fetcher = DataFetcher()
+            normalized_symbol = fetcher.normalize_symbol(args.symbol)
+            update_single_stock(normalized_symbol, args.days)
             
         elif args.file:
             # 从文件读取股票列表
             with open(args.file, 'r') as f:
                 symbols = [line.strip() for line in f if line.strip()]
-            update_stock_list(symbols, args.days)
+            
+            # 批量标准化
+            fetcher = DataFetcher()
+            normalized_symbols = []
+            for s in symbols:
+                # 跳过注释行
+                if s.startswith('#'):
+                    continue
+                # 提取代码（可能后面有注释）
+                code_part = s.split('#')[0].strip()
+                if code_part:
+                    normalized_symbols.append(fetcher.normalize_symbol(code_part))
+            
+            # 显示转换结果
+            if symbols != normalized_symbols:
+                logger.info("符号转换结果:")
+                for orig, new in zip(symbols, normalized_symbols):
+                    if orig != new:
+                        logger.info(f"  {orig} -> {new}")
+            
+            update_stock_list(normalized_symbols, args.days)
             
         elif args.market:
-            # 更新指定市场
+            # 更新指定市场（这里market应该是标准格式：SH/SZ/BJ）
             fetcher = DataFetcher()
             symbols = fetcher.fetch_stock_list(args.market)
-            update_stock_list(symbols[:50], args.days)  # 只取前50只作为示例
+            update_stock_list(symbols[:50], args.days)
             
         elif args.all:
             # 更新全部A股
             update_all_a_shares(args.days)
             
         else:
-            # 默认更新主要指数
-            default_symbols = ['sh000001', 'sh000300', 'sz399001', 'sz399006']
+            # 默认更新主要指数（已经使用标准格式）
+            default_symbols = ['000001.SH', '000300.SH', '399001.SZ', '399006.SZ']
             update_stock_list(default_symbols, args.days)
             
         logger.info("数据更新任务完成")
