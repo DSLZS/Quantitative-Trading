@@ -1,22 +1,26 @@
 # src/data/database_manager.py
-import pymysql
-from pymysql import Error
-from config.settings import MYSQL_CONFIG
+from sqlalchemy import create_engine, text
+from sqlalchemy.pool import QueuePool
+from sqlalchemy.exc import SQLAlchemyError
+from config.settings import MYSQL_CONFIG, DB_POOL_CONFIG
 import pandas as pd
 from typing import List, Dict, Optional, Tuple, Union
 from datetime import datetime
 import logging
 import re
-from decimal import Decimal
+from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    """数据库管理类"""
+    """数据库管理类（使用连接池）"""
+    
+    # 类级别的连接池
+    _engine = None
     
     def __init__(self, config=None):
         self.config = config or MYSQL_CONFIG
-        self.connection = None
+        self.pool_config = DB_POOL_CONFIG
         
         # 定义表结构所需的列顺序
         self.stock_daily_columns = [
@@ -32,53 +36,51 @@ class DatabaseManager:
             'BJ': 'BSE',      # 北京证券交易所
             'HK': 'HKEX',     # 香港交易所
             'US': 'NYSE',     # 纽约交易所
-            # 添加更多映射
             'SSE': 'SSE',     # 直接映射，防止大小写问题
             'sse': 'SSE',     # 小写映射到大写
         }
         
         # 反向映射
         self.reverse_market_mapping = {v: k for k, v in self.market_mapping.items()}
+        
+        # 初始化连接池
+        self._init_engine()
     
-    def connect(self):
-        """建立数据库连接"""
+    @classmethod
+    def _init_engine(cls):
+        """初始化数据库连接池（单例模式）"""
+        if cls._engine is None:
+            config = MYSQL_CONFIG
+            pool_config = DB_POOL_CONFIG
+            
+            # 构建数据库URL
+            db_url = f"mysql+pymysql://{config['user']}:{config['password']}@{config['host']}:{config['port']}/{config['database']}?charset={config.get('charset', 'utf8mb4')}"
+            
+            # 创建连接池引擎
+            cls._engine = create_engine(
+                db_url,
+                poolclass=QueuePool,
+                pool_size=pool_config['pool_size'],
+                max_overflow=pool_config['max_overflow'],
+                pool_recycle=pool_config['pool_recycle'],
+                pool_timeout=pool_config['pool_timeout'],
+                echo=pool_config['echo']
+            )
+            logger.info(f"数据库连接池初始化完成，池大小: {pool_config['pool_size']}")
+    
+    @contextmanager
+    def get_connection(self):
+        """获取数据库连接（上下文管理器）"""
+        connection = None
         try:
-            self.connection = pymysql.connect(**self.config)
-            logger.info(f"成功连接到数据库: {self.config['database']}")
-            return True
-        except Error as e:
-            logger.error(f"数据库连接失败: {e}")
-            return False
-    
-    def disconnect(self):
-        """关闭数据库连接"""
-        if self.connection:
-            self.connection.close()
-            logger.info("数据库连接已关闭")
-    
-    def execute_query(self, query, params=None):
-        """执行查询"""
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(query, params or ())
-                return cursor.fetchall()
-        except Error as e:
-            logger.error(f"查询执行失败: {e}")
-            return None
-    
-    def execute_many(self, query, data_list):
-        """批量执行插入/更新"""
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.executemany(query, data_list)
-            self.connection.commit()
-            affected_rows = cursor.rowcount
-            logger.info(f"批量操作成功，影响行数: {affected_rows}")
-            return affected_rows
-        except Error as e:
-            self.connection.rollback()
-            logger.error(f"批量操作失败: {e}")
-            return 0
+            connection = self._engine.connect()
+            yield connection
+        except SQLAlchemyError as e:
+            logger.error(f"数据库连接错误: {e}")
+            raise
+        finally:
+            if connection:
+                connection.close()
     
     def parse_stock_code(self, full_code: str) -> Tuple[str, str]:
         """
@@ -174,16 +176,43 @@ class DatabaseManager:
             # 使用原始市场代码
             return f"{symbol}.{market}"
     
-    def convert_decimal_to_float(self, value):
-        """将Decimal类型转换为float"""
-        if isinstance(value, Decimal):
-            return float(value)
-        elif isinstance(value, (list, tuple)):
-            return [self.convert_decimal_to_float(v) for v in value]
-        elif isinstance(value, dict):
-            return {k: self.convert_decimal_to_float(v) for k, v in value.items()}
-        else:
-            return value
+    def execute_query(self, query, params=None, connection=None):
+        """执行查询"""
+        close_connection = False
+        if connection is None:
+            connection = self._engine.connect()
+            close_connection = True
+        
+        try:
+            result = connection.execute(text(query), params or {})
+            return result.fetchall()
+        except SQLAlchemyError as e:
+            logger.error(f"查询执行失败: {e}")
+            return None
+        finally:
+            if close_connection and connection:
+                connection.close()
+    
+    def execute_many(self, query, data_list, connection=None):
+        """批量执行插入/更新"""
+        close_connection = False
+        if connection is None:
+            connection = self._engine.connect()
+            close_connection = True
+        
+        try:
+            # 使用事务
+            with connection.begin():
+                result = connection.execute(text(query), data_list)
+                affected_rows = result.rowcount
+                logger.info(f"批量操作成功，影响行数: {affected_rows}")
+                return affected_rows
+        except SQLAlchemyError as e:
+            logger.error(f"批量操作失败: {e}")
+            return 0
+        finally:
+            if close_connection and connection:
+                connection.close()
     
     def insert_stock_daily(self, data_df, replace=False):
         """
@@ -208,31 +237,29 @@ class DatabaseManager:
         
         # 打印数据摘要
         logger.info(f"准备插入 {len(data_df)} 行数据")
-        logger.info(f"数据列: {list(data_df.columns)}")
         logger.info(f"数据日期范围: {data_df['trade_date'].min()} 到 {data_df['trade_date'].max()}")
-        logger.info(f"股票列表: {data_df['symbol'].unique()[:5]}")  # 只显示前5只股票
         
         # 准备数据
         data_list = []
         for _, row in data_df.iterrows():
             try:
                 # 处理每一行数据
-                data_tuple = (
-                    str(row['symbol']).strip() if pd.notna(row.get('symbol')) else '',
-                    str(row['market']).strip().upper() if pd.notna(row.get('market')) else '',  # 市场代码大写
-                    pd.to_datetime(row['trade_date']).strftime('%Y-%m-%d') if pd.notna(row.get('trade_date')) else None,
-                    float(row.get('open')) if pd.notna(row.get('open')) else None,
-                    float(row.get('high')) if pd.notna(row.get('high')) else None,
-                    float(row.get('low')) if pd.notna(row.get('low')) else None,
-                    float(row.get('close')) if pd.notna(row.get('close')) else None,
-                    int(row.get('volume')) if pd.notna(row.get('volume')) else None,
-                    float(row.get('amount')) if pd.notna(row.get('amount')) else None,
-                    float(row.get('adjust_factor_back', 1.0)) if pd.notna(row.get('adjust_factor_back', 1.0)) else 1.0,
-                    float(row.get('adjust_factor_forward', 1.0)) if pd.notna(row.get('adjust_factor_forward', 1.0)) else 1.0,
-                    float(row.get('change')) if pd.notna(row.get('change')) else None,
-                    float(row.get('pct_change')) if pd.notna(row.get('pct_change')) else None,
-                    float(row.get('turnover_rate')) if pd.notna(row.get('turnover_rate')) else None
-                )
+                data_tuple = {
+                    'symbol': str(row['symbol']).strip() if pd.notna(row.get('symbol')) else '',
+                    'market': str(row['market']).strip().upper() if pd.notna(row.get('market')) else '',
+                    'trade_date': pd.to_datetime(row['trade_date']).strftime('%Y-%m-%d') if pd.notna(row.get('trade_date')) else None,
+                    'open': float(row.get('open')) if pd.notna(row.get('open')) else None,
+                    'high': float(row.get('high')) if pd.notna(row.get('high')) else None,
+                    'low': float(row.get('low')) if pd.notna(row.get('low')) else None,
+                    'close': float(row.get('close')) if pd.notna(row.get('close')) else None,
+                    'volume': int(row.get('volume')) if pd.notna(row.get('volume')) else None,
+                    'amount': float(row.get('amount')) if pd.notna(row.get('amount')) else None,
+                    'adjust_factor_back': float(row.get('adjust_factor_back', 1.0)) if pd.notna(row.get('adjust_factor_back', 1.0)) else 1.0,
+                    'adjust_factor_forward': float(row.get('adjust_factor_forward', 1.0)) if pd.notna(row.get('adjust_factor_forward', 1.0)) else 1.0,
+                    'change': float(row.get('change')) if pd.notna(row.get('change')) else None,
+                    'pct_change': float(row.get('pct_change')) if pd.notna(row.get('pct_change')) else None,
+                    'turnover_rate': float(row.get('turnover_rate')) if pd.notna(row.get('turnover_rate')) else None
+                }
                 data_list.append(data_tuple)
             except Exception as e:
                 logger.warning(f"处理行数据时出错（跳过该行）: {e}")
@@ -243,8 +270,6 @@ class DatabaseManager:
             return 0
         
         logger.info(f"成功准备 {len(data_list)} 行数据用于插入")
-        if data_list:
-            logger.debug(f"第一行数据示例: {data_list[0]}")
         
         # SQL语句 - 匹配表结构
         if replace:
@@ -252,17 +277,22 @@ class DatabaseManager:
             REPLACE INTO stock_daily 
             (symbol, market, trade_date, `open`, high, low, `close`, volume, amount, 
              adjust_factor_back, adjust_factor_forward, `change`, pct_change, turnover_rate)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (:symbol, :market, :trade_date, :open, :high, :low, :close, :volume, :amount, 
+                    :adjust_factor_back, :adjust_factor_forward, :change, :pct_change, :turnover_rate)
             """
         else:
             sql = """
             INSERT IGNORE INTO stock_daily 
             (symbol, market, trade_date, `open`, high, low, `close`, volume, amount, 
              adjust_factor_back, adjust_factor_forward, `change`, pct_change, turnover_rate)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (:symbol, :market, :trade_date, :open, :high, :low, :close, :volume, :amount, 
+                    :adjust_factor_back, :adjust_factor_forward, :change, :pct_change, :turnover_rate)
             """
         
-        affected_rows = self.execute_many(sql, data_list)
+        # 使用连接池执行批量操作
+        with self.get_connection() as conn:
+            affected_rows = self.execute_many(sql, data_list, conn)
+        
         logger.info(f"数据库操作完成，影响行数: {affected_rows}")
         return affected_rows
     
@@ -284,15 +314,10 @@ class DatabaseManager:
             返回的DataFrame中会包含完整代码列 'full_symbol'
         """
         try:
-            if not self.connect():
-                logger.error("数据库连接失败")
-                return pd.DataFrame()
-            
             # 设置默认日期
             if end_date is None:
                 end_date = datetime.now().strftime('%Y-%m-%d')
             if start_date is None:
-                # 默认获取最近一年的数据
                 from datetime import timedelta
                 start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
             
@@ -331,44 +356,19 @@ class DatabaseManager:
             
             # 构建WHERE条件
             where_conditions = []
-            params = []
+            params = {}
 
-            # 简单化逻辑处理，暂时只支持510030.SH的传入
+            # 解析股票代码
             symbol_code, market_code = symbol.split('.')[0], symbol.split('.')[1]
             
-            # # 处理symbol条件
-            # if isinstance(symbol, str):
-            #     # 解析完整代码
-            #     symbol_code, market_code = self.parse_stock_code(symbol)
-            #     logger.debug(f"解析结果: symbol={symbol_code}, market={market_code}")
-                
-            #     if market_code:
-            #         # 如果能够解析出市场代码
-            #         where_conditions.append("symbol = %s AND market = %s")
-            #         params.extend([symbol_code, market_code])
-            #     else:
-            #         # 如果不能解析出市场代码，只使用symbol
-            #         where_conditions.append("symbol = %s")
-            #         params.append(symbol_code)
-                    
-            # elif isinstance(symbol, list):
-            #     # 处理多个股票代码
-            #     symbol_conditions = []
-            #     for s in symbol:
-            #         symbol_code, market_code = self.parse_stock_code(s)
-            #         if market_code:
-            #             symbol_conditions.append("(symbol = %s AND market = %s)")
-            #             params.extend([symbol_code, market_code])
-            #         else:
-            #             symbol_conditions.append("symbol = %s")
-            #             params.append(symbol_code)
-                
-            #     if symbol_conditions:
-            #         where_conditions.append(f"({' OR '.join(symbol_conditions)})")
+            where_conditions.append("symbol = :symbol_code AND market = :market_code")
+            params['symbol_code'] = symbol_code
+            params['market_code'] = market_code
             
             # 日期条件
-            where_conditions.append("trade_date BETWEEN %s AND %s")
-            params.extend([start_date, end_date])
+            where_conditions.append("trade_date BETWEEN :start_date AND :end_date")
+            params['start_date'] = start_date
+            params['end_date'] = end_date
             
             # 完整WHERE子句
             where_clause = " AND ".join(where_conditions)
@@ -380,21 +380,16 @@ class DatabaseManager:
             WHERE {where_clause}
             ORDER BY trade_date ASC
             """
-            
             logger.debug(f"执行查询: {query}")
-            logger.debug(f"查询参数: {params}")
             
-            # 执行查询
-            with self.connection.cursor() as cursor:
-                cursor.execute(query, params)
-                results = cursor.fetchall()
+            # 使用连接池执行查询
+            with self.get_connection() as conn:
+                result = conn.execute(text(query), params)
+                results = result.fetchall()
             
             if not results:
                 logger.warning(f"未找到 {symbol} 在 {start_date} 到 {end_date} 的数据")
                 return pd.DataFrame()
-            
-            # 将结果中的Decimal转换为float
-            results = self.convert_decimal_to_float(results)
             
             # 转换为DataFrame
             df = pd.DataFrame(results, columns=fields)
@@ -421,8 +416,6 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"获取股票数据失败: {e}", exc_info=True)
             return pd.DataFrame()
-        finally:
-            self.disconnect()
     
     def get_available_symbols(self, full_format: bool = True) -> List[str]:
         """
@@ -435,20 +428,14 @@ class DatabaseManager:
             股票代码列表
         """
         try:
-            if not self.connect():
-                return []
-            
             if full_format:
                 query = "SELECT DISTINCT symbol, market FROM stock_daily ORDER BY symbol"
             else:
                 query = "SELECT DISTINCT symbol FROM stock_daily ORDER BY symbol"
             
-            with self.connection.cursor() as cursor:
-                cursor.execute(query)
-                results = cursor.fetchall()
-            
-            # 转换Decimal类型
-            results = self.convert_decimal_to_float(results)
+            with self.get_connection() as conn:
+                result = conn.execute(text(query))
+                results = result.fetchall()
             
             if full_format:
                 symbols = []
@@ -465,8 +452,6 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"获取股票代码列表失败: {e}")
             return []
-        finally:
-            self.disconnect()
     
     def get_date_range(self, symbol: str) -> Tuple[Optional[str], Optional[str]]:
         """
@@ -479,9 +464,6 @@ class DatabaseManager:
             (开始日期, 结束日期) 元组
         """
         try:
-            if not self.connect():
-                return None, None
-            
             # 解析股票代码
             symbol_code, market_code = self.parse_stock_code(symbol)
             
@@ -489,42 +471,34 @@ class DatabaseManager:
                 query = """
                 SELECT MIN(trade_date), MAX(trade_date) 
                 FROM stock_daily 
-                WHERE symbol = %s AND market = %s
+                WHERE symbol = :symbol AND market = :market
                 """
-                params = (symbol_code, market_code)
+                params = {'symbol': symbol_code, 'market': market_code}
             else:
                 query = """
                 SELECT MIN(trade_date), MAX(trade_date) 
                 FROM stock_daily 
-                WHERE symbol = %s
+                WHERE symbol = :symbol
                 """
-                params = (symbol_code,)
+                params = {'symbol': symbol_code}
             
-            with self.connection.cursor() as cursor:
-                cursor.execute(query, params)
-                result = cursor.fetchone()
+            with self.get_connection() as conn:
+                result = conn.execute(text(query), params)
+                result_data = result.fetchone()
             
-            # 转换Decimal类型
-            result = self.convert_decimal_to_float(result)
-            
-            if result and result[0] and result[1]:
-                start_date = result[0].strftime('%Y-%m-%d') if hasattr(result[0], 'strftime') else str(result[0])
-                end_date = result[1].strftime('%Y-%m-%d') if hasattr(result[1], 'strftime') else str(result[1])
+            if result_data and result_data[0] and result_data[1]:
+                start_date = result_data[0].strftime('%Y-%m-%d') if hasattr(result_data[0], 'strftime') else str(result_data[0])
+                end_date = result_data[1].strftime('%Y-%m-%d') if hasattr(result_data[1], 'strftime') else str(result_data[1])
                 return (start_date, end_date)
             return None, None
             
         except Exception as e:
             logger.error(f"获取日期范围失败: {e}")
             return None, None
-        finally:
-            self.disconnect()
     
     def get_latest_trade_date(self, symbol=None, market=None):
         """获取最新交易日期"""
         try:
-            if not self.connect():
-                return None
-            
             if symbol:
                 # 解析股票代码
                 symbol_code, market_code = self.parse_stock_code(symbol)
@@ -532,26 +506,25 @@ class DatabaseManager:
                 if market_code:
                     query = """
                     SELECT MAX(trade_date) FROM stock_daily 
-                    WHERE symbol = %s AND market = %s
+                    WHERE symbol = :symbol AND market = :market
                     """
-                    params = (symbol_code, market_code)
+                    params = {'symbol': symbol_code, 'market': market_code}
                 else:
                     query = """
                     SELECT MAX(trade_date) FROM stock_daily 
-                    WHERE symbol = %s
+                    WHERE symbol = :symbol
                     """
-                    params = (symbol_code,)
+                    params = {'symbol': symbol_code}
             else:
                 query = "SELECT MAX(trade_date) FROM stock_daily"
-                params = None
+                params = {}
             
-            result = self.execute_query(query, params)
+            with self.get_connection() as conn:
+                result = conn.execute(text(query), params)
+                result_data = result.fetchone()
             
-            # 转换Decimal类型
-            result = self.convert_decimal_to_float(result)
-            
-            if result and result[0][0]:
-                date_value = result[0][0]
+            if result_data and result_data[0]:
+                date_value = result_data[0]
                 if hasattr(date_value, 'strftime'):
                     return date_value.strftime('%Y-%m-%d')
                 else:
@@ -560,46 +533,45 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"获取最新交易日期失败: {e}")
             return None
-        finally:
-            self.disconnect()
     
     def check_table_exists(self):
         """检查表是否存在"""
         try:
-            if not self.connect():
-                return False
-            
             query = """
             SELECT COUNT(*) FROM information_schema.tables 
-            WHERE table_schema = %s AND table_name = 'stock_daily'
+            WHERE table_schema = :database AND table_name = 'stock_daily'
             """
-            result = self.execute_query(query, (self.config['database'],))
+            params = {'database': self.config['database']}
             
-            # 转换Decimal类型
-            result = self.convert_decimal_to_float(result)
+            with self.get_connection() as conn:
+                result = conn.execute(text(query), params)
+                result_data = result.fetchone()
             
-            return result[0][0] > 0 if result else False
+            return result_data[0] > 0 if result_data else False
         except Exception as e:
             logger.error(f"检查表是否存在失败: {e}")
             return False
-        finally:
-            self.disconnect()
     
     def check_connection(self):
         """检查数据库连接"""
         try:
-            if self.connect():
-                logger.info("数据库连接测试成功")
-                self.disconnect()
-                return True
+            with self.get_connection() as conn:
+                # 执行一个简单查询来测试连接
+                result = conn.execute(text("SELECT 1"))
+                test_result = result.fetchone()
+                
+                if test_result and test_result[0] == 1:
+                    logger.info("数据库连接测试成功")
+                    return True
             return False
         except Exception as e:
             logger.error(f"数据库连接测试失败: {e}")
             return False
     
     def __enter__(self):
-        self.connect()
-        return self
+        # 对于上下文管理器，我们返回连接
+        return self._engine.connect()
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.disconnect()
+        # 注意：这里实际上不会关闭连接，连接由连接池管理
+        pass

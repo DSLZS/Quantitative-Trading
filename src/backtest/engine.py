@@ -1,6 +1,7 @@
 # src/backtest/engine.py
 import pandas as pd
 import numpy as np
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Dict, List, Optional
 import logging
 
@@ -20,10 +21,31 @@ class BacktestEngine:
             commission_rate: 佣金费率（默认万分之三）
             slippage_rate: 滑点费率（默认万分之一）
         """
-        self.initial_capital = initial_capital
-        self.commission_rate = commission_rate
-        self.slippage_rate = slippage_rate
+        # 转换为 Decimal 以确保精度
+        self.initial_capital = self._to_decimal(initial_capital)
+        self.commission_rate = self._to_decimal(commission_rate)
+        self.slippage_rate = self._to_decimal(slippage_rate)
         
+    @staticmethod
+    def _to_decimal(value, precision='0.000001'):
+        """将各种类型转为 Decimal，并四舍五入到指定精度"""
+        if isinstance(value, Decimal):
+            return value
+        try:
+            # 如果是字符串，直接转换为 Decimal
+            if isinstance(value, str):
+                decimal_value = Decimal(value)
+            else:
+                # 对于 int/float，先转为字符串再转 Decimal 以避免浮点误差
+                decimal_value = Decimal(str(float(value)))
+            
+            # 四舍五入到指定精度
+            return decimal_value.quantize(Decimal(precision), rounding=ROUND_HALF_UP)
+        except Exception as e:
+            logger.error(f"转换Decimal失败: {value}, 错误: {e}")
+            # 如果转换失败，返回 0
+            return Decimal('0')
+    
     def run(self, data_with_signals: pd.DataFrame) -> Dict:
         """
         运行回测
@@ -31,7 +53,7 @@ class BacktestEngine:
         Args:
             data_with_signals: 包含价格和信号的DataFrame，必须有：
                               - trade_date: 日期
-                              - price: 价格
+                              - price: 价格（最好是Decimal或float）
                               - position: 仓位（0或1）
                               
         Returns:
@@ -48,16 +70,21 @@ class BacktestEngine:
         
         for i in range(len(df)):
             date = df.loc[i, 'trade_date']
-            price = df.loc[i, 'price']
+            price = self._to_decimal(df.loc[i, 'price'])  # 确保价格为 Decimal
             target_position = df.loc[i, 'position']  # 目标仓位比例（0或1）
             
             # 计算目标持股数量（全仓或空仓）
             if target_position == 1 and position == 0:
                 # 买入信号：全仓买入
-                shares_to_buy = int(capital / price)
+                # 计算可买股数（取整）
+                if price > Decimal('0'):
+                    shares_to_buy = int(capital / price)
+                else:
+                    shares_to_buy = 0
+                    
                 if shares_to_buy > 0:
                     # 计算交易成本
-                    trade_value = shares_to_buy * price
+                    trade_value = Decimal(shares_to_buy) * price
                     commission = trade_value * self.commission_rate
                     slippage = trade_value * self.slippage_rate
                     total_cost = commission + slippage
@@ -69,16 +96,16 @@ class BacktestEngine:
                     trades.append({
                         'date': date,
                         'type': 'BUY',
-                        'price': price,
+                        'price': float(price),  # 存储为 float 便于显示
                         'shares': shares_to_buy,
-                        'value': trade_value,
-                        'commission': commission,
-                        'slippage': slippage
+                        'value': float(trade_value),
+                        'commission': float(commission),
+                        'slippage': float(slippage)
                     })
             
             elif target_position == 0 and position > 0:
                 # 卖出信号：全仓卖出
-                trade_value = position * price
+                trade_value = Decimal(position) * price
                 commission = trade_value * self.commission_rate
                 slippage = trade_value * self.slippage_rate
                 total_cost = commission + slippage
@@ -88,23 +115,23 @@ class BacktestEngine:
                 trades.append({
                     'date': date,
                     'type': 'SELL',
-                    'price': price,
+                    'price': float(price),
                     'shares': position,
-                    'value': trade_value,
-                    'commission': commission,
-                    'slippage': slippage
+                    'value': float(trade_value),
+                    'commission': float(commission),
+                    'slippage': float(slippage)
                 })
                 
                 position = 0
             
             # 计算当日资产
-            daily_value = capital + (position * price)
+            daily_value = capital + (Decimal(position) * price)
             equity.append({
                 'date': date,
-                'capital': capital,
+                'capital': float(capital),  # 存储为 float 便于分析
                 'position': position,
-                'price': price,
-                'total_value': daily_value
+                'price': float(price),
+                'total_value': float(daily_value)
             })
         
         # 构建回测结果
@@ -118,8 +145,8 @@ class BacktestEngine:
             'equity': equity_df,
             'trades': trades_df,
             'metrics': metrics,
-            'initial_capital': self.initial_capital,
-            'final_capital': equity_df['total_value'].iloc[-1] if not equity_df.empty else self.initial_capital
+            'initial_capital': float(self.initial_capital),
+            'final_capital': equity_df['total_value'].iloc[-1] if not equity_df.empty else float(self.initial_capital)
         }
     
     def _calculate_metrics(self, equity_df: pd.DataFrame, trades_df: pd.DataFrame) -> Dict:
@@ -128,7 +155,7 @@ class BacktestEngine:
             return {}
         
         # 基础数据
-        initial = self.initial_capital
+        initial = float(self.initial_capital)
         final = equity_df['total_value'].iloc[-1]
         total_return = (final - initial) / initial
         

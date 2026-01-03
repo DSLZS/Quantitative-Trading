@@ -72,10 +72,10 @@ def update_single_stock(symbol: str, days: int = 30):
         logger.error(f"未获取到 {normalized_symbol} 的数据")
         return False
     
-    # 保存到数据库
-    with DatabaseManager(MYSQL_CONFIG) as db:
-        affected_rows = db.insert_stock_daily(df, replace=True)
-        logger.info(f"{normalized_symbol} 更新完成，影响行数: {affected_rows}")
+    # 保存到数据库（使用连接池）
+    db = DatabaseManager()
+    affected_rows = db.insert_stock_daily(df, replace=True)
+    logger.info(f"{normalized_symbol} 更新完成，影响行数: {affected_rows}")
     
     return True
 
@@ -100,10 +100,10 @@ def update_stock_list(symbols: List[str], days: int = 30):
         logger.error("未获取到任何数据")
         return False
     
-    # 保存到数据库
-    with DatabaseManager(MYSQL_CONFIG) as db:
-        affected_rows = db.insert_stock_daily(df, replace=True)
-        logger.info(f"批量更新完成，总记录数: {len(df)}，影响行数: {affected_rows}")
+    # 保存到数据库（使用连接池）
+    db = DatabaseManager()
+    affected_rows = db.insert_stock_daily(df, replace=True)
+    logger.info(f"批量更新完成，总记录数: {len(df)}，影响行数: {affected_rows}")
     
     return True
 

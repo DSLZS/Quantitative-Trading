@@ -43,9 +43,8 @@ def main():
     
     # 1. 获取数据
     print("\n1. 从数据库获取数据...")
-    db = DatabaseManager()
+    db = DatabaseManager()  # 使用连接池
     
-
     # 获取数据（使用前复权价格）
     symbol=args.symbol
     data = db.fetch_stock_data(
@@ -189,6 +188,5 @@ def plot_results(backtest_result, data_with_signals, symbol):
     print(f"图表保存至: {chart_file}")
     
     plt.show()
-
 if __name__ == '__main__':
     main()
