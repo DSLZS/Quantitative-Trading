@@ -16,6 +16,15 @@ MYSQL_CONFIG = {
     'charset': os.getenv('MYSQL_CHARSET', 'utf8mb4'),
 }
 
+# 连接池配置
+DB_POOL_CONFIG = {
+    'pool_size': int(os.getenv('DB_POOL_SIZE', '5')),  # 连接池大小
+    'max_overflow': int(os.getenv('DB_MAX_OVERFLOW', '10')),  # 最大溢出连接数
+    'pool_recycle': int(os.getenv('DB_POOL_RECYCLE', '3600')),  # 连接回收时间（秒）
+    'pool_timeout': 30,  # 获取连接超时时间
+    'echo': False,  # 关闭SQL日志输出
+}
+
 missing = [key for key, value in MYSQL_CONFIG.items() if value is None]
 if missing:
     raise ValueError(f"缺少必需的配置项: {missing}. 请检查 .env 文件")
