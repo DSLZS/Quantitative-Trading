@@ -408,27 +408,26 @@ trainer.save_model("data/models/stock_model.txt")
 
 ```sql
 CREATE TABLE `stock_daily` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `symbol` VARCHAR(20) NOT NULL COMMENT '股票代码',
-    `Date` DATE NOT NULL COMMENT '交易日期',
-    `open` DECIMAL(20, 4) COMMENT '开盘价',
-    `high` DECIMAL(20, 4) COMMENT '最高价',
-    `low` DECIMAL(20, 4) COMMENT '最低价',
-    `close` DECIMAL(20, 4) COMMENT '收盘价',
-    `pre_close` DECIMAL(20, 4) COMMENT '昨收价',
-    `change` DECIMAL(20, 4) COMMENT '涨跌额',
-    `pct_chg` DECIMAL(20, 4) COMMENT '涨跌幅',
-    `volume` DECIMAL(30, 4) COMMENT '成交量',
-    `amount` DECIMAL(30, 4) COMMENT '成交额',
-    `adj_close` DECIMAL(20, 4) COMMENT '复权收盘价',
-    `adj_open` DECIMAL(20, 4) COMMENT '复权开盘价',
-    `adj_high` DECIMAL(20, 4) COMMENT '复权最高价',
-    `adj_low` DECIMAL(20, 4) COMMENT '复权最低价',
-    `adj_factor` DECIMAL(20, 4) COMMENT '复权因子',
-    UNIQUE KEY `uk_symbol_date` (`symbol`, `Date`),
-    INDEX `idx_symbol` (`symbol`),
-    INDEX `idx_date` (`Date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `symbol` varchar(10) NOT NULL COMMENT '股票代码',
+    `trade_date` date NOT NULL COMMENT '交易日期',
+    `open` decimal(10,2) NOT NULL,
+    `high` decimal(10,2) NOT NULL,
+    `low` decimal(10,2) NOT NULL,
+    `close` decimal(10,2) NOT NULL,
+    `volume` bigint(20) NOT NULL COMMENT '原始成交量',
+    `amount` decimal(18,2) NOT NULL COMMENT '成交额',
+    `adj_factor` decimal(12,6) NOT NULL DEFAULT '1.000000' COMMENT '复权因子(当日)',
+    `turnover_rate` decimal(8,4) DEFAULT NULL COMMENT '换手率(基础非计算指标,建议保留)',
+    PRIMARY KEY (`symbol`, `trade_date`),
+    KEY `idx_date` (`trade_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+PARTITION BY RANGE COLUMNS(`trade_date`) (
+    PARTITION p_hist VALUES LESS THAN ('2023-01-01'),
+    PARTITION p_2023 VALUES LESS THAN ('2024-01-01'),
+    PARTITION p_2024 VALUES LESS THAN ('2025-01-01'),
+    PARTITION p_2025 VALUES LESS THAN ('2026-01-01'),
+    PARTITION p_future VALUES LESS THAN (MAXVALUE)
+);
 ```
 
 ---
