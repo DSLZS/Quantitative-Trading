@@ -1,8 +1,34 @@
-# requirements.txt
-pandas>=1.5.0
-numpy>=1.21.0
-pymysql>=1.0.0
-sqlalchemy>=1.4.0
-python-dotenv>=1.0.0
-akshare>=1.10.0
-matplotlib>=3.5.0
+# ===========================================
+# Quantitative Trading System Dependencies
+# Python 3.13 Compatible | 2024-2026 Stable
+# ===========================================
+
+# Core Data Processing
+polars>=1.0.0,<2.0.0          # Vectorized computation (Pandas alternative)
+pyarrow>=15.0.0,<20.0.0       # Parquet file support
+
+# Database
+sqlalchemy>=2.0.0,<3.0.0      # Database ORM & connection pool
+pymysql>=1.1.0,<2.0.0         # MySQL driver (primary for Python 3.13)
+cryptography>=42.0.0          # MySQL auth plugin support
+# adbc-driver-mysql           # Optional: ADBC MySQL driver (not yet available for Python 3.13)
+
+# Machine Learning
+lightgbm>=4.3.0,<5.0.0        # Gradient boosting framework
+scikit-learn>=1.4.0,<2.0.0    # Metrics & utilities
+
+# Configuration & Environment
+python-dotenv>=1.0.0,<2.0.0   # Environment variables
+pyyaml>=6.0,<7.0              # YAML configuration
+
+# Data Sources
+tushare>=1.2.89,<2.0.0        # A-share data provider
+baostock>=0.8.0,<1.0.0        # Alternative data source
+
+# Logging & Utilities
+loguru>=0.7.0,<1.0.0          # Modern logging
+tqdm>=4.66.0,<5.0.0           # Progress bars
+
+# Development (optional)
+pytest>=8.0.0,<9.0.0          # Testing
+black>=24.0.0                 # Code formatting

@@ -1,0 +1,64 @@
+# ===========================================
+# Quantitative Trading System - Project Rules
+# ===========================================
+
+## 1. Version Locking (版本锁定)
+- Python: 3.13.x
+- All dependencies must be pinned in requirements.txt with compatible version ranges
+- Use `>=X.Y.0,<Z.0.0` format for stable releases (2024-2026 compatible)
+
+## 2. Coding Standards (编码规范)
+- Style: PEP 8 compliant, use `black` for formatting
+- Type hints: Required for all function signatures
+- Docstrings: Google style for public functions/classes
+- Naming conventions:
+  - Variables/functions: snake_case
+  - Classes: PascalCase
+  - Constants: UPPER_CASE
+  - Private members: _prefix
+
+## 3. Technology Stack (技术栈)
+- Data Processing: Polars ONLY (NO pandas unless third-party requires)
+- Database: MySQL with SQLAlchemy 2.0+
+- Feature Storage: PyArrow Parquet format with compression (snappy/zstd)
+- Machine Learning: LightGBM
+- Configuration: YAML files with eval() for factor expressions
+- Logging: loguru
+
+## 4. Memory Optimization (内存优化策略)
+- Use Polars LazyFrame for large dataset operations
+- Stream data from MySQL in chunks (default: 10000 rows)
+- Parquet files must use row_group_size for efficient reading
+- Delete intermediate DataFrames explicitly with `del`
+- Use `pl.Config.set_streaming_chunk_size()` for large operations
+
+## 5. Database Guidelines (数据库规范)
+- All tables must have primary keys
+- Use InnoDB engine with utf8mb4 charset
+- Connection pooling is mandatory (SQLAlchemy QueuePool)
+- Read operations: use `read_sql` with chunksize
+- Write operations: use `to_sql` with if_exists='append' or 'replace'
+
+## 6. Factor Configuration (因子配置规范)
+- Factors must be defined in YAML format
+- Use eval() for dynamic expression evaluation
+- All factor expressions must be vectorized (no loops)
+- Example:
+  ```yaml
+  factors:
+    - name: momentum_20
+      expression: "close / close.shift(20) - 1"
+      window: 20
+  ```
+
+## 7. Error Handling (错误处理)
+- Use try-except with specific exception types
+- Log all errors with loguru
+- Database operations must handle connection failures gracefully
+- Never expose credentials in error messages
+
+## 8. Testing (测试要求)
+- Unit tests required for core modules
+- Use pytest for testing
+- Mock external API calls in tests
+- Test database connection before any data operations
