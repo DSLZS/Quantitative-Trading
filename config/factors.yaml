@@ -1,0 +1,76 @@
+# Factor Configuration File
+# All factor expressions use Polars native syntax
+# Polars expressions:
+#   - .shift(n) - same as pandas
+#   - .rolling_mean(window_size=n) - replaces .rolling(n).mean()
+#   - .rolling_std(window_size=n, ddof=1) - replaces .rolling(n).std()
+#   - .rolling_min(window_size=n) - replaces .rolling(n).min()
+#   - .rolling_max(window_size=n) - replaces .rolling(n).max()
+
+factors:
+  # Momentum Factors (动量因子)
+  - name: momentum_5
+    description: "5-day momentum"
+    expression: "close / close.shift(5) - 1"
+    window: 5
+    
+  - name: momentum_10
+    description: "10-day momentum"
+    expression: "close / close.shift(10) - 1"
+    window: 10
+    
+  - name: momentum_20
+    description: "20-day momentum (monthly)"
+    expression: "close / close.shift(20) - 1"
+    window: 20
+
+  # Volatility Factors (波动率因子)
+  - name: volatility_5
+    description: "5-day return volatility"
+    expression: "pct_change.rolling_std(window_size=5, ddof=1)"
+    window: 5
+    
+  - name: volatility_20
+    description: "20-day return volatility"
+    expression: "pct_change.rolling_std(window_size=20, ddof=1)"
+    window: 20
+
+  # Volume Factors (成交量因子)
+  - name: volume_ma_ratio_5
+    description: "Volume to 5-day MA ratio"
+    expression: "volume / volume.rolling_mean(window_size=5)"
+    window: 5
+    
+  - name: volume_ma_ratio_20
+    description: "Volume to 20-day MA ratio"
+    expression: "volume / volume.rolling_mean(window_size=20)"
+    window: 20
+
+  # Price Position Factors (价格位置因子)
+  - name: price_position_20
+    description: "Price position in 20-day range"
+    expression: "(close - close.rolling_min(window_size=20)) / (close.rolling_max(window_size=20) - close.rolling_min(window_size=20))"
+    window: 20
+    
+  - name: price_position_60
+    description: "Price position in 60-day range"
+    expression: "(close - close.rolling_min(window_size=60)) / (close.rolling_max(window_size=60) - close.rolling_min(window_size=60))"
+    window: 60
+
+  # MA Deviation Factors (均线偏离因子)
+  - name: ma_deviation_5
+    description: "Price deviation from 5-day MA"
+    expression: "close / close.rolling_mean(window_size=5) - 1"
+    window: 5
+    
+  - name: ma_deviation_20
+    description: "Price deviation from 20-day MA"
+    expression: "close / close.rolling_mean(window_size=20) - 1"
+    window: 20
+
+# Label Configuration (标签配置)
+label:
+  name: future_return_5
+  description: "5-day forward return"
+  expression: "close.shift(-5) / close - 1"
+  window: 5
