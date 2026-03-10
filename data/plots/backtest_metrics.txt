@@ -1,0 +1,15 @@
+Backtest Performance Metrics
+========================================
+Generated at: 2026-03-10 17:33:59
+
+Total Return:      -0.0393 (-3.93%)
+Annualized Return: -0.0574 (-5.74%)
+Max Drawdown:      0.0395 (3.95%)
+Sharpe Ratio:      -6.2771
+Calmar Ratio:      0.0000
+Volatility:        0.0000 (0.00%)
+Final Value:       $960,662
+Initial Capital:   $1,000,000
+Trading Days:      171
+Total Trades:      154
+Strategy Rating:   NEEDS IMPROVEMENT

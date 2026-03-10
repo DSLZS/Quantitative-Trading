@@ -1,11 +1,12 @@
 """
 Data Loader Module - Tushare data fetching and loading.
 
-This module provides a TushareLoader class for fetching stock data
+This module provides a TushareLoader class for fetching stock and fund data
 from Tushare API and loading it into the database using Polars.
 
 核心功能:
-    - 从 Tushare API 获取 A 股股票数据
+    - 从 Tushare API 获取 A 股股票和基金数据
+    - 资产类型自动识别 (股票/基金)
     - 获取日线数据和复权因子
     - 频率限制控制，避免触发 API 限制
     - 将 Pandas DataFrame 转换为 Polars DataFrame
@@ -115,6 +116,35 @@ class TushareLoader:
         if self.request_count % 10 == 0:
             logger.debug(f"Tushare API requests: {self.request_count}")
     
+    def _get_asset_type(self, ts_code: str) -> str:
+        """
+        根据股票代码前缀自动识别资产类型。
+        
+        资产类型识别规则:
+            - 51, 58, 15, 16 开头 -> FUND (基金)
+            - 其他 -> STOCK (股票)
+        
+        Args:
+            ts_code (str): Tushare 代码，格式为 "代码。交易所"
+                示例："000001.SZ", "510300.SH"
+        
+        Returns:
+            str: "STOCK" 或 "FUND"
+        
+        资产类型示例:
+            - STOCK: 000001.SZ (平安银行), 600519.SH (贵州茅台)
+            - FUND: 510300.SH (沪深 300ETF), 159915.SZ (创业板 ETF)
+        """
+        # 提取代码部分 (去掉交易所后缀)
+        code = ts_code.split(".")[0]
+        
+        # 检查前缀
+        fund_prefixes = ("51", "58", "15", "16")
+        
+        if code.startswith(fund_prefixes):
+            return "FUND"
+        return "STOCK"
+    
     def _fetch_daily_data(
         self,
         ts_code: str,
@@ -124,12 +154,13 @@ class TushareLoader:
         """
         从 Tushare 获取日线价格数据。
         
-        调用 Tushare 的 daily 接口获取股票日线数据，
-        包含开盘价、最高价、最低价、收盘价、成交量等。
+        根据资产类型自动调用不同的 API:
+            - STOCK: 调用 pro.daily()
+            - FUND: 调用 pro.fund_daily()
         
         Args:
-            ts_code (str): Tushare 股票代码，格式为 "代码。交易所"
-                示例："000001.SZ" (平安银行), "600000.SH" (浦发银行)
+            ts_code (str): Tushare 代码，格式为 "代码。交易所"
+                示例："000001.SZ" (平安银行), "510300.SH" (沪深 300ETF)
             start_date (str): 开始日期，格式 YYYYMMDD
                 示例："20240101"
             end_date (str): 结束日期，格式 YYYYMMDD
@@ -141,41 +172,108 @@ class TushareLoader:
                 列包括：ts_code, trade_date, open, high, low, close,
                       pre_close, change, pct_chg, vol, amount
             
-        Tushare daily 接口返回字段说明:
-            - ts_code: 股票代码
-            - trade_date: 交易日期
-            - open: 开盘价
-            - high: 最高价
-            - low: 最低价
-            - close: 收盘价
-            - pre_close: 昨收价
-            - change: 涨跌额
-            - pct_chg: 涨跌幅 (%)
-            - vol: 成交量 (手)
-            - amount: 成交额 (千元)
+        字段映射说明:
+            - 股票 (daily): ts_code, trade_date, open, high, low, close,
+                           pre_close, change, pct_chg, vol, amount
+            - 基金 (fund_daily): 同上，vol 映射为 volume
         """
         try:
             self._rate_limit()  # 执行频率限制
             
-            # 调用 Tushare API 获取日线数据
-            df = self.pro.daily(
+            # 根据资产类型调用不同的 API
+            asset_type = self._get_asset_type(ts_code)
+            
+            if asset_type == "STOCK":
+                # 调用股票 API
+                df = self.pro.daily(
+                    ts_code=ts_code,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+            else:
+                # 调用基金 API
+                df = self.pro.fund_daily(
+                    ts_code=ts_code,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+            
+            if df is None or df.empty:
+                logger.warning(f"No daily data for {ts_code} ({asset_type})")
+                return None
+            
+            # 将 Pandas DataFrame 转换为 Polars DataFrame
+            pl_df = pl.from_pandas(df)
+            
+            # 基金数据字段映射：vol -> volume (统一数据库字段名)
+            if asset_type == "FUND" and "vol" in pl_df.columns:
+                pl_df = pl_df.with_columns(
+                    pl.col("vol").alias("volume")
+                )
+            
+            logger.debug(f"Fetched {len(pl_df)} rows of daily data for {ts_code} ({asset_type})")
+            return pl_df
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch daily data for {ts_code}: {e}")
+            return None
+    
+    def _fetch_daily_basic(
+        self,
+        ts_code: str,
+        start_date: str,
+        end_date: str,
+    ) -> Optional[pl.DataFrame]:
+        """
+        从 Tushare 获取每日基本指标数据（包括换手率、量比等）。
+        
+        调用 pro.daily_basic() 接口获取：
+            - turnover_rate: 换手率
+            - volume_ratio: 量比
+            - pe, pe_ttm: 市盈率
+            - pb: 市净率
+            - 等其他基本指标
+        
+        Args:
+            ts_code (str): Tushare 代码
+            start_date (str): 开始日期，格式 YYYYMMDD
+            end_date (str): 结束日期，格式 YYYYMMDD
+            
+        Returns:
+            Optional[pl.DataFrame]: 包含每日基本指标的 Polars DataFrame，
+                如果获取失败返回 None。
+                列包括：ts_code, trade_date, turnover_rate, volume_ratio
+            
+        注意:
+            - daily_basic 接口返回的字段名为 volume_ratio，不是 vol_ratio
+            - 需要积分 >= 3000 才能访问此接口
+        """
+        try:
+            self._rate_limit()  # 执行频率限制
+            
+            # 只针对股票调用此接口，基金不需要
+            if self._get_asset_type(ts_code) != "STOCK":
+                return None
+            
+            # 调用 daily_basic API
+            df = self.pro.daily_basic(
                 ts_code=ts_code,
                 start_date=start_date,
                 end_date=end_date,
             )
             
             if df is None or df.empty:
-                logger.warning(f"No daily data for {ts_code}")
+                logger.debug(f"No daily_basic data for {ts_code}")
                 return None
             
             # 将 Pandas DataFrame 转换为 Polars DataFrame
             pl_df = pl.from_pandas(df)
             
-            logger.debug(f"Fetched {len(pl_df)} rows of daily data for {ts_code}")
+            logger.debug(f"Fetched {len(pl_df)} rows of daily_basic data for {ts_code}")
             return pl_df
             
         except Exception as e:
-            logger.error(f"Failed to fetch daily data for {ts_code}: {e}")
+            logger.debug(f"Failed to fetch daily_basic data for {ts_code}: {e}")
             return None
     
     def _fetch_adj_factor(
@@ -187,11 +285,15 @@ class TushareLoader:
         """
         从 Tushare 获取复权因子数据。
         
+        根据资产类型自动调用不同的 API:
+            - STOCK: 调用 pro.adj_factor()
+            - FUND: 调用 pro.fund_adj()
+        
         复权因子用于计算复权价格，消除分红、配股等事件对价格的影响。
         Tushare 的复权因子是累积的，可以直接用于计算后复权价格。
         
         Args:
-            ts_code (str): Tushare 股票代码
+            ts_code (str): Tushare 代码
             start_date (str): 开始日期，格式 YYYYMMDD
             end_date (str): 结束日期，格式 YYYYMMDD
             
@@ -200,10 +302,9 @@ class TushareLoader:
                 如果获取失败返回 None。
                 列包括：ts_code, trade_date, adj_factor
             
-        Tushare adj_factor 接口返回字段说明:
-            - ts_code: 股票代码
-            - trade_date: 交易日期
-            - adj_factor: 复权因子 (累积值)
+        接口说明:
+            - 股票 (adj_factor): ts_code, trade_date, adj_factor
+            - 基金 (fund_adj): ts_code, trade_date, adj_factor
             
         复权价格计算公式:
             后复权收盘价 = 收盘价 × 复权因子 / 基准值 (通常为 1000)
@@ -211,21 +312,32 @@ class TushareLoader:
         try:
             self._rate_limit()  # 执行频率限制
             
-            # 调用 Tushare API 获取复权因子
-            df = self.pro.adj_factor(
-                ts_code=ts_code,
-                start_date=start_date,
-                end_date=end_date,
-            )
+            # 根据资产类型调用不同的 API
+            asset_type = self._get_asset_type(ts_code)
+            
+            if asset_type == "STOCK":
+                # 调用股票复权因子 API
+                df = self.pro.adj_factor(
+                    ts_code=ts_code,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+            else:
+                # 调用基金复权因子 API
+                df = self.pro.fund_adj(
+                    ts_code=ts_code,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
             
             if df is None or df.empty:
-                logger.warning(f"No adj_factor data for {ts_code}")
+                logger.warning(f"No adj_factor data for {ts_code} ({asset_type})")
                 return None
             
             # 将 Pandas DataFrame 转换为 Polars DataFrame
             pl_df = pl.from_pandas(df)
             
-            logger.debug(f"Fetched {len(pl_df)} rows of adj_factor data for {ts_code}")
+            logger.debug(f"Fetched {len(pl_df)} rows of adj_factor data for {ts_code} ({asset_type})")
             return pl_df
             
         except Exception as e:
@@ -361,6 +473,12 @@ class TushareLoader:
         # 选择并重命名列以适配数据库 schema
         # 注意：数据库字段名为 trade_date (DATE 类型)，不是 Date
         # 现有表结构：symbol, trade_date, open, high, low, close, volume, amount, adj_factor, turnover_rate
+        # Tushare daily 接口返回字段：ts_code, trade_date, open, high, low, close, pre_close, change, pct_chg, vol, amount, turnover_rate, vol_ratio, pe, pb
+        
+        # 检查是否有 turnover_rate 字段（Tushare daily 接口返回）
+        has_turnover = "turnover_rate" in merged_df.columns
+        has_vol_ratio = "vol_ratio" in merged_df.columns
+        
         result_df = merged_df.select([
             pl.col("symbol"),
             pl.col("Date").alias("trade_date"),  # 重命名为 trade_date
@@ -368,11 +486,16 @@ class TushareLoader:
             pl.col("high").alias("high"),
             pl.col("low").alias("low"),
             pl.col("close").alias("close"),
+            pl.col("pre_close").alias("pre_close"),
+            pl.col("change").alias("change"),
+            pl.col("pct_chg").alias("pct_chg"),
             pl.col("vol").alias("volume"),
             pl.col("amount").alias("amount"),
             pl.col("adj_factor").fill_null(1000).alias("adj_factor"),
-            # turnover_rate 需要额外计算，这里用 null 填充
-            pl.lit(None).cast(pl.Float64).alias("turnover_rate"),
+            # 从 Tushare API 获取 turnover_rate（换手率）
+            (pl.col("turnover_rate") if has_turnover else pl.lit(None).cast(pl.Float64)).alias("turnover_rate"),
+            # 从 Tushare API 获取 vol_ratio（量比）
+            (pl.col("vol_ratio") if has_vol_ratio else pl.lit(None).cast(pl.Float64)).alias("vol_ratio"),
         ])
         
         # 按 symbol 和 trade_date 排序
@@ -380,30 +503,83 @@ class TushareLoader:
         
         return result_df
     
+    def _merge_daily_basic(
+        self,
+        main_df: pl.DataFrame,
+        daily_basic_df: Optional[pl.DataFrame],
+    ) -> pl.DataFrame:
+        """
+        合并日线数据与 daily_basic 数据（换手率、量比等）。
+        
+        Args:
+            main_df: 主 DataFrame（已包含日线数据）
+            daily_basic_df: daily_basic 数据 DataFrame（可选）
+            
+        Returns:
+            pl.DataFrame: 合并后的 DataFrame
+        """
+        if daily_basic_df is None or daily_basic_df.is_empty():
+            logger.debug("No daily_basic data to merge")
+            return main_df
+        
+        # 重命名 ts_code 为 symbol
+        daily_basic_df = daily_basic_df.with_columns(
+            pl.col("ts_code").alias("symbol")
+        )
+        
+        # 转换日期格式
+        daily_basic_df = daily_basic_df.with_columns(
+            pl.col("trade_date")
+            .str.strptime(pl.Date, "%Y%m%d")
+            .alias("Date")
+        )
+        
+        # 合并数据（左连接）
+        merged_df = main_df.join(
+            daily_basic_df.select([
+                "symbol", "Date", "turnover_rate", "volume_ratio"
+            ]),
+            on=["symbol", "Date"],
+            how="left",
+        )
+        
+        # volume_ratio 重命名为 vol_ratio 以适配数据库字段
+        if "volume_ratio" in merged_df.columns:
+            merged_df = merged_df.with_columns(
+                pl.col("volume_ratio").alias("vol_ratio")
+            )
+        
+        logger.debug(f"Merged daily_basic data: {len(merged_df)} rows")
+        return merged_df
+    
     def sync_stock_data(
         self,
         ts_code: str,
         start_date: str,
         end_date: str,
         table_name: str = "stock_daily",
+        use_upsert: bool = False,
     ) -> int:
         """
-        同步单只股票数据到数据库。
+        同步单只股票/基金数据到数据库。
         
         此方法执行完整的 ETL 流程:
-        1. 获取日线数据
-        2. 获取复权因子
-        3. 转换和合并数据
-        4. 写入数据库
+        1. 获取日线数据 (根据资产类型自动调用不同 API)
+        2. 获取复权因子 (根据资产类型自动调用不同 API)
+        3. 获取 daily_basic 数据（换手率、量比等）
+        4. 转换和合并数据
+        5. 写入数据库
         
         Args:
-            ts_code (str): Tushare 股票代码
-                示例："000001.SZ"
+            ts_code (str): Tushare 代码
+                示例："000001.SZ" (股票), "510300.SH" (基金)
             start_date (str): 开始日期，格式 YYYYMMDD
                 示例："20240101"
             end_date (str): 结束日期，格式 YYYYMMDD
                 示例："20241231"
             table_name (str): 目标数据库表名，默认 "stock_daily"
+            use_upsert (bool): 是否使用 upsert 模式处理重复数据，默认 False
+                如果为 True，会先删除重复记录再插入
             
         Returns:
             int: 同步的行数
@@ -417,7 +593,8 @@ class TushareLoader:
             ... )
             >>> print(f"Synced {rows} rows")
         """
-        logger.info(f"Syncing data for {ts_code} from {start_date} to {end_date}")
+        asset_type = self._get_asset_type(ts_code)
+        logger.info(f"Syncing data for {ts_code} ({asset_type}) from {start_date} to {end_date}")
         
         # 获取日线数据
         daily_df = self._fetch_daily_data(ts_code, start_date, end_date)
@@ -434,21 +611,40 @@ class TushareLoader:
                 pl.lit(1000).alias("adj_factor")
             )
         
-        # 转换和合并数据
+        # 获取 daily_basic 数据（换手率、量比等）
+        daily_basic_df = None
+        if asset_type == "STOCK":
+            daily_basic_df = self._fetch_daily_basic(ts_code, start_date, end_date)
+            if daily_basic_df is not None:
+                logger.debug(f"Fetched daily_basic data for {ts_code}: {len(daily_basic_df)} rows")
+        
+        # 转换和合并数据（先合并日线和复权因子）
         transformed_df = self._transform_data(daily_df, adj_factor_df)
+        
+        # 合并 daily_basic 数据（换手率、量比）
+        if daily_basic_df is not None:
+            transformed_df = self._merge_daily_basic(transformed_df, daily_basic_df)
         
         if transformed_df.is_empty():
             logger.warning(f"Transformed data is empty for {ts_code}")
             return 0
         
         # 写入数据库
-        rows = self.db.to_sql(
-            df=transformed_df,
-            table_name=table_name,
-            if_exists="append",
-        )
+        if use_upsert:
+            rows = self.db.upsert(
+                df=transformed_df,
+                table_name=table_name,
+                key_columns=["symbol", "trade_date"],
+            )
+            logger.info(f"Upserted {rows} rows for {ts_code}")
+        else:
+            rows = self.db.to_sql(
+                df=transformed_df,
+                table_name=table_name,
+                if_exists="append",
+            )
+            logger.info(f"Synced {rows} rows for {ts_code}")
         
-        logger.info(f"Synced {rows} rows for {ts_code}")
         return rows
     
     def sync_index_constituents(
