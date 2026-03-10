@@ -18,6 +18,7 @@ import os
 from typing import Any, Optional
 from contextlib import contextmanager
 
+import pandas as pd
 import polars as pl
 from dotenv import load_dotenv
 from loguru import logger
@@ -203,14 +204,19 @@ class DatabaseManager:
                     result = conn.execute(text(query), params)
                     columns = [col[0] for col in result.cursor.description]
                     rows = result.fetchall()
-                    df = pl.DataFrame(rows, schema=columns)
             else:
                 # 无参数的直接查询
                 with self.get_connection() as conn:
                     result = conn.execute(text(query))
                     columns = [col[0] for col in result.cursor.description]
                     rows = result.fetchall()
-                    df = pl.DataFrame(rows, schema=columns)
+            
+            # Use pandas as intermediate layer for better type handling
+            # This handles mixed types and DECIMAL conversion automatically
+            pdf = pd.DataFrame.from_records(rows, columns=columns)
+            
+            # Convert to Polars DataFrame
+            df = pl.from_pandas(pdf)
             
             logger.info(f"Query returned {len(df)} rows")
             return df

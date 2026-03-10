@@ -31,6 +31,7 @@ class ModelTrainer:
         - 特征重要性分析
         - 模型持久化 (保存/加载)
         - 早停机制防止过拟合
+        - 支持从 Parquet 文件加载数据
     
     模型参数说明:
         - objective: "regression" (回归任务)
@@ -49,6 +50,111 @@ class ModelTrainer:
         >>> predictions = trainer.predict(X_test)  # 预测
         >>> trainer.save_model("models/my_model.txt")  # 保存模型
     """
+    
+    @staticmethod
+    def load_parquet(path: str) -> pl.DataFrame:
+        """
+        从 Parquet 文件加载数据。
+        
+        Args:
+            path (str): Parquet 文件路径
+            
+        Returns:
+            pl.DataFrame: 加载的数据
+            
+        使用示例:
+            >>> df = ModelTrainer.load_parquet("data/parquet/features_latest.parquet")
+            >>> print(f"Loaded {len(df)} rows")
+        """
+        logger.info(f"Loading Parquet file: {path}")
+        df = pl.read_parquet(path)
+        logger.info(f"Loaded {len(df)} rows from {path}")
+        return df
+    
+    @staticmethod
+    def prepare_data(
+        df: pl.DataFrame,
+        feature_columns: list[str],
+        label_column: str = "future_return_5",
+        train_ratio: float = 0.7,
+        val_ratio: float = 0.15,
+        test_ratio: float = 0.15,
+    ) -> dict[str, Any]:
+        """
+        准备训练/验证/测试数据，执行时间序列切分。
+        
+        时间序列切分原则:
+            - 训练集：前 70% 的数据 (按时间排序)
+            - 验证集：中间 15% 的数据
+            - 测试集：最后 15% 的数据
+        
+        这种切分方式确保:
+            - 不使用未来数据预测过去
+            - 符合实际交易场景
+        
+        Args:
+            df (pl.DataFrame): 包含特征和标签的 DataFrame
+            feature_columns (list[str]): 特征列名列表
+                示例：["momentum_5", "volatility_20", ...]
+            label_column (str): 标签列名，默认 "future_return_5"
+            train_ratio (float): 训练集比例，默认 0.7
+            val_ratio (float): 验证集比例，默认 0.15
+            test_ratio (float): 测试集比例，默认 0.15
+            
+        Returns:
+            dict[str, Any]: 包含以下键的字典:
+                - "X_train", "y_train": 训练集
+                - "X_val", "y_val": 验证集
+                - "X_test", "y_test": 测试集
+                - "feature_columns": 特征列名列表
+            
+        使用示例:
+            >>> df = pl.read_parquet("data/parquet/features_latest.parquet")
+            >>> features = ["momentum_5", "volatility_20"]
+            >>> data = ModelTrainer.prepare_data(df, features)
+            >>> print(f"Train: {len(data['X_train'])}, Val: {len(data['X_val'])}")
+        
+        注意:
+            - 数据必须按时间排序 (trade_date 升序)
+            - 会自动删除标签列的空值
+        """
+        logger.info(f"Preparing data with {len(df)} rows")
+        
+        # 删除标签列的空值
+        df = df.drop_nulls(subset=[label_column])
+        logger.info(f"After dropping null labels: {len(df)} rows")
+        
+        # 计算切分点
+        n = len(df)
+        train_end = int(n * train_ratio)
+        val_end = int(n * (train_ratio + val_ratio))
+        
+        # 时间序列切分
+        train_df = df.slice(0, train_end)
+        val_df = df.slice(train_end, val_end - train_end)
+        test_df = df.slice(val_end, n - val_end)
+        
+        logger.info(f"Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
+        
+        # 提取特征和标签
+        X_train = train_df.select(feature_columns)
+        y_train = train_df[label_column]
+        
+        X_val = val_df.select(feature_columns)
+        y_val = val_df[label_column]
+        
+        X_test = test_df.select(feature_columns)
+        y_test = test_df[label_column]
+        
+        return {
+            "X_train": X_train,
+            "y_train": y_train,
+            "X_val": X_val,
+            "y_val": y_val,
+            "X_test": X_test,
+            "y_test": y_test,
+            "feature_columns": feature_columns,
+        }
     
     def __init__(
         self,
@@ -399,3 +505,151 @@ class ModelTrainer:
         self.model = lgb.Booster(model_file=path)
         logger.info(f"Model loaded from {path}")
         return self.model
+
+
+def run_training(
+    parquet_path: str = "data/parquet/features_latest.parquet",
+    feature_columns: list[str] = None,
+    label_column: str = "future_return_5",
+    n_estimators: int = 500,
+    learning_rate: float = 0.05,
+    max_depth: int = 6,
+) -> dict[str, Any]:
+    """
+    运行完整的训练流程。
+    
+    此函数执行:
+    1. 从 Parquet 文件加载数据
+    2. 准备训练/验证/测试集 (时间序列切分)
+    3. 训练 LightGBM 模型
+    4. 输出前 5 个最重要的特征
+    5. 在测试集上评估
+    
+    Args:
+        parquet_path (str): Parquet 文件路径
+        feature_columns (list[str], optional): 特征列名列表
+            如果为 None，则自动检测因子列
+        label_column (str): 标签列名
+        n_estimators (int): boosting 轮数
+        learning_rate (float): 学习率
+        max_depth (int): 树的最大深度
+    
+    Returns:
+        dict[str, Any]: 训练结果，包含:
+            - "model": 训练好的模型
+            - "top_features": 前 5 个重要特征
+            - "test_mse": 测试集 MSE
+            - "train_samples": 训练样本数
+            - "val_samples": 验证样本数
+            - "test_samples": 测试样本数
+    
+    使用示例:
+        >>> results = run_training()
+        >>> print(f"Test MSE: {results['test_mse']:.6f}")
+    """
+    # 默认特征列 (11 个因子)
+    if feature_columns is None:
+        feature_columns = [
+            "momentum_5", "momentum_10", "momentum_20",
+            "volatility_5", "volatility_20",
+            "volume_ma_ratio_5", "volume_ma_ratio_20",
+            "price_position_20", "price_position_60",
+            "ma_deviation_5", "ma_deviation_20",
+        ]
+    
+    logger.info("=" * 50)
+    logger.info("Starting Model Training")
+    logger.info("=" * 50)
+    
+    # Step 1: 加载数据
+    df = ModelTrainer.load_parquet(parquet_path)
+    
+    # Step 2: 准备数据
+    data = ModelTrainer.prepare_data(
+        df=df,
+        feature_columns=feature_columns,
+        label_column=label_column,
+    )
+    
+    # Step 3: 初始化训练器
+    trainer = ModelTrainer(
+        n_estimators=n_estimators,
+        learning_rate=learning_rate,
+        max_depth=max_depth,
+    )
+    
+    # Step 4: 训练模型
+    logger.info("Training LightGBM model...")
+    trainer.train(
+        X_train=data["X_train"],
+        y_train=data["y_train"],
+        X_val=data["X_val"],
+        y_val=data["y_val"],
+    )
+    
+    # Step 5: 获取特征重要性
+    top_features = trainer.get_top_features(n=5)
+    logger.info("=" * 50)
+    logger.info("Top 5 Most Important Features:")
+    logger.info("=" * 50)
+    for i, (name, importance) in enumerate(top_features, 1):
+        logger.info(f"  {i}. {name}: {importance:.2f}")
+    
+    # Step 6: 测试集评估
+    test_pred = trainer.predict(data["X_test"])
+    test_mse = np.mean((test_pred - data["y_test"].to_numpy()) ** 2)
+    
+    train_mse = np.mean((trainer.predict(data["X_train"]) - data["y_train"].to_numpy()) ** 2)
+    val_mse = np.mean((trainer.predict(data["X_val"]) - data["y_val"].to_numpy()) ** 2)
+    
+    logger.info("=" * 50)
+    logger.info("Model Evaluation:")
+    logger.info("=" * 50)
+    logger.info(f"  Train MSE: {train_mse:.6f}")
+    logger.info(f"  Valid  MSE: {val_mse:.6f}")
+    logger.info(f"  Test   MSE: {test_mse:.6f}")
+    
+    # 判断模型是否收敛
+    logger.info("=" * 50)
+    logger.info("Convergence Analysis:")
+    logger.info("=" * 50)
+    
+    # 计算训练集和验证集的差距
+    gap = val_mse - train_mse
+    if gap < 0.0001:
+        logger.info("  Model is well-fitted (train/val gap is small)")
+    elif gap < 0.001:
+        logger.info("  Model shows slight overfitting (acceptable)")
+    else:
+        logger.info(f"  Model shows overfitting (gap={gap:.6f})")
+    
+    # 检查测试集表现
+    if test_mse < 0.0001:
+        logger.info("  Test performance is EXCELLENT")
+    elif test_mse < 0.001:
+        logger.info("  Test performance is GOOD")
+    else:
+        logger.info("  Test performance needs improvement")
+    
+    logger.info("=" * 50)
+    logger.info("Training Complete!")
+    logger.info("=" * 50)
+    
+    return {
+        "model": trainer.model,
+        "top_features": top_features,
+        "test_mse": test_mse,
+        "train_mse": train_mse,
+        "val_mse": val_mse,
+        "train_samples": len(data["X_train"]),
+        "val_samples": len(data["X_val"]),
+        "test_samples": len(data["X_test"]),
+    }
+
+
+if __name__ == "__main__":
+    # 运行训练流程
+    results = run_training()
+    print(f"\nTraining completed!")
+    print(f"Top features: {results['top_features']}")
+    print(f"Test MSE: {results['test_mse']:.6f}")

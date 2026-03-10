@@ -68,6 +68,22 @@ factors:
     expression: "close / close.rolling_mean(window_size=20) - 1"
     window: 20
 
+  # Technical Indicator Factors (技术指标因子)
+  - name: rsi_14
+    description: "14-day Relative Strength Index - measures overbought/oversold conditions"
+    expression: "100 - 100 / (1 + (pct_change.clip(0, null).rolling_sum(window_size=14) / pct_change.clip(null, 0).abs().rolling_sum(window_size=14)).fill_null(1))"
+    window: 14
+    
+  - name: mfi_14
+    description: "14-day Money Flow Index - volume-weighted RSI"
+    expression: "100 - 100 / (1 + ((pct_change.clip(0, null) * volume).rolling_sum(window_size=14) / (pct_change.clip(null, 0).abs() * volume).rolling_sum(window_size=14)).fill_null(1))"
+    window: 14
+    
+  - name: turnover_bias_20
+    description: "Turnover rate deviation from 20-day average - measures trading activity anomaly"
+    expression: "turnover_rate / turnover_rate.rolling_mean(window_size=20) - 1"
+    window: 20
+
 # Label Configuration (标签配置)
 label:
   name: future_return_5
