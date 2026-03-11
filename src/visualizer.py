@@ -81,6 +81,7 @@ class Visualizer:
         initial_capital: float = 1_000_000.0,
         risk_free_rate: float = 0.03,
         benchmark_returns: Optional[list[float]] = None,
+        trade_records: Optional[pl.DataFrame] = None,
     ) -> dict[str, float]:
         """
         计算核心绩效指标。
@@ -91,6 +92,7 @@ class Visualizer:
             initial_capital (float): 初始资金，默认 100 万
             risk_free_rate (float): 无风险利率，默认 3%
             benchmark_returns (list[float], optional): 基准收益率序列（如沪深 300）
+            trade_records (pl.DataFrame, optional): 交易记录（用于计算胜率、盈亏比）
             
         Returns:
             dict[str, float]: 绩效指标字典
@@ -99,10 +101,12 @@ class Visualizer:
                 - sharpe_ratio: 夏普比率
                 - total_return: 总收益率
                 - win_rate: 胜率
+                - profit_factor: 盈亏比
                 - calmar_ratio: 卡玛比率
                 - volatility: 年化波动率
                 - alpha: 相对基准的超额收益
                 - information_ratio: 信息比率
+                - avg_daily_turnover: 日均换手率
         """
         if equity_curve.is_empty():
             return self._empty_metrics()
@@ -147,7 +151,7 @@ class Visualizer:
                 max_drawdown = drawdown
         
         # 年化波动率
-        volatility = np.std(returns_array) * np.sqrt(252)
+        volatility = np.std(returns_array, ddof=1) * np.sqrt(252)
         
         # 夏普比率
         mean_return = np.mean(returns_array)
@@ -174,7 +178,7 @@ class Visualizer:
             alpha = np.mean(excess_returns) * 252  # 年化超额收益
             
             # 信息比率
-            tracking_error = np.std(excess_returns) * np.sqrt(252)
+            tracking_error = np.std(excess_returns, ddof=1) * np.sqrt(252)
             if tracking_error > 0:
                 information_ratio = (np.mean(excess_returns) * 252) / tracking_error
             
@@ -183,6 +187,29 @@ class Visualizer:
             for r in benchmark_returns:
                 benchmark_total_return *= (1 + r)
             benchmark_total_return -= 1
+        
+        # 胜率和盈亏比（从交易记录计算）
+        win_rate = 0.0
+        profit_factor = 0.0
+        avg_daily_turnover = 0.0
+        total_transaction_cost = 0.0
+        
+        if trade_records is not None and not trade_records.is_empty():
+            trade_records = trade_records.filter(pl.col("action") == "SELL")
+            if not trade_records.is_empty():
+                profits = trade_records["profit"].to_list()
+                costs = trade_records["cost"].to_list()
+                total_transaction_cost = sum(costs)
+                
+                winning_trades = sum(1 for p in profits if p > 0)
+                win_rate = winning_trades / len(profits) if profits else 0.0
+                
+                gross_profit = sum(p for p in profits if p > 0)
+                gross_loss = abs(sum(p for p in profits if p < 0))
+                profit_factor = gross_profit / gross_loss if gross_loss > 1e-10 else float('inf')
+                
+                # 日均换手率 = 总交易成本 / 交易天数
+                avg_daily_turnover = total_transaction_cost / max(num_days, 1)
         
         return {
             "annualized_return": annualized_return,
@@ -193,9 +220,13 @@ class Visualizer:
             "calmar_ratio": calmar_ratio,
             "final_value": portfolio_values[-1],
             "num_trading_days": num_days,
+            "win_rate": win_rate,
+            "profit_factor": profit_factor,
+            "avg_daily_turnover": avg_daily_turnover,
             "alpha": alpha,
             "information_ratio": information_ratio,
             "benchmark_total_return": benchmark_total_return,
+            "total_transaction_cost": total_transaction_cost,
         }
     
     def _empty_metrics(self) -> dict[str, float]:
@@ -209,6 +240,13 @@ class Visualizer:
             "calmar_ratio": 0.0,
             "final_value": 0.0,
             "num_trading_days": 0,
+            "win_rate": 0.0,
+            "profit_factor": 0.0,
+            "avg_daily_turnover": 0.0,
+            "alpha": 0.0,
+            "information_ratio": 0.0,
+            "benchmark_total_return": 0.0,
+            "total_transaction_cost": 0.0,
         }
     
     def plot_equity_curve(
@@ -495,8 +533,8 @@ class Visualizer:
         logger.info("Generating Backtest Report")
         logger.info("=" * 50)
         
-        # 计算指标
-        metrics = self.calculate_metrics(equity_curve, initial_capital)
+        # 计算指标（传入交易记录以计算胜率、盈亏比、换手率）
+        metrics = self.calculate_metrics(equity_curve, initial_capital, trade_records=trade_records)
         
         # 打印指标
         logger.info("Performance Metrics:")
@@ -578,6 +616,7 @@ class Visualizer:
         ax2 = axes[0, 1]
         ax2.axis('off')
         
+        # 构建绩效指标文本，包含胜率和盈亏比
         metrics_text = (
             f"Performance Metrics\n"
             f"{'='*40}\n"
@@ -590,6 +629,15 @@ class Visualizer:
             f"Final Value:       ${metrics['final_value']:>11,.0f}\n"
             f"Trading Days:      {metrics['num_trading_days']:>12d}\n"
         )
+        
+        # 添加胜率和盈亏比（如果可用）
+        if metrics.get('win_rate', 0) > 0 or metrics.get('profit_factor', 0) > 0:
+            metrics_text += (
+                f"\n"
+                f"Win Rate:          {metrics.get('win_rate', 0):>12.1%}\n"
+                f"Profit Factor:     {metrics.get('profit_factor', 0):>12.2f}\n"
+                f"Avg Daily Turnover: ${metrics.get('avg_daily_turnover', 0):>10,.0f}\n"
+            )
         ax2.text(0.1, 0.7, metrics_text, fontsize=12, family='monospace',
                 verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
         ax2.set_xlim(0, 1)

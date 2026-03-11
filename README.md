@@ -58,22 +58,22 @@ TUSHARE_TOKEN=your_tushare_token_here
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           Quantitative Trading System                        │
+│                           Quantitative Trading System                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  数据同步流程：                                                              │
+│  数据同步流程:                                                               │
 │  Tushare API → TushareLoader → DatabaseManager → MySQL                      │
 │                                                                             │
-│  特征计算流程：                                                              │
+│  特征计算流程:                                                               │
 │  MySQL → FeaturePipeline → FactorEngine → Parquet                           │
 │                                                                             │
-│  模型训练流程：                                                              │
+│  模型训练流程:                                                               │
 │  Parquet → ModelTrainer → LightGBM → Model File                             │
 │                                                                             │
-│  回测流程：                                                                  │
-│  Parquet + Model → Backtester → Performance Metrics → Visualizer → Plots   │
+│  回测流程:                                                                   │
+│  Parquet + Model → Backtester → Performance Metrics → Visualizer → Plots    │
 │                                                                             │
-│  预测流程：                                                                  │
+│  预测流程:                                                                   │
 │  MySQL → NextDayPredictor → Model → Trading Signals                         │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘

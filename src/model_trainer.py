@@ -5,12 +5,19 @@ This module handles:
 - Feature/label preparation from Parquet files
 - LightGBM model training with cross-validation
 - Model persistence and evaluation
+- Factor IC (Information Coefficient) analysis
 
 核心功能:
     - 使用 LightGBM 训练股票选择模型
     - 时间序列交叉验证
     - 特征重要性分析
+    - 因子 IC 分析（信息系数）
     - 模型保存和加载
+    
+【新增 - 2026-03-10】:
+    - 因子 IC 分析：计算各因子与预测目标的秩相关性
+    - 样本加权：对收益率分布两端样本赋予更高权重
+    - 增强正则化：lambda_l1, lambda_l2 防止过拟合
 """
 
 import lightgbm as lgb
@@ -20,6 +27,7 @@ from typing import Any
 from loguru import logger
 from sklearn.model_selection import TimeSeriesSplit
 import numpy as np
+from scipy.stats import spearmanr
 
 
 class ModelTrainer:
@@ -32,6 +40,8 @@ class ModelTrainer:
         - 模型持久化 (保存/加载)
         - 早停机制防止过拟合
         - 支持从 Parquet 文件加载数据
+        - 【新增】因子 IC 分析
+        - 【新增】样本加权训练
     
     模型参数说明:
         - objective: "regression" (回归任务)
@@ -43,6 +53,8 @@ class ModelTrainer:
         - min_child_samples: 每个叶子节点的最小样本数
         - subsample: 行采样比例
         - colsample_bytree: 列采样比例
+        - lambda_l1: L1 正则化
+        - lambda_l2: L2 正则化
     
     使用示例:
         >>> trainer = ModelTrainer()  # 使用默认参数
@@ -156,6 +168,104 @@ class ModelTrainer:
             "feature_columns": feature_columns,
         }
     
+    @staticmethod
+    def calculate_sample_weights(
+        y: np.ndarray,
+        weight_method: str = "tail_focus",
+        tail_threshold: float = 0.3,
+    ) -> np.ndarray:
+        """
+        计算样本权重，让模型更关注"捕捉大机会"和"躲避大风险"。
+        
+        Args:
+            y (np.ndarray): 标签值（未来收益率）
+            weight_method (str): 权重计算方法
+                - "tail_focus": 对收益率分布两端（大涨大跌）赋予更高权重
+                - "uniform": 均匀权重（默认 baseline）
+            tail_threshold (float): 尾部阈值，默认 0.3（30% 分位数）
+        
+        Returns:
+            np.ndarray: 样本权重数组
+        
+        【新增 - 2026-03-10】:
+            样本加权策略让模型更关注极端收益率样本，
+            提高对"大机会"和"大风险"的预测能力。
+        """
+        if weight_method == "uniform":
+            return np.ones_like(y)
+        
+        # tail_focus: 对收益率分布两端赋予更高权重
+        # 使用分位数识别极端样本
+        lower_quantile = np.percentile(np.abs(y), (1 - tail_threshold) * 100)
+        
+        # 权重与绝对收益率成正比
+        weights = 1.0 + np.abs(y) / (lower_quantile + 1e-10)
+        
+        # 归一化权重，使平均权重为 1
+        weights = weights / np.mean(weights)
+        
+        logger.info(f"Sample weights calculated: min={weights.min():.3f}, max={weights.max():.3f}, mean={weights.mean():.3f}")
+        return weights
+    
+    @staticmethod
+    def calculate_factor_ic(
+        features: pl.DataFrame,
+        labels: pl.Series,
+        feature_columns: list[str],
+    ) -> dict[str, float]:
+        """
+        计算各因子与标签的 IC（信息系数）- 秩相关性。
+        
+        IC（Information Coefficient）是衡量因子预测能力的重要指标，
+        通过计算因子值与未来收益率的 Spearman 秩相关系数得到。
+        
+        Args:
+            features (pl.DataFrame): 特征 DataFrame
+            labels (pl.Series): 标签 Series（未来收益率）
+            feature_columns (list[str]): 特征列名列表
+        
+        Returns:
+            dict[str, float]: 各因子的 IC 值字典
+            
+        【新增 - 2026-03-10】:
+            IC 分析帮助识别真正有预测力的 Alpha 因子，
+            IC 绝对值越大，说明因子预测能力越强。
+            通常 IC>0.05 被认为是有意义的因子。
+        """
+        logger.info(f"Calculating Factor IC for {len(feature_columns)} factors...")
+        
+        ic_dict = {}
+        labels_np = labels.to_numpy()
+        
+        for col in feature_columns:
+            try:
+                factor_values = features[col].to_numpy()
+                
+                # 处理空值
+                valid_mask = ~(np.isnan(factor_values) | np.isnan(labels_np))
+                if valid_mask.sum() < 10:
+                    ic_dict[col] = 0.0
+                    continue
+                
+                # 计算 Spearman 秩相关系数
+                ic, _ = spearmanr(factor_values[valid_mask], labels_np[valid_mask])
+                ic_dict[col] = ic if not np.isnan(ic) else 0.0
+                
+            except Exception as e:
+                logger.warning(f"Failed to calculate IC for {col}: {e}")
+                ic_dict[col] = 0.0
+        
+        # 按 IC 绝对值排序
+        ic_sorted = sorted(ic_dict.items(), key=lambda x: abs(x[1]), reverse=True)
+        
+        logger.info("=" * 50)
+        logger.info("Factor IC Analysis (Top 10):")
+        logger.info("=" * 50)
+        for i, (name, ic) in enumerate(ic_sorted[:10], 1):
+            logger.info(f"  {i}. {name}: IC = {ic:.4f}")
+        
+        return ic_dict
+    
     def __init__(
         self,
         n_estimators: int = 1000,
@@ -166,6 +276,8 @@ class ModelTrainer:
         subsample: float = 0.8,
         colsample_bytree: float = 0.8,
         random_state: int = 42,
+        lambda_l1: float = 0.1,  # 新增：L1 正则化
+        lambda_l2: float = 0.1,  # 新增：L2 正则化
     ) -> None:
         """
         使用超参数初始化模型训练器。
@@ -200,6 +312,12 @@ class ModelTrainer:
             
             random_state (int): 随机种子，默认 42
                 确保结果可复现
+            
+            lambda_l1 (float): L1 正则化参数，默认 0.1
+                增加稀疏性，防止过拟合
+            
+            lambda_l2 (float): L2 正则化参数，默认 0.1
+                平滑权重，防止过拟合
         
         初始化后创建的属性:
             - self.params: LightGBM 参数字典
@@ -207,7 +325,7 @@ class ModelTrainer:
             - self.model: 训练后的模型 (初始为 None)
             - self.feature_importance_: 特征重要性字典
         """
-        # LightGBM 模型参数配置
+        # LightGBM 模型参数配置 - 【优化】增强正则化防止过拟合
         self.params = {
             "objective": "regression",  # 回归任务
             "metric": "mse",  # 评估指标：均方误差
@@ -221,10 +339,14 @@ class ModelTrainer:
             "random_state": random_state,  # 随机种子
             "n_jobs": -1,  # 使用所有 CPU 核心
             "verbose": -1,  # 关闭训练日志输出
+            # 【新增】正则化参数
+            "lambda_l1": lambda_l1,  # L1 正则化
+            "lambda_l2": lambda_l2,  # L2 正则化
         }
         self.n_estimators = n_estimators  # boosting 轮数
         self.model: lgb.Booster | None = None  # 训练后的模型
         self.feature_importance_: dict[str, float] = {}  # 特征重要性
+        self.factor_ic_: dict[str, float] = {}  # 因子 IC 值
     
     def train(
         self,
@@ -232,6 +354,7 @@ class ModelTrainer:
         y_train: pl.Series,
         X_val: pl.DataFrame | None = None,
         y_val: pl.Series | None = None,
+        sample_weights: np.ndarray | None = None,
     ) -> lgb.Booster:
         """
         训练 LightGBM 模型。
@@ -255,6 +378,10 @@ class ModelTrainer:
             
             y_val (pl.Series, optional): 验证标签 Series
             
+            sample_weights (np.ndarray, optional): 样本权重
+                如果为 None，则使用均匀权重
+                可使用 calculate_sample_weights() 生成
+            
         Returns:
             lgb.Booster: 训练好的 LightGBM 模型
             
@@ -273,8 +400,12 @@ class ModelTrainer:
         X_np = X_train.to_numpy()
         y_np = y_train.to_numpy()
         
-        # 创建 LightGBM 训练数据集
-        train_data = lgb.Dataset(X_np, label=y_np)
+        # 计算样本权重（如果未提供）
+        if sample_weights is None:
+            sample_weights = self.calculate_sample_weights(y_np)
+        
+        # 创建 LightGBM 训练数据集（带样本权重）
+        train_data = lgb.Dataset(X_np, label=y_np, weight=sample_weights)
         
         # 配置回调函数
         callbacks = [
@@ -450,6 +581,15 @@ class ModelTrainer:
         )
         return sorted_features[:n]
     
+    def get_factor_ic(self) -> dict[str, float]:
+        """
+        获取因子 IC 值字典。
+        
+        Returns:
+            dict[str, float]: 因子 IC 值字典
+        """
+        return self.factor_ic_
+    
     def save_model(self, path: str) -> None:
         """
         保存训练好的模型到文件。
@@ -514,6 +654,9 @@ def run_training(
     n_estimators: int = 500,
     learning_rate: float = 0.05,
     max_depth: int = 6,
+    lambda_l1: float = 0.1,  # 新增参数
+    lambda_l2: float = 0.1,  # 新增参数
+    use_sample_weights: bool = True,  # 新增参数
 ) -> dict[str, Any]:
     """
     运行完整的训练流程。
@@ -521,9 +664,10 @@ def run_training(
     此函数执行:
     1. 从 Parquet 文件加载数据
     2. 准备训练/验证/测试集 (时间序列切分)
-    3. 训练 LightGBM 模型
-    4. 输出前 5 个最重要的特征
-    5. 在测试集上评估
+    3. 【新增】计算因子 IC 分析
+    4. 训练 LightGBM 模型（带样本加权）
+    5. 输出前 10 个最重要的特征
+    6. 在测试集上评估
     
     Args:
         parquet_path (str): Parquet 文件路径
@@ -533,11 +677,15 @@ def run_training(
         n_estimators (int): boosting 轮数
         learning_rate (float): 学习率
         max_depth (int): 树的最大深度
+        lambda_l1 (float): L1 正则化参数，默认 0.1
+        lambda_l2 (float): L2 正则化参数，默认 0.1
+        use_sample_weights (bool): 是否使用样本加权，默认 True
     
     Returns:
         dict[str, Any]: 训练结果，包含:
             - "model": 训练好的模型
-            - "top_features": 前 5 个重要特征
+            - "top_features": 前 10 个重要特征
+            - "factor_ic": 因子 IC 值字典
             - "test_mse": 测试集 MSE
             - "train_samples": 训练样本数
             - "val_samples": 验证样本数
@@ -547,7 +695,7 @@ def run_training(
         >>> results = run_training()
         >>> print(f"Test MSE: {results['test_mse']:.6f}")
     """
-    # 默认特征列 (11 个因子)
+    # 默认特征列 (包含新增因子)
     if feature_columns is None:
         feature_columns = [
             "momentum_5", "momentum_10", "momentum_20",
@@ -555,6 +703,10 @@ def run_training(
             "volume_ma_ratio_5", "volume_ma_ratio_20",
             "price_position_20", "price_position_60",
             "ma_deviation_5", "ma_deviation_20",
+            "rsi_14", "mfi_14",  # 新增技术指标因子
+            "turnover_bias_20", "turnover_ma_ratio",  # 新增换手率因子
+            "volume_price_divergence_5", "volume_price_divergence_20",
+            "volume_price_correlation", "smart_money_flow",
         ]
     
     logger.info("=" * 50)
@@ -571,31 +723,61 @@ def run_training(
         label_column=label_column,
     )
     
-    # Step 3: 初始化训练器
+    # Step 2.5: 【新增】因子 IC 分析
+    logger.info("=" * 50)
+    logger.info("Factor IC Analysis")
+    logger.info("=" * 50)
+    factor_ic = ModelTrainer.calculate_factor_ic(
+        features=data["X_train"],
+        labels=data["y_train"],
+        feature_columns=feature_columns,
+    )
+    
+    # Step 3: 初始化训练器 - 【优化】增强正则化
     trainer = ModelTrainer(
         n_estimators=n_estimators,
         learning_rate=learning_rate,
         max_depth=max_depth,
+        lambda_l1=lambda_l1,
+        lambda_l2=lambda_l2,
     )
     
-    # Step 4: 训练模型
+    # 保存因子 IC 值
+    trainer.factor_ic_ = factor_ic
+    
+    # Step 4: 计算样本权重（如果启用）
+    sample_weights = None
+    if use_sample_weights:
+        logger.info("=" * 50)
+        logger.info("Calculating Sample Weights")
+        logger.info("=" * 50)
+        sample_weights = ModelTrainer.calculate_sample_weights(
+            data["y_train"].to_numpy(),
+            weight_method="tail_focus",
+        )
+    
+    # Step 5: 训练模型（带样本权重）
+    logger.info("=" * 50)
     logger.info("Training LightGBM model...")
+    logger.info(f"Parameters: lambda_l1={lambda_l1}, lambda_l2={lambda_l2}, learning_rate={learning_rate}")
+    logger.info("=" * 50)
     trainer.train(
         X_train=data["X_train"],
         y_train=data["y_train"],
         X_val=data["X_val"],
         y_val=data["y_val"],
+        sample_weights=sample_weights,
     )
     
-    # Step 5: 获取特征重要性
-    top_features = trainer.get_top_features(n=5)
+    # Step 6: 获取特征重要性
+    top_features = trainer.get_top_features(n=10)
     logger.info("=" * 50)
-    logger.info("Top 5 Most Important Features:")
+    logger.info("Top 10 Most Important Features:")
     logger.info("=" * 50)
     for i, (name, importance) in enumerate(top_features, 1):
         logger.info(f"  {i}. {name}: {importance:.2f}")
     
-    # Step 6: 测试集评估
+    # Step 7: 测试集评估
     test_pred = trainer.predict(data["X_test"])
     test_mse = np.mean((test_pred - data["y_test"].to_numpy()) ** 2)
     
@@ -638,6 +820,7 @@ def run_training(
     return {
         "model": trainer.model,
         "top_features": top_features,
+        "factor_ic": factor_ic,
         "test_mse": test_mse,
         "train_mse": train_mse,
         "val_mse": val_mse,

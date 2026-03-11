@@ -6,6 +6,8 @@
 #   - .rolling_std(window_size=n, ddof=1) - replaces .rolling(n).std()
 #   - .rolling_min(window_size=n) - replaces .rolling(n).min()
 #   - .rolling_max(window_size=n) - replaces .rolling(n).max()
+#   - .clip(lower_bound, upper_bound) - clip values
+#   - Note: For RSI/MFI, use positive/negative separation with max/min
 
 factors:
   # Momentum Factors (动量因子)
@@ -49,12 +51,12 @@ factors:
   # Price Position Factors (价格位置因子)
   - name: price_position_20
     description: "Price position in 20-day range"
-    expression: "(close - close.rolling_min(window_size=20)) / (close.rolling_max(window_size=20) - close.rolling_min(window_size=20))"
+    expression: "(close - close.rolling_min(window_size=20)) / (close.rolling_max(window_size=20) - close.rolling_min(window_size=20) + 1e-10)"
     window: 20
     
   - name: price_position_60
     description: "Price position in 60-day range"
-    expression: "(close - close.rolling_min(window_size=60)) / (close.rolling_max(window_size=60) - close.rolling_min(window_size=60))"
+    expression: "(close - close.rolling_min(window_size=60)) / (close.rolling_max(window_size=60) - close.rolling_min(window_size=60) + 1e-10)"
     window: 60
 
   # MA Deviation Factors (均线偏离因子)
@@ -69,19 +71,75 @@ factors:
     window: 20
 
   # Technical Indicator Factors (技术指标因子)
+  # RSI: Uses pct_change positive/negative separation
+  # Using pl.Series with explicit float conversion
   - name: rsi_14
     description: "14-day Relative Strength Index - measures overbought/oversold conditions"
-    expression: "100 - 100 / (1 + (pct_change.clip(0, null).rolling_sum(window_size=14) / pct_change.clip(null, 0).abs().rolling_sum(window_size=14)).fill_null(1))"
+    expression: "100 - 100 / (1 + pct_change.map_elements(lambda x: float(x) if x > 0 else 0.0, return_dtype=pl.Float64).rolling_sum(window_size=14) / (pct_change.map_elements(lambda x: float(-x) if x < 0 else 0.0, return_dtype=pl.Float64).rolling_sum(window_size=14) + 1e-10))"
     window: 14
     
   - name: mfi_14
     description: "14-day Money Flow Index - volume-weighted RSI"
-    expression: "100 - 100 / (1 + ((pct_change.clip(0, null) * volume).rolling_sum(window_size=14) / (pct_change.clip(null, 0).abs() * volume).rolling_sum(window_size=14)).fill_null(1))"
+    expression: "100 - 100 / (1 + (pct_change.map_elements(lambda x: float(x) if x > 0 else 0.0, return_dtype=pl.Float64) * volume).rolling_sum(window_size=14) / ((pct_change.map_elements(lambda x: float(-x) if x < 0 else 0.0, return_dtype=pl.Float64) * volume).rolling_sum(window_size=14) + 1e-10))"
     window: 14
     
+  # Turnover Rate Factors (换手率因子) - 需要 Tushare 积分>=120
+  # 注意：这些因子需要数据库中有 turnover_rate 字段
+  # 如果数据库中没有 turnover_rate 字段，这些因子将被跳过
+  # 已使用 map_elements 和 fill_null(0) 处理缺失值
   - name: turnover_bias_20
     description: "Turnover rate deviation from 20-day average - measures trading activity anomaly"
-    expression: "turnover_rate / turnover_rate.rolling_mean(window_size=20) - 1"
+    expression: "(turnover_rate.fill_null(0) - turnover_rate.fill_null(0).rolling_mean(window_size=20)) / (turnover_rate.fill_null(0).rolling_std(window_size=20, ddof=1) + 1e-10)"
+    window: 20
+  
+  - name: turnover_ma_ratio
+    description: "Turnover rate to 5-day MA ratio - measures relative trading activity"
+    expression: "turnover_rate.fill_null(0) / (turnover_rate.fill_null(0).rolling_mean(window_size=5) + 1e-10)"
+    window: 5
+
+  # Volume-Price Divergence Factors (量价背离因子)
+  - name: volume_price_divergence_5
+    description: "5-day volume-price divergence - positive when price up but volume down (bearish divergence)"
+    expression: "(close / close.shift(5) - 1) - (volume / volume.shift(5) - 1)"
+    window: 5
+  
+  - name: volume_price_divergence_20
+    description: "20-day volume-price divergence - measures long-term divergence trend"
+    expression: "(close / close.shift(20) - 1) - (volume / volume.shift(20) - 1)"
+    window: 20
+  
+  - name: volume_price_correlation
+    description: "Correlation between price change and volume over 20 days - negative correlation indicates divergence"
+    expression: "((pct_change - pct_change.rolling_mean(window_size=20)) * (volume - volume.rolling_mean(window_size=20))).rolling_mean(window_size=20) / ((pct_change.rolling_std(window_size=20, ddof=1) + 1e-10) * (volume.rolling_std(window_size=20, ddof=1) + 1e-10))"
+    window: 20
+  
+  - name: smart_money_flow
+    description: "Smart money flow indicator - high volume on up days vs low volume on down days"
+    expression: "((pct_change.map_elements(lambda x: float(x) if x > 0 else 0.0, return_dtype=pl.Float64) * volume).rolling_sum(window_size=5) - (pct_change.map_elements(lambda x: float(-x) if x < 0 else 0.0, return_dtype=pl.Float64) * volume).rolling_sum(window_size=5)) / ((volume.rolling_sum(window_size=5) + 1e-10) * close)"
+    window: 5
+
+  # Volatility Contraction Factors (波动率缩量因子)
+  # 逻辑：波动率收缩 + 成交量萎缩，通常预示着即将突破
+  - name: volatility_contraction_10
+    description: "Volatility contraction ratio - measures 10-day volatility relative to 20-day volatility (low value = contraction)"
+    expression: "volatility_5 / (volatility_20 + 1e-10)"
+    window: 10
+  
+  - name: volume_shrink_ratio
+    description: "Volume shrinkage ratio - current volume relative to 20-day average (low value = shrinking volume)"
+    expression: "volume / (volume.rolling_mean(window_size=20) + 1e-10)"
+    window: 20
+  
+  # Price-Stable Volume-Increase Factors (量增价稳因子)
+  # 逻辑：成交量放大但价格波动小，通常表示主力吸筹
+  - name: volume_price_stable
+    description: "Volume increase with stable price - high volume but small price range (accumulation signal)"
+    expression: "(volume / volume.rolling_mean(window_size=10)) / ((high - low) / close.rolling_mean(window_size=10) + 1e-10)"
+    window: 10
+  
+  - name: accumulation_distribution_20
+    description: "Accumulation/Distribution indicator - measures buying pressure over 20 days"
+    expression: "((close - low) - (high - close)).rolling_sum(window_size=20) / ((high - low + 1e-10).rolling_sum(window_size=20) * volume.rolling_sum(window_size=20) + 1e-10) * volume"
     window: 20
 
 # Label Configuration (标签配置)
