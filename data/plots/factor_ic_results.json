@@ -1,5 +1,16 @@
 [
   {
+    "factor_name": "volume_price_stable",
+    "mean_ic": 0.044680281134004955,
+    "ic_std": 0.19521659465316932,
+    "ic_ir": 0.22887542533659075,
+    "positive_ratio": 0.6015625,
+    "num_valid_days": 768,
+    "min_ic": -0.4612621353414029,
+    "max_ic": 0.6295019013740338,
+    "t_stat": 6.342781844590597
+  },
+  {
     "factor_name": "volatility_20",
     "mean_ic": -0.04427649741405596,
     "ic_std": 0.2264261862539836,
@@ -88,6 +99,17 @@
     "t_stat": -4.005904950613144
   },
   {
+    "factor_name": "volume_shrink_ratio",
+    "mean_ic": -0.01659241686590676,
+    "ic_std": 0.11478618444090437,
+    "ic_ir": -0.14455064384903457,
+    "positive_ratio": 0.41796875,
+    "num_valid_days": 768,
+    "min_ic": -0.44614206529684713,
+    "max_ic": 0.4648059904044476,
+    "t_stat": -4.005904950613144
+  },
+  {
     "factor_name": "momentum_5",
     "mean_ic": -0.015719715333495272,
     "ic_std": 0.16350412678055856,
@@ -143,6 +165,17 @@
     "t_stat": 3.2632385373033874
   },
   {
+    "factor_name": "accumulation_distribution_20",
+    "mean_ic": -0.010612747978794461,
+    "ic_std": 0.15230889622833796,
+    "ic_ir": -0.0696791076660688,
+    "positive_ratio": 0.4635416666666667,
+    "num_valid_days": 768,
+    "min_ic": -0.6688312154969802,
+    "max_ic": 0.4569102604857684,
+    "t_stat": -1.9310040752590913
+  },
+  {
     "factor_name": "volume_ma_ratio_5",
     "mean_ic": -0.009765913930625585,
     "ic_std": 0.10646360394984054,
@@ -187,6 +220,17 @@
     "t_stat": -1.8446774193204707
   },
   {
+    "factor_name": "volatility_contraction_10",
+    "mean_ic": -0.0006327906030658692,
+    "ic_std": 0.10699551934596177,
+    "ic_ir": -0.005914178527605343,
+    "positive_ratio": 0.4830729166666667,
+    "num_valid_days": 768,
+    "min_ic": -0.29924025284550865,
+    "max_ic": 0.4610122989695903,
+    "t_stat": -0.16389852311752556
+  },
+  {
     "factor_name": "turnover_bias_20",
     "mean_ic": 0.0,
     "ic_std": 0.0,
@@ -204,50 +248,6 @@
     "ic_ir": 0.0,
     "positive_ratio": 0.0,
     "num_valid_days": 768,
-    "min_ic": 0.0,
-    "max_ic": 0.0,
-    "t_stat": 0.0
-  },
-  {
-    "factor_name": "volatility_contraction_10",
-    "mean_ic": 0.0,
-    "ic_std": 0.0,
-    "ic_ir": 0.0,
-    "positive_ratio": 0.0,
-    "num_valid_days": 0,
-    "min_ic": 0.0,
-    "max_ic": 0.0,
-    "t_stat": 0.0
-  },
-  {
-    "factor_name": "volume_shrink_ratio",
-    "mean_ic": 0.0,
-    "ic_std": 0.0,
-    "ic_ir": 0.0,
-    "positive_ratio": 0.0,
-    "num_valid_days": 0,
-    "min_ic": 0.0,
-    "max_ic": 0.0,
-    "t_stat": 0.0
-  },
-  {
-    "factor_name": "volume_price_stable",
-    "mean_ic": 0.0,
-    "ic_std": 0.0,
-    "ic_ir": 0.0,
-    "positive_ratio": 0.0,
-    "num_valid_days": 0,
-    "min_ic": 0.0,
-    "max_ic": 0.0,
-    "t_stat": 0.0
-  },
-  {
-    "factor_name": "accumulation_distribution_20",
-    "mean_ic": 0.0,
-    "ic_std": 0.0,
-    "ic_ir": 0.0,
-    "positive_ratio": 0.0,
-    "num_valid_days": 0,
     "min_ic": 0.0,
     "max_ic": 0.0,
     "t_stat": 0.0
