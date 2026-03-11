@@ -88,26 +88,100 @@ credentials.json
 *.sqlite3
 
 # Large data files (should use Git LFS or DVC)
-data/*.csv
-data/*.parquet
-data/*.feather
+# Raw data files - do not commit
 data/raw/*
 !data/raw/.gitkeep
+
+# Parquet files - generated data, do not commit
 data/parquet/*
 !data/parquet/.gitkeep
 
-# Model files (large binary files)
-data/models/*.txt
-data/models/*.pkl
-data/models/*.joblib
-data/models/*.bin
+# CSV exports - do not commit
+data/*.csv
+data/**/*.csv
+
+# Feather files
+data/*.feather
+data/**/*.feather
+
+# -------------------------------------------
+# Project Specific - Model Files
+# -------------------------------------------
+# Trained model files (large binary files, regenerate from code)
+data/models/*
 !data/models/.gitkeep
+
+# Pickle and joblib files
+*.pkl
+*.joblib
+
+# -------------------------------------------
+# Project Specific - Plots and Results
+# -------------------------------------------
+# Generated plots and visualizations (can be regenerated)
+data/plots/*.png
+data/plots/*.jpg
+data/plots/*.svg
+data/plots/*.pdf
+
+# Backtest result files (generated)
+data/plots/backtest_metrics.txt
+data/plots/*_results.json
+
+# Parameter scan results
+data/plots/parameter_scan_results.json
+data/plots/parameter_heatmap.png
+
+# IC analysis results (generated)
+data/plots/factor_ic_results.json
+data/plots/factor_ic_heatmap.png
+
+# OOS validation results (generated)
+data/plots/oos_comparison_report.json
+data/plots/oos_trained_model.txt
+data/plots/is_vs_oos_equity_curves.png
+
+# Keep only essential plot files that are manually curated
+# data/plots/.gitkeep
 
 # -------------------------------------------
 # Project Specific - Logs
 # -------------------------------------------
 logs/
 *.log
+
+# Loguru log files
+logs/*.log
+
+# -------------------------------------------
+# Project Specific - Temporary Scripts
+# -------------------------------------------
+# One-off data sync scripts
+sync_*.py
+*_sync.py
+temp_*.py
+tmp_*.py
+download_*.py
+fetch_*.py
+pull_*.py
+
+# Notebooks (optional - uncomment if you want to exclude)
+# notebooks/*.ipynb
+# notebooks/temp_*.ipynb
+
+# -------------------------------------------
+# Project Specific - Sync Status
+# -------------------------------------------
+# Data sync status files (local state)
+data/sync_status/*
+!data/sync_status/.gitkeep
+
+# -------------------------------------------
+# Project Specific - Cache
+# -------------------------------------------
+# Feature cache
+data/cache/
+data/.cache/
 
 # -------------------------------------------
 # Project Specific - OS
@@ -130,11 +204,6 @@ htmlcov/
 .nox/
 
 # -------------------------------------------
-# Jupyter
-# -------------------------------------------
-.ipynb_checkpoints
-
-# -------------------------------------------
 # mypy
 # -------------------------------------------
 .mypy_cache/
@@ -147,7 +216,14 @@ dmypy.json
 .pyre/
 
 # -------------------------------------------
-# Notes (optional - uncomment to ignore)
+# Documentation Build
 # -------------------------------------------
-# *.md
-# notes/
+docs/_build/
+docs/build/
+
+# -------------------------------------------
+# Optional Local Overrides
+# -------------------------------------------
+# Local customizations that should not be committed
+*.local
+*.override
