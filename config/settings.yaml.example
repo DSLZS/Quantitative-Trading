@@ -1,0 +1,87 @@
+# ===========================================
+# Quantitative Trading System - Settings Template
+# Daily Trade Advisor Configuration
+# ===========================================
+# 使用说明：
+# 1. 复制此文件为 config/settings.yaml
+# 2. 将所有 YOUR_*_KEY 占位符替换为真实的 API Key
+# 3. 不要将包含真实 Key 的 settings.yaml 提交到 Git
+# ===========================================
+
+# 如何获取 API Key：
+# - DeepSeek API: 访问 https://platform.deepseek.com 注册并获取 API Key
+# - 通义千问 (Qwen): 访问 https://dashscope.console.aliyun.com 注册并获取 API Key
+# - Kimi: 访问 https://platform.moonshot.cn 注册并获取 API Key
+# - MiniMax: 访问 https://platform.minimaxi.com 注册并获取 API Key
+
+# 核心交易参数
+trading:
+  capital: 50000          # 总本金（元）
+  max_positions: 3        # 最大持仓数
+  min_prob: 0.70          # 量化概率门槛（70%）
+  regime_ma: 20           # 大盘均线择时天数
+  
+  # 交易成本
+  commission_rate: 0.0003     # 佣金率（万分之三）
+  commission_min: 5.0         # 最低佣金（元）
+  stamp_duty_rate: 0.001      # 印花税率（千分之一，卖出时收取）
+
+# 混合 AI 审计配置
+ai_agents:
+  # 第一级：免费模型初筛（可用 Mock 逻辑临时替代）
+  pre_filter:
+    enabled: true
+    provider: "qwen"      # 或 kimi, minimax
+    # 【重要】将下方的 YOUR_QWEN_KEY 替换为你的真实 API Key
+    api_key: "YOUR_QWEN_KEY"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    model: "qwen-plus"
+    max_tokens: 500
+  
+  # 第二级：DeepSeek 核心精审
+  deep_audit:
+    enabled: true
+    provider: "deepseek"
+    # 【重要】将下方的 YOUR_DEEPSEEK_KEY 替换为你的真实 API Key
+    api_key: "YOUR_DEEPSEEK_KEY"
+    base_url: "https://api.deepseek.com"
+    model: "deepseek-chat"
+    max_tokens: 1000
+    retry:
+      max_attempts: 3
+      base_delay: 1.0     # 指数退避基数（秒）
+      max_delay: 30.0     # 最大延迟（秒）
+
+# 股票池与标的
+assets:
+  index_code: "000905.SH"   # 中证 500（用于大盘择时）
+  bond_etf: "511010"        # 国债 ETF（空仓时的避险标的）
+  
+# 数据源配置
+data:
+  # akshare 数据源
+  news_lookback_days: 3     # 新闻回溯天数
+  max_news_per_stock: 10    # 每只股票最大新闻数
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "logs/trade_advisor.log"
+  rotation: "1 day"
+  retention: "7 days"
+
+# 模型配置
+model:
+  path: "data/models/stock_model.txt"
+  feature_columns:
+    - momentum_5
+    - momentum_10
+    - momentum_20
+    - volatility_5
+    - volatility_20
+    - volume_ma_ratio_5
+    - volume_ma_ratio_20
+    - price_position_20
+    - price_position_60
+    - ma_deviation_5
+    - ma_deviation_20
