@@ -266,18 +266,112 @@ class ModelTrainer:
         
         return ic_dict
     
+    @staticmethod
+    def calculate_shuffle_importance(
+        model: lgb.Booster,
+        X: pl.DataFrame,
+        y: pl.Series,
+        feature_columns: list[str],
+        n_repeats: int = 5,
+        random_state: int = 42,
+    ) -> dict[str, float]:
+        """
+        计算排列重要性（Shuffle Importance）- 通过随机打乱特征值来评估特征重要性。
+        
+        排列重要性原理:
+            1. 计算原始模型的基准得分（如 MSE）
+            2. 对每个特征，随机打乱其值
+            3. 用打乱后的数据计算新得分
+            4. 重要性 = 新得分 - 基准得分
+            5. 重复多次取平均
+        
+        与 Gain 重要性的区别:
+            - Gain 重要性：基于信息增益，可能高估某些特征
+            - Shuffle Importance：基于预测性能下降，更可靠
+            
+        Args:
+            model (lgb.Booster): 训练好的 LightGBM 模型
+            X (pl.DataFrame): 特征 DataFrame
+            y (pl.Series): 标签 Series
+            feature_columns (list[str]): 特征列名列表
+            n_repeats (int): 重复次数，默认 5
+            random_state (int): 随机种子，默认 42
+        
+        Returns:
+            dict[str, float]: 各特征的排列重要性字典
+                - 正值：特征对预测有贡献
+                - 负值：特征可能是噪声
+                - 接近 0：特征对预测无影响
+            
+        【新增 - 2026-03-11】:
+            防御性重训方案：剔除随机扰动后对预测无贡献的"干扰因子"
+        """
+        logger.info(f"Calculating Shuffle Importance for {len(feature_columns)} features...")
+        
+        np.random.seed(random_state)
+        X_np = X.to_numpy()
+        y_np = y.to_numpy()
+        
+        # 计算基准得分
+        baseline_pred = model.predict(X_np)
+        baseline_mse = np.mean((baseline_pred - y_np) ** 2)
+        logger.info(f"Baseline MSE: {baseline_mse:.6f}")
+        
+        importance_dict = {}
+        
+        for col_idx, col in enumerate(feature_columns):
+            logger.info(f"  Evaluating {col} ({col_idx + 1}/{len(feature_columns)})")
+            
+            importance_scores = []
+            
+            for repeat in range(n_repeats):
+                # 复制数据
+                X_shuffled = X_np.copy()
+                
+                # 随机打乱当前特征
+                shuffled_indices = np.random.permutation(len(y_np))
+                X_shuffled[:, col_idx] = X_np[:, col_idx][shuffled_indices]
+                
+                # 计算打乱后的得分
+                shuffled_pred = model.predict(X_shuffled)
+                shuffled_mse = np.mean((shuffled_pred - y_np) ** 2)
+                
+                # 重要性 = 得分下降量
+                importance_scores.append(shuffled_mse - baseline_mse)
+            
+            # 取平均
+            importance_dict[col] = np.mean(importance_scores)
+        
+        # 按重要性排序
+        importance_sorted = sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)
+        
+        logger.info("=" * 50)
+        logger.info("Shuffle Importance Analysis (Top 10):")
+        logger.info("=" * 50)
+        for i, (name, imp) in enumerate(importance_sorted[:10], 1):
+            logger.info(f"  {i}. {name}: {imp:.6f}")
+        
+        # 识别干扰因子（重要性接近 0 或为负）
+        noise_features = [name for name, imp in importance_dict.items() if imp < 0.0001]
+        if noise_features:
+            logger.info(f"\nNoise features (shuffle importance ≈ 0): {len(noise_features)}")
+            for name in noise_features[:10]:
+                logger.info(f"  - {name}")
+        
+        return importance_dict
+    
     def __init__(
         self,
         n_estimators: int = 1000,
         learning_rate: float = 0.05,
-        max_depth: int = 6,
-        num_leaves: int = 31,
+        max_depth: int = 4,  # 【防御性调优】限制在 3-5 层
+        num_leaves: int = 18,  # 【防御性调优】降至 15-20
         min_child_samples: int = 100,
-        subsample: float = 0.8,
-        colsample_bytree: float = 0.8,
+        subsample: float = 0.8,  # 【防御性调优】采样扰动
+        colsample_bytree: float = 0.8,  # 【防御性调优】采样扰动
         random_state: int = 42,
-        lambda_l1: float = 0.1,  # 新增：L1 正则化
-        lambda_l2: float = 0.1,  # 新增：L2 正则化
+        lambda_l1: float = 0.1,  # 【防御性调优】增加正则化
+        lambda_l2: float = 0.1,  # 【防御性调优】增加正则化
     ) -> None:
         """
         使用超参数初始化模型训练器。
