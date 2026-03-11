@@ -1,19 +1,15 @@
 # ===========================================
 # Python Quantitative Trading System .gitignore
+# Security Isolation Configuration
 # ===========================================
 
 # -------------------------------------------
 # Python
 # -------------------------------------------
-# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -30,12 +26,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# PyInstaller
 *.manifest
 *.spec
-
-# Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
 
@@ -50,149 +42,15 @@ env/
 # -------------------------------------------
 # IDE
 # -------------------------------------------
-# PyCharm
 .idea/
 *.iml
 *.ipr
 *.iws
-
-# VS Code
 .vscode/
 *.code-workspace
-
-# Jupyter Notebook
 .ipynb_checkpoints/
-
-# Spyder
 .spyderproject
 .spyproject
-
-# -------------------------------------------
-# Project Specific - Sensitive Files
-# -------------------------------------------
-# Environment variables (contains passwords/tokens)
-.env
-.env.local
-.env.*.local
-
-# Database credentials
-*-credentials.json
-credentials.json
-
-# -------------------------------------------
-# Project Specific - Data Files
-# -------------------------------------------
-# Database files (if using SQLite locally)
-*.db
-*.sqlite
-*.sqlite3
-
-# Large data files (should use Git LFS or DVC)
-# Raw data files - do not commit
-data/raw/*
-!data/raw/.gitkeep
-
-# Parquet files - generated data, do not commit
-data/parquet/*
-!data/parquet/.gitkeep
-
-# CSV exports - do not commit
-data/*.csv
-data/**/*.csv
-
-# Feather files
-data/*.feather
-data/**/*.feather
-
-# -------------------------------------------
-# Project Specific - Model Files
-# -------------------------------------------
-# Trained model files (large binary files, regenerate from code)
-data/models/*
-!data/models/.gitkeep
-
-# Pickle and joblib files
-*.pkl
-*.joblib
-
-# -------------------------------------------
-# Project Specific - Plots and Results
-# -------------------------------------------
-# Generated plots and visualizations (can be regenerated)
-data/plots/*.png
-data/plots/*.jpg
-data/plots/*.svg
-data/plots/*.pdf
-
-# Backtest result files (generated)
-data/plots/backtest_metrics.txt
-data/plots/*_results.json
-
-# Parameter scan results
-data/plots/parameter_scan_results.json
-data/plots/parameter_heatmap.png
-
-# IC analysis results (generated)
-data/plots/factor_ic_results.json
-data/plots/factor_ic_heatmap.png
-
-# OOS validation results (generated)
-data/plots/oos_comparison_report.json
-data/plots/oos_trained_model.txt
-data/plots/is_vs_oos_equity_curves.png
-
-# Keep only essential plot files that are manually curated
-# data/plots/.gitkeep
-
-# -------------------------------------------
-# Project Specific - Logs
-# -------------------------------------------
-logs/
-*.log
-
-# Loguru log files
-logs/*.log
-
-# -------------------------------------------
-# Project Specific - Temporary Scripts
-# -------------------------------------------
-# One-off data sync scripts
-sync_*.py
-*_sync.py
-temp_*.py
-tmp_*.py
-download_*.py
-fetch_*.py
-pull_*.py
-
-# Notebooks (optional - uncomment if you want to exclude)
-# notebooks/*.ipynb
-# notebooks/temp_*.ipynb
-
-# -------------------------------------------
-# Project Specific - Sync Status
-# -------------------------------------------
-# Data sync status files (local state)
-data/sync_status/*
-!data/sync_status/.gitkeep
-
-# -------------------------------------------
-# Project Specific - Cache
-# -------------------------------------------
-# Feature cache
-data/cache/
-data/.cache/
-
-# -------------------------------------------
-# Project Specific - OS
-# -------------------------------------------
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
 # -------------------------------------------
 # Testing
@@ -204,26 +62,106 @@ htmlcov/
 .nox/
 
 # -------------------------------------------
-# mypy
+# Type Checkers
 # -------------------------------------------
 .mypy_cache/
 .dmypy.json
 dmypy.json
-
-# -------------------------------------------
-# Pyre type checker
-# -------------------------------------------
 .pyre/
 
 # -------------------------------------------
-# Documentation Build
+# SENSITIVE CONFIGURATION (安全隔离 - 敏感配置)
+# -------------------------------------------
+# 配置文件（仅允许 .example 模板上传）
+config/settings.yaml
+!config/settings.yaml.example
+
+# 环境变量文件（包含 API Key、数据库密码等）
+.env
+.env.local
+.env.*.local
+.env.*
+
+# 凭证文件
+*-credentials.json
+credentials.json
+*.pem
+*.key
+
+# -------------------------------------------
+# LOCAL DATA FILES (本地数据 - 禁止上传)
+# -------------------------------------------
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Parquet files (generated data)
+data/**/*.parquet
+data/*.parquet
+
+# CSV files (generated data)
+data/**/*.csv
+data/*.csv
+
+# Feather files
+data/**/*.feather
+data/*.feather
+
+# Pickle and joblib files
+*.pkl
+*.joblib
+
+# -------------------------------------------
+# MODEL FILES (模型文件 - 可重新生成)
+# -------------------------------------------
+data/models/*
+!data/models/.gitkeep
+
+# -------------------------------------------
+# PLOTS AND VISUALIZATIONS (图表输出)
+# -------------------------------------------
+data/plots/
+!data/plots/.gitkeep
+
+# -------------------------------------------
+# LOG FILES (日志文件)
+# -------------------------------------------
+logs/
+*.log
+logs/*.log
+
+# -------------------------------------------
+# SYNC STATUS (数据同步状态)
+# -------------------------------------------
+data/sync_status/*
+!data/sync_status/.gitkeep
+
+# -------------------------------------------
+# CACHE (缓存文件)
+# -------------------------------------------
+data/cache/
+data/.cache/
+
+# -------------------------------------------
+# DOCUMENTATION BUILD (文档构建)
 # -------------------------------------------
 docs/_build/
 docs/build/
 
 # -------------------------------------------
-# Optional Local Overrides
+# OS FILES (系统文件)
 # -------------------------------------------
-# Local customizations that should not be committed
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# -------------------------------------------
+# LOCAL OVERRIDES (本地覆盖配置)
+# -------------------------------------------
 *.local
 *.override

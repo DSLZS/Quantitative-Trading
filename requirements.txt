@@ -25,6 +25,10 @@ pyyaml>=6.0,<7.0              # YAML configuration
 # Data Sources
 tushare>=1.2.89,<2.0.0        # A-share data provider
 baostock>=0.8.0,<1.0.0        # Alternative data source
+akshare>=1.12.0,<2.0.0        # Financial data provider (stock news, etc.)
+
+# HTTP Client
+httpx>=0.27.0,<1.0.0          # Async HTTP client for AI APIs
 
 # Logging & Utilities
 loguru>=0.7.0,<1.0.0          # Modern logging
