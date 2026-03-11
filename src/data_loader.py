@@ -527,19 +527,19 @@ class TushareLoader:
             pl.col("ts_code").alias("symbol")
         )
         
-        # 转换日期格式
+        # 转换日期格式 - 使用 trade_date 作为列名以匹配 main_df
         daily_basic_df = daily_basic_df.with_columns(
             pl.col("trade_date")
             .str.strptime(pl.Date, "%Y%m%d")
-            .alias("Date")
+            .alias("trade_date")  # 保持列名为 trade_date，与 main_df 一致
         )
         
-        # 合并数据（左连接）
+        # 合并数据（左连接）- 使用 trade_date 而不是 Date
         merged_df = main_df.join(
             daily_basic_df.select([
-                "symbol", "Date", "turnover_rate", "volume_ratio"
+                "symbol", "trade_date", "turnover_rate", "volume_ratio"
             ]),
-            on=["symbol", "Date"],
+            on=["symbol", "trade_date"],
             how="left",
         )
         
@@ -551,6 +551,52 @@ class TushareLoader:
         
         logger.debug(f"Merged daily_basic data: {len(merged_df)} rows")
         return merged_df
+    
+    def _filter_columns_for_db(
+        self,
+        df: pl.DataFrame,
+        table_name: str = "stock_daily",
+    ) -> pl.DataFrame:
+        """
+        过滤 DataFrame 列，只保留数据库中存在的字段。
+        
+        Args:
+            df: 原始 DataFrame
+            table_name: 数据库表名
+            
+        Returns:
+            pl.DataFrame: 过滤后的 DataFrame
+            
+        数据库表结构 (stock_daily):
+            - symbol, trade_date, open, high, low, close
+            - pre_close, change, pct_chg, volume, amount
+            - adj_factor, turnover_rate, vol_ratio
+        """
+        # 定义数据库表中存在的列
+        valid_columns = {
+            "stock_daily": [
+                "symbol", "trade_date",
+                "open", "high", "low", "close",
+                "pre_close", "change", "pct_chg",
+                "volume", "amount",
+                "adj_factor",
+                "turnover_rate", "vol_ratio",
+            ],
+        }
+        
+        if table_name not in valid_columns:
+            logger.warning(f"Unknown table {table_name}, using default columns")
+            return df
+        
+        valid_cols = valid_columns[table_name]
+        available_cols = [col for col in valid_cols if col in df.columns]
+        
+        # 记录被过滤掉的列
+        filtered_out = [col for col in df.columns if col not in valid_cols]
+        if filtered_out:
+            logger.debug(f"Filtered out columns: {filtered_out}")
+        
+        return df.select(available_cols)
     
     def sync_stock_data(
         self,
@@ -628,6 +674,9 @@ class TushareLoader:
         if transformed_df.is_empty():
             logger.warning(f"Transformed data is empty for {ts_code}")
             return 0
+        
+        # 过滤列，只保留数据库中存在的字段
+        transformed_df = self._filter_columns_for_db(transformed_df, table_name)
         
         # 写入数据库
         if use_upsert:

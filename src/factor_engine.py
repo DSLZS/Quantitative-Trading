@@ -115,7 +115,7 @@ class FactorEngine:
         logger.info("Validating factor configurations...")
         self.validation_errors = []
         
-        # 创建测试 DataFrame，包含所有基础字段
+        # 创建测试 DataFrame，包含所有基础字段和扩展字段
         test_df = pl.DataFrame({
             "open": [10.0, 10.5, 11.0],
             "high": [10.8, 11.2, 11.5],
@@ -131,10 +131,15 @@ class FactorEngine:
             "adj_open": [10.0, 10.5, 11.0],
             "adj_high": [10.8, 11.2, 11.5],
             "adj_low": [9.8, 10.2, 10.8],
+            # 扩展字段：turnover_rate (换手率)
+            "turnover_rate": [1.5, 2.0, 1.8],
         })
         
-        # 创建 eval 上下文
+        # 创建 eval 上下文，注入 pl (polars) 支持 return_dtype=pl.Float64 等用法
         context = {col: test_df[col] for col in test_df.columns}
+        context["pl"] = pl
+        # 注入 float 函数，支持 lambda x: float(x) 用法
+        context["float"] = float
         
         # 验证每个因子
         for factor in self.factors:
@@ -142,8 +147,9 @@ class FactorEngine:
             expression = factor.get("expression", "")
             
             try:
-                # 测试表达式执行
-                eval(expression, {"__builtins__": {}}, context)
+                # 测试表达式执行，注入 float 到 globals 以支持 lambda x: float(x) 用法
+                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min}}
+                eval(expression, eval_globals, context)
                 logger.debug(f"Factor '{factor_name}' expression is valid")
                 
             except NameError as e:
@@ -172,7 +178,8 @@ class FactorEngine:
             expression = self.label_config.get("expression", "")
             
             try:
-                eval(expression, {"__builtins__": {}}, context)
+                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min}}
+                eval(expression, eval_globals, context)
                 logger.debug(f"Label '{label_name}' expression is valid")
                 
             except NameError as e:
@@ -290,10 +297,15 @@ class FactorEngine:
                 # 为 eval() 创建上下文，将 DataFrame 列作为变量
                 # 这样表达式中可以直接使用 close, volume 等列名
                 context = {col: result[col] for col in result.columns}
+                # 注入 pl (polars) 到上下文中，支持 return_dtype=pl.Float64 等用法
+                context["pl"] = pl
+                # 注入 float 函数，支持 lambda x: float(x) 用法
+                context["float"] = float
                 
                 # 使用 eval() 执行因子表达式
-                # {"__builtins__": {}} 限制内置函数，提高安全性
-                factor_values = eval(expression, {"__builtins__": {}}, context)
+                # 注入 float 到 globals 以支持 lambda x: float(x) 用法
+                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min}}
+                factor_values = eval(expression, eval_globals, context)
                 
                 # 将因子值作为新列添加到 DataFrame
                 result = result.with_columns(

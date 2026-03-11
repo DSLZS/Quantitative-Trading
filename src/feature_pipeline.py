@@ -136,7 +136,7 @@ class FeaturePipeline:
                 raise ValueError(f"Missing required column: {col}")
         
         # 转换数值列为 Float64 (修复 MySQL decimal 类型不支持 rolling 操作的问题)
-        numeric_columns = ["open", "high", "low", "close", "volume", "amount", "adj_factor"]
+        numeric_columns = ["open", "high", "low", "close", "volume", "amount", "adj_factor", "turnover_rate", "pre_close", "change", "pct_chg", "vol_ratio"]
         for col in numeric_columns:
             if col in df.columns:
                 df = df.with_columns(

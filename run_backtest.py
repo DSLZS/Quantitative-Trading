@@ -98,8 +98,64 @@ def main() -> None:
         action="store_true",
         help="Skip generating plots",
     )
+    parser.add_argument(
+        "--min-hold-days",
+        type=int,
+        default=1,
+        help="Minimum holding days before selling (default: 1)",
+    )
+    parser.add_argument(
+        "--min-avg-return-to-enter",
+        type=float,
+        default=0.01,
+        help="Minimum average predicted return to open position (default: 1%)",
+    )
+    parser.add_argument(
+        "--min-prediction-diff",
+        type=float,
+        default=0.005,
+        help="Minimum prediction difference for turnover (default: 0.5%)",
+    )
+    parser.add_argument(
+        "--stop-loss",
+        type=float,
+        default=-0.02,
+        help="Stop loss threshold (default: -2%)",
+    )
+    parser.add_argument(
+        "--no-stop-loss",
+        action="store_true",
+        help="Disable stop loss",
+    )
+    parser.add_argument(
+        "--turnover-control",
+        action="store_true",
+        default=True,
+        help="Enable turnover control (default: True)",
+    )
+    parser.add_argument(
+        "--no-turnover-control",
+        action="store_true",
+        help="Disable turnover control",
+    )
+    parser.add_argument(
+        "--dynamic-position",
+        action="store_true",
+        default=False,
+        help="Use dynamic position sizing based on prediction scores",
+    )
+    parser.add_argument(
+        "--max-single-position",
+        type=float,
+        default=0.3,
+        help="Maximum single position weight (default: 0.3 = 30%)",
+    )
     
     args = parser.parse_args()
+    
+    # Handle turnover control flag
+    if args.no_turnover_control:
+        args.turnover_control = False
     
     # Check if input files exist
     parquet_path = Path(args.parquet)
@@ -119,6 +175,12 @@ def main() -> None:
     logger.info(f"Buy threshold: {args.threshold:.2%}")
     logger.info(f"Max positions: {args.max_positions}")
     logger.info(f"Position size: {args.position_size:.0%}")
+    logger.info(f"Min hold days: {args.min_hold_days}")
+    logger.info(f"Min avg return to enter: {args.min_avg_return_to_enter:.2%}")
+    logger.info(f"Min prediction diff: {args.min_prediction_diff:.2%}")
+    logger.info(f"Turnover control: {args.turnover_control}")
+    logger.info(f"Dynamic position: {args.dynamic_position}")
+    logger.info(f"Max single position: {args.max_single_position:.0%}")
     logger.info(f"Output directory: {args.output}")
     logger.info("=" * 60)
     
@@ -128,6 +190,14 @@ def main() -> None:
         prediction_threshold=args.threshold,
         max_positions=args.max_positions,
         position_size_pct=args.position_size,
+        min_hold_days=args.min_hold_days,
+        min_avg_return_to_enter=args.min_avg_return_to_enter,
+        min_prediction_diff=args.min_prediction_diff,
+        stop_loss_threshold=args.stop_loss,
+        enable_stop_loss=not args.no_stop_loss,
+        turnover_control=args.turnover_control,
+        use_dynamic_position=args.dynamic_position,
+        max_single_position=args.max_single_position,
     )
     
     # Run backtest
@@ -160,6 +230,15 @@ def main() -> None:
     logger.info(f"Final Value: ${metrics['final_value']:,.0f}")
     logger.info(f"Trading Days: {metrics['num_trading_days']}")
     logger.info(f"Total Trades: {metrics.get('num_trades', 0)}")
+    logger.info(f"Win Rate: {metrics.get('win_rate', 0):.2%}")
+    logger.info(f"Profit Factor: {metrics.get('profit_factor', 0):.2f}")
+    logger.info(f"Stop Loss Triggered: {metrics.get('stop_loss_count', 0)} times")
+    
+    # Cost analysis
+    if 'cost_analysis' in results:
+        cost_info = results['cost_analysis']
+        logger.info(f"Total Transaction Cost: ${cost_info['total_cost']:,.2f}")
+        logger.info(f"Cost Ratio: {cost_info['cost_ratio']*100:.3f}% of initial capital")
     
     # Generate visualizations
     if not args.no_plot:
@@ -221,7 +300,17 @@ def main() -> None:
         f.write(f"Initial Capital:   ${args.capital:,.0f}\n")
         f.write(f"Trading Days:      {metrics['num_trading_days']}\n")
         f.write(f"Total Trades:      {metrics.get('num_trades', 0)}\n")
+        f.write(f"Win Rate:          {metrics.get('win_rate', 0):.2%}\n")
+        f.write(f"Profit Factor:     {metrics.get('profit_factor', 0):.2f}\n")
+        f.write(f"Stop Loss Count:   {metrics.get('stop_loss_count', 0)}\n")
         f.write(f"Strategy Rating:   {rating}\n")
+        
+        # Add cost analysis if available
+        if 'cost_analysis' in results:
+            cost_info = results['cost_analysis']
+            f.write(f"\nTransaction Cost Analysis:\n")
+            f.write(f"  Total Cost:        ${cost_info['total_cost']:,.2f}\n")
+            f.write(f"  Cost Ratio:        {cost_info['cost_ratio']*100:.3f}%\n")
     
     logger.info(f"Metrics saved to: {metrics_file}")
 
