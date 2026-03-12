@@ -288,6 +288,15 @@ class FactorEngine:
         # 创建工作副本，避免修改原始数据
         result = df.clone()
         
+        # 预处理：将所有数值列转换为 Float64 类型，避免字符串运算错误
+        numeric_columns = ["open", "high", "low", "close", "volume", "amount", "turnover_rate", "pre_close", "change", "pct_chg"]
+        for col in numeric_columns:
+            if col in result.columns:
+                # 尝试转换为 Float64，非数值会被转换为 null
+                result = result.with_columns(
+                    pl.col(col).cast(pl.Float64, strict=False)
+                )
+        
         # 遍历所有因子配置
         for factor in self.factors:
             factor_name = factor["name"]  # 因子名称
@@ -316,7 +325,8 @@ class FactorEngine:
                 
             except Exception as e:
                 logger.error(f"Failed to compute factor {factor_name}: {e}")
-                raise
+                # 因子计算失败时跳过该因子，继续执行
+                continue
         
         return result
     

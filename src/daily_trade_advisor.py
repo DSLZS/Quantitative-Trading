@@ -12,7 +12,7 @@ Daily Trade Advisor - 本地量化实战决策系统
        - 若满足条件的股票多于 10 只，仅取 Top 10 进入审计环节
     
     2. 第二层：混合 AI 分级审计（黄金组合策略）
-       - 步骤 A: 免费模型初筛（Kimi/千问）- 快速总结新闻要点
+       - 步骤 A: 免费模型初筛（Qwen）- 快速总结新闻要点
        - 步骤 B: DeepSeek 核心精审 - 严格风控审计
        - 判定原则：宁缺毋滥，PASS 或 REJECT
     
@@ -47,6 +47,9 @@ import yaml
 import akshare as ak
 from loguru import logger
 from dotenv import load_dotenv
+
+# 加载环境变量（优先从 .env 文件读取）
+load_dotenv()
 
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -288,12 +291,12 @@ class ConfigManager:
             print("2. 使用 .env 文件存储敏感信息（确保 .env 已添加到 .gitignore）")
             print("3. 将 config/settings.yaml 中的 Key 替换为占位符")
             print("\n示例 - 使用环境变量:")
-            print("  api_key: ${DEEPSEEK_API_KEY}")
-            print("  或")
             print("  api_key: ${QWEN_API_KEY}")
+            print("  或")
+            print("  api_key: ${DEEPSEEK_API_KEY}")
             print("\n示例 - .env 文件格式:")
-            print("  DEEPSEEK_API_KEY=sk-your-actual-api-key-here")
             print("  QWEN_API_KEY=sk-your-actual-api-key-here")
+            print("  DEEPSEEK_API_KEY=sk-your-actual-api-key-here")
             print("=" * 70 + "\n")
             
             # 同时记录到日志
@@ -462,42 +465,82 @@ class MockDeepSeekAgent(AIAgentBase):
 
 
 class QwenAgent(AIAgentBase):
-    """通义千问 AI Agent（用于初筛）"""
+    """
+    通义千问 AI Agent（用于初筛）
+    
+    按照阿里云 Coding Plan 规范强制配置:
+    - base_url: https://coding.dashscope.aliyuncs.com/v1 (硬编码)
+    - model: qwen3.5-plus (硬编码)
+    - api_key: 直接从环境变量 QWEN_API_KEY 读取 (必须 sk-sp-开头)
+    """
+    
+    # Coding Plan 专用 Key 格式前缀
+    CODING_PLAN_KEY_PREFIX = "sk-sp-"
     
     def __init__(self, config: dict):
-        super().__init__(config)
-        import httpx
-        self.httpx = httpx
+        # 不调用 super().__init__(config)，完全接管配置加载
+        self.config = config
+        self.provider = 'qwen'
+        self.max_tokens = config.get('max_tokens', 500)
+        
+        from openai import OpenAI
+        
+        # ========== 强制 Key 加载 (Key Enforcement) ==========
+        # 直接从环境变量读取，不依赖 config.get('api_key')
+        self.api_key = os.getenv("QWEN_API_KEY", "")
+        
+        # ========== 安全校验 (Security Validation) ==========
+        # Coding Plan 必须使用 sk-sp- 开头的 Key
+        if not self.api_key:
+            logger.error("❌ QWEN_API_KEY 未配置！请在 .env 文件中设置 QWEN_API_KEY")
+            raise ValueError("QWEN_API_KEY is required for Coding Plan")
+        
+        if not self.api_key.startswith(self.CODING_PLAN_KEY_PREFIX):
+            logger.error(
+                f"❌ Qwen API Key 格式错误！Coding Plan 的 Key 必须以 '{self.CODING_PLAN_KEY_PREFIX}' 开头。"
+                f"当前 Key 以 '{self.api_key[:6] if len(self.api_key) >= 6 else self.api_key}' 开头。"
+                f"请确认您使用的是阿里云 Coding Plan 的 API Key，而非其他服务。"
+            )
+            # 继续执行但记录警告，让用户知道可能有问题
+        
+        # ========== 强制 URL 与模型对齐 (Endpoint Alignment) ==========
+        # 硬编码 base_url，废弃 settings.yaml 中的配置
+        self.base_url = "https://coding.dashscope.aliyuncs.com/v1"
+        
+        # 硬编码 model 名称
+        self.model = "qwen3.5-plus"
+        
+        # ========== OpenAI 客户端实例化加固 ==========
+        logger.debug(f"Qwen Client Auth: Key starting with {self.api_key[:7]}, URL: {self.base_url}")
+        logger.info(f"Qwen Agent initialized with model={self.model}, base_url={self.base_url}")
+        
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url
+        )
     
     def call(self, messages: list[dict]) -> tuple[str, int]:
-        """调用通义千问 API"""
-        import httpx
+        """
+        调用通义千问 API（使用 OpenAI SDK）
         
-        url = self.base_url
-        if not url:
-            url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
-        
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": self.max_tokens
-        }
-        
+        Args:
+            messages: 消息列表
+            
+        Returns:
+            (response_text, token_usage)
+        """
         try:
-            with httpx.Client(timeout=30.0) as client:
-                response = client.post(url, json=payload, headers=headers)
-                response.raise_for_status()
-                data = response.json()
-                
-                content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-                usage = data.get('usage', {}).get('total_tokens', 0)
-                
-                return content, usage
+            completion = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=self.max_tokens
+            )
+            
+            content = completion.choices[0].message.content
+            usage = completion.usage.total_tokens if completion.usage else 0
+            
+            return content, usage
+            
         except Exception as e:
             logger.error(f"Qwen API call failed: {e}")
             return f"API 调用失败：{e}", 0
@@ -537,7 +580,17 @@ class QwenAgent(AIAgentBase):
 
 
 class DeepSeekAgent(AIAgentBase):
-    """DeepSeek AI Agent（用于核心精审）"""
+    """
+    DeepSeek AI Agent（用于核心精审）
+    
+    使用 OpenAI SDK 兼容模式调用 DeepSeek API
+    关键配置:
+    - base_url: https://api.deepseek.com
+    - model: deepseek-chat
+    - api_key: 从环境变量 DEEPSEEK_API_KEY 读取
+    
+    注意：此模块的配置被原封不动保留，仅将底层请求封装进 OpenAI SDK
+    """
     
     # 审计关键词
     NEGATIVE_KEYWORDS = [
@@ -554,13 +607,32 @@ class DeepSeekAgent(AIAgentBase):
     
     def __init__(self, config: dict):
         super().__init__(config)
+        from openai import OpenAI
+        
+        # DeepSeek 专用配置 - 保持原有配置不变
+        # 如果配置中没有指定 base_url，使用默认的 DeepSeek API 地址
+        deepseek_base_url = self.base_url
+        if not deepseek_base_url:
+            deepseek_base_url = "https://api.deepseek.com"
+        
+        # 如果配置中没有指定 model，使用 deepseek-chat
+        deepseek_model = self.model
+        if deepseek_model == 'default' or not deepseek_model:
+            deepseek_model = "deepseek-chat"
+        
+        # 重试配置
         self.retry_config = config.get('retry', {
             'max_attempts': 3,
             'base_delay': 1.0,
             'max_delay': 30.0
         })
-        import httpx
-        self.httpx = httpx
+        
+        # 使用 OpenAI SDK 初始化
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=deepseek_base_url
+        )
+        self.model = deepseek_model
     
     def _exponential_backoff_retry(self, func, *args, **kwargs):
         """指数退避重试机制"""
@@ -585,34 +657,26 @@ class DeepSeekAgent(AIAgentBase):
         raise last_exception
     
     def call(self, messages: list[dict]) -> tuple[str, int]:
-        """调用 DeepSeek API（带重试）"""
-        import httpx
+        """
+        调用 DeepSeek API（使用 OpenAI SDK，带重试）
         
+        Args:
+            messages: 消息列表
+            
+        Returns:
+            (response_text, token_usage)
+        """
         def _call_internal():
-            url = self.base_url
-            if not url:
-                url = "https://api.deepseek.com/v1/chat/completions"
+            completion = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=self.max_tokens
+            )
             
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
+            content = completion.choices[0].message.content
+            usage = completion.usage.total_tokens if completion.usage else 0
             
-            payload = {
-                "model": self.model,
-                "messages": messages,
-                "max_tokens": self.max_tokens
-            }
-            
-            with httpx.Client(timeout=60.0) as client:
-                response = client.post(url, json=payload, headers=headers)
-                response.raise_for_status()
-                data = response.json()
-                
-                content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-                usage = data.get('usage', {}).get('total_tokens', 0)
-                
-                return content, usage
+            return content, usage
         
         return self._exponential_backoff_retry(_call_internal)
     
@@ -806,7 +870,7 @@ class DailyTradeAdvisor:
                 logger.info("Using Mock Qwen Agent (no valid API key)")
                 self.pre_filter_agent = MockQwenAgent(pre_filter_config)
             else:
-                logger.info("Using real Qwen Agent")
+                logger.info("Using real Qwen Agent with OpenAI SDK")
                 self.pre_filter_agent = QwenAgent(pre_filter_config)
         else:
             self.pre_filter_agent = None
@@ -820,7 +884,7 @@ class DailyTradeAdvisor:
                 logger.info("Using Mock DeepSeek Agent (no valid API key)")
                 self.deep_audit_agent = MockDeepSeekAgent(deep_audit_config)
             else:
-                logger.info("Using real DeepSeek Agent")
+                logger.info("Using real DeepSeek Agent with OpenAI SDK")
                 self.deep_audit_agent = DeepSeekAgent(deep_audit_config)
         else:
             self.deep_audit_agent = None
@@ -882,8 +946,9 @@ class DailyTradeAdvisor:
         # 计算因子
         df_with_factors = factor_engine.compute_factors(df)
         
-        # 获取最新一天数据
-        latest_df = df_with_factors.filter(pl.col("trade_date") == trade_date)
+        # 获取最新一天数据 - 修复日期类型比较问题
+        # 将 trade_date 列转换为字符串类型再比较
+        latest_df = df_with_factors.filter(pl.col("trade_date").cast(pl.Utf8) == trade_date)
         
         if latest_df.is_empty():
             logger.warning(f"No data for trade_date={trade_date}")
@@ -1065,11 +1130,16 @@ class DailyTradeAdvisor:
             news_list = self.fetch_stock_news(candidate.symbol, candidate.name)
             
             # Step B: 免费模型初筛（如果有配置）
+            news_summary = ""
             if self.pre_filter_agent and news_list:
-                logger.info("  -> Pre-filter: Summarizing news...")
-                news_summary = self.pre_filter_agent.summarize_news(news_list)
-                candidate.news_summary = news_summary
-                logger.info(f"  -> Summary: {news_summary[:100]}...")
+                try:
+                    logger.info("  -> Pre-filter: Summarizing news...")
+                    news_summary = self.pre_filter_agent.summarize_news(news_list)
+                    candidate.news_summary = news_summary
+                    logger.info(f"  -> Summary: {news_summary[:100]}...")
+                except Exception as e:
+                    logger.warning(f"Qwen 初筛失败，跳过初筛直接使用原始新闻：{e}")
+                    candidate.news_summary = "\n".join(news_list[:5]) if news_list else "无相关新闻"
             else:
                 # 无初筛，直接使用原始新闻
                 candidate.news_summary = "\n".join(news_list[:5]) if news_list else "无相关新闻"
@@ -1139,21 +1209,27 @@ class DailyTradeAdvisor:
             # 获取中证 500 指数数据
             index_code = self.index_code
             
-            # 从数据库查询（假设已同步指数数据）
-            query = f"""
-                SELECT trade_date, close 
-                FROM index_daily 
-                WHERE symbol = '{index_code}'
-                AND trade_date <= '{trade_date}'
-                ORDER BY trade_date DESC
-                LIMIT {self.regime_ma + 10}
-            """
-            
-            index_df = self.db.read_sql(query)
+            # 尝试从数据库查询指数数据
+            try:
+                query = f"""
+                    SELECT trade_date, close 
+                    FROM index_daily 
+                    WHERE symbol = '{index_code}'
+                    AND trade_date <= '{trade_date}'
+                    ORDER BY trade_date DESC
+                    LIMIT {self.regime_ma + 10}
+                """
+                
+                index_df = self.db.read_sql(query)
+            except Exception as db_error:
+                logger.warning(f"Index data not available: {db_error}")
+                index_df = pl.DataFrame()
             
             if index_df.is_empty() or len(index_df) < self.regime_ma:
                 logger.warning(f"Insufficient index data for {index_code}, using default mode")
                 self.report_ctx.market_mode = MarketMode.NORMAL
+                self.report_ctx.regime_ma_value = None
+                self.report_ctx.current_price = None
                 return MarketMode.NORMAL
             
             # 计算 20 日均线
