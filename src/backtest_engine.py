@@ -1,5 +1,5 @@
 """
-Backtest Engine - 简易回测引擎，模拟 DailyTradeAdvisor 执行逻辑。
+Backtest Engine - 多因子模型回测引擎，适配 FactorEngine 新架构。
 
 功能:
     - 模拟过去 N 个交易日按 DailyTradeAdvisor 逻辑执行
@@ -7,14 +7,16 @@ Backtest Engine - 简易回测引擎，模拟 DailyTradeAdvisor 执行逻辑。
     - 计算策略收益率、最大回撤
     - 对比"策略收益" vs "沪深 300 收益"
     - 输出 Markdown 表格报告
+    - 【新增】直接使用 FactorEngine 的 predict_score（Z-Score 标准化值）
+    - 【新增】多级排序规则：predict_score + sharpe_label
+    - 【新增】防御模式动态阈值调整
+    - 【新增】完善卖出风控（负分触发卖出）
 
 使用示例:
-    >>> python src/backtest_engine.py --days 30
-    # 模拟过去 30 个交易日的回测
+    >>> python src/backtest_engine.py --days 30 --threshold 0.0
 """
 
 import sys
-import json
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Any, Optional
@@ -35,42 +37,49 @@ except ImportError:
     from factor_engine import FactorEngine
 
 
+# ===========================================
+# 可配置参数 - 多因子模型阈值
+# ===========================================
+# Z-Score 阈值：0.0 表示强于平均水平
+# predict_score 是 Z-Score 标准化后的值，均值为 0，标准差为 1
+SCORE_THRESHOLD = 0.0  # 默认准入阈值（强于平均）
+DEFENSIVE_THRESHOLD_ADDON = 0.5  # 防御模式额外阈值（+0.5 个标准差）
+
+MIN_HOLD_DAYS = 2  # 最小持有天数（防止频繁换手）
+DEFENSIVE_STOP_LOSS = -0.05  # 防御模式下止损线（-5%）
+
+
 @dataclass
 class BacktestConfig:
     """回测配置"""
-    lookback_days: int = 30          # 回测天数
-    initial_capital: float = 50000.0  # 初始资金 5 万元
-    max_positions: int = 3           # 最大持仓数
-    min_prob: float = 0.70           # 最小预测概率
-    commission_rate: float = 0.0003  # 佣金率
-    commission_min: float = 5.0      # 最低佣金
-    stamp_duty_rate: float = 0.001   # 印花税率
-    use_mock_ai: bool = True         # 使用 Mock AI（避免 API 调用）
-    test_mode: bool = True           # 测试模式（固定 2 只股票）
+    lookback_days: int = 30
+    initial_capital: float = 50000.0
+    max_positions: int = 3
+    min_score: float = SCORE_THRESHOLD  # 最小预测分值阈值（Z-Score）
+    commission_rate: float = 0.0003
+    commission_min: float = 5.0
+    stamp_duty_rate: float = 0.001
+    use_mock_ai: bool = True
+    test_mode: bool = True
+    verbose: bool = True
 
 
 @dataclass
 class DailyRecord:
     """每日交易记录"""
     trade_date: str
-    market_mode: str                 # NORMAL / DEFENSIVE
-    index_close: float               # 中证 500 收盘价
-    index_ma20: float                # 中证 500 20 日均线
-    
-    # 持仓信息
+    market_mode: str
+    index_close: float
+    index_ma20: float
     holdings: list[dict] = field(default_factory=list)
     holding_symbols: list[str] = field(default_factory=list)
-    
-    # 交易信息
     bought_symbols: list[str] = field(default_factory=list)
     sold_symbols: list[str] = field(default_factory=list)
-    
-    # 资金信息
     cash: float = 0.0
     portfolio_value: float = 0.0
     daily_return: float = 0.0
-    
-    # 统计
+    daily_pnl: float = 0.0
+    top_10_scores: list[dict] = field(default_factory=list)
     api_tokens: int = 0
     notes: str = ""
 
@@ -78,84 +87,82 @@ class DailyRecord:
 @dataclass
 class BacktestResult:
     """回测结果"""
-    # 配置信息
     config: BacktestConfig
     start_date: str
     end_date: str
     total_days: int
-    
-    # 绩效指标
-    total_return: float              # 总收益率
-    annualized_return: float         # 年化收益率
-    max_drawdown: float              # 最大回撤
-    sharpe_ratio: float              # 夏普比率
-    win_rate: float                  # 胜率
-    avg_daily_return: float          # 日均收益
-    
-    # 资金曲线
+    total_return: float
+    annualized_return: float
+    max_drawdown: float
+    sharpe_ratio: float
+    win_rate: float
+    avg_daily_return: float
     daily_records: list[DailyRecord]
-    
-    # 对比基准
-    benchmark_return: float          # 沪深 300 同期收益
-    
-    # 交易统计
+    benchmark_return: float
     total_trades: int
     total_commission: float
     total_stamp_duty: float
 
 
+def format_pct_change(pct: float) -> str:
+    """
+    格式化百分比变化，确保显示在合理范围。
+    
+    Args:
+        pct: 原始百分比（如 0.05 表示 5%）
+        
+    Returns:
+        格式化后的字符串（如 "5.00%"）
+    """
+    # 截断到合理范围 [-50%, +50%]
+    clipped = max(-0.50, min(0.50, pct))
+    
+    # 对于异常值，添加标记
+    if pct > 0.50:
+        return f">{50:.2f}%"
+    elif pct < -0.50:
+        return f"<{-50:.2f}%"
+    else:
+        return f"{clipped * 100:.2f}%"
+
+
 class BacktestEngine:
     """
-    回测引擎 - 模拟 DailyTradeAdvisor 执行逻辑
+    回测引擎 - 适配多因子模型架构。
     
-    核心流程:
-        1. 获取历史交易日列表
-        2. 逐日模拟 Advisor 决策
-        3. 记录持仓和资金变化
-        4. 计算绩效指标
+    核心变更:
+        1. 删除概率映射函数：直接使用 predict_score（Z-Score 标准化值）
+        2. 多级排序规则：predict_score（主）+ sharpe_label（次）
+        3. 动态阈值调整：防御模式自动提高阈值 +0.5
+        4. 完善卖出风控：predict_score 降至负数触发卖出
     """
     
     def __init__(self, config: BacktestConfig = None):
-        """
-        初始化回测引擎
-        
-        Args:
-            config: 回测配置
-        """
         self.config = config or BacktestConfig()
         self.db = DatabaseManager.get_instance()
-        
-        # 资金状态
+        self.factor_engine: Optional[FactorEngine] = None
         self.cash = self.config.initial_capital
         self.portfolio_value = self.config.initial_capital
-        
-        # 持仓状态
-        self.holdings: dict[str, dict] = {}  # symbol -> {shares, buy_price, buy_date}
-        
-        # 交易记录
+        self.holdings: dict[str, dict] = {}
         self.daily_records: list[DailyRecord] = []
-        
-        # 统计
         self.total_commission = 0.0
         self.total_stamp_duty = 0.0
         self.total_trades = 0
         
+        # 初始化 FactorEngine
+        try:
+            self.factor_engine = FactorEngine("config/factors.yaml", validate=False)
+            logger.info("FactorEngine initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize FactorEngine: {e}")
+        
         logger.info(f"BacktestEngine initialized: days={self.config.lookback_days}, "
-                   f"capital={self.config.initial_capital}")
+                   f"capital={self.config.initial_capital}, "
+                   f"score_threshold={self.config.min_score:.2f}")
     
     def get_trade_dates(self, end_date: str = None, days: int = 60) -> list[str]:
-        """
-        获取历史交易日列表
-        
-        Args:
-            end_date: 结束日期
-            days: 获取天数（多获取一些用于计算 MA20）
-            
-        Returns:
-            交易日列表（按时间正序）
-        """
+        """获取历史交易日列表"""
         if end_date is None:
-            # 获取数据库中最新日期
             query = "SELECT MAX(trade_date) as max_date FROM stock_daily"
             result = self.db.read_sql(query)
             if result.is_empty():
@@ -163,7 +170,6 @@ class BacktestEngine:
                 return []
             end_date = str(result["max_date"][0])
         
-        # 获取交易日列表（多获取用于计算因子）
         query = f"""
             SELECT DISTINCT trade_date 
             FROM stock_daily 
@@ -178,23 +184,221 @@ class BacktestEngine:
             return []
         
         dates = [str(d) for d in result["trade_date"].to_list()]
-        dates.sort()  # 正序排列
+        dates.sort()
         
         logger.info(f"Got {len(dates)} trade dates from {dates[0]} to {dates[-1]}")
         return dates
     
-    def simulate_daily_decision(self, trade_date: str) -> DailyRecord:
+    def get_top_10_predictions(self, trade_date: str, lookback_days: int = 20) -> list[dict]:
         """
-        模拟单日的 DailyTradeAdvisor 决策
+        获取当日所有股票的预测排名（前 10 名）用于诊断输出。
         
-        注意：这里简化了 Advisor 逻辑，直接基于数据库数据模拟
-        而不是完整运行 Advisor（避免 AI API 调用和模型推理）
+        【核心变更】
+        1. 使用 FactorEngine 计算 predict_score 和 sharpe_label
+        2. 多级排序：predict_score（降序）+ sharpe_label（降序）
+        3. 不再使用概率映射，直接使用原始 Z-Score 分值
+        """
+        try:
+            start_date = (datetime.strptime(trade_date, '%Y-%m-%d') - timedelta(days=lookback_days)).strftime('%Y-%m-%d')
+            
+            # 获取股票数据
+            query = f"""
+                SELECT 
+                    s1.symbol,
+                    s1.trade_date,
+                    s1.open,
+                    s1.high,
+                    s1.low,
+                    s1.close,
+                    s1.volume,
+                    s1.pct_chg,
+                    s1.pre_close
+                FROM stock_daily s1
+                WHERE s1.trade_date = '{trade_date}'
+                AND s1.volume > 0
+                AND s1.close > 0
+            """
+            
+            df = self.db.read_sql(query)
+            
+            if df.is_empty():
+                logger.warning(f"No stock data found for {trade_date}")
+                return []
+            
+            logger.debug(f"Got {len(df)} stocks for prediction scoring")
+            
+            # 使用 FactorEngine 计算因子和评分
+            if self.factor_engine:
+                try:
+                    # 按 symbol 分组，为每只股票计算因子
+                    # 需要获取每只股票的历史数据来计算因子
+                    results = []
+                    
+                    for symbol in df["symbol"].unique().limit(100).to_list():  # 限制处理数量
+                        symbol_df = df.filter(pl.col("symbol") == symbol)
+                        
+                        # 获取该股票的历史数据用于因子计算
+                        history_query = f"""
+                            SELECT symbol, trade_date, open, high, low, close, volume, pct_chg, pre_close
+                            FROM stock_daily
+                            WHERE symbol = '{symbol}'
+                            AND trade_date <= '{trade_date}'
+                            ORDER BY trade_date DESC
+                            LIMIT 60
+                        """
+                        history_df = self.db.read_sql(history_query)
+                        
+                        if len(history_df) < 30:
+                            continue
+                        
+                        # 反转数据为时间正序
+                        history_df = history_df.sort("trade_date")
+                        
+                        # 计算因子和评分
+                        result_df = self.factor_engine.compute_factors(history_df)
+                        
+                        # 获取最新一行的评分
+                        latest_row = result_df.tail(1)
+                        
+                        if latest_row.is_empty():
+                            continue
+                        
+                        # 安全获取字段值，处理可能的缺失
+                        predict_score = self._safe_get_value(latest_row, "predict_score", 0.0)
+                        sharpe_label = self._safe_get_value(latest_row, "sharpe_label", 0.0)
+                        rsi_14 = self._safe_get_value(latest_row, "rsi_14", 50.0)
+                        volume_price_health = self._safe_get_value(latest_row, "volume_price_health", 0.0)
+                        close = self._safe_get_value(latest_row, "close", 0.0)
+                        pct_chg = self._safe_get_value(latest_row, "pct_chg", 0.0)
+                        
+                        results.append({
+                            "symbol": symbol,
+                            "close": close,
+                            "pct_chg": pct_chg,
+                            "predict_score": predict_score,
+                            "sharpe_label": sharpe_label,
+                            "rsi_14": rsi_14,
+                            "volume_price_health": volume_price_health,
+                        })
+                    
+                    # 多级排序：predict_score（主）+ sharpe_label（次）
+                    results.sort(key=lambda x: (x["predict_score"], x["sharpe_label"]), reverse=True)
+                    
+                    # 取前 10 名
+                    top_10 = results[:10]
+                    
+                    # 添加是否达到阈值的标记
+                    current_threshold = self._get_current_threshold(trade_date)
+                    for item in top_10:
+                        item["meets_threshold"] = item["predict_score"] >= current_threshold
+                    
+                    return top_10
+                    
+                except Exception as e:
+                    logger.error(f"Failed to compute factors: {e}")
+                    return self._fallback_scoring(df, lookback_days)
+            else:
+                return self._fallback_scoring(df, lookback_days)
+            
+        except Exception as e:
+            logger.error(f"Failed to get predictions: {e}")
+            return []
+    
+    def _safe_get_value(self, df: pl.DataFrame, column: str, default: float = 0.0) -> float:
+        """安全获取 DataFrame 列值，处理缺失列和 null 值"""
+        try:
+            if column in df.columns:
+                val = df[column][0]
+                if val is None:
+                    return default
+                return float(val)
+            return default
+        except (IndexError, TypeError, ValueError):
+            return default
+    
+    def _fallback_scoring(self, df: pl.DataFrame, lookback_days: int) -> list[dict]:
+        """
+        降级评分逻辑（当 FactorEngine 不可用时使用）。
+        
+        使用简单的动量 + 成交量评分。
+        """
+        df = df.with_columns([
+            pl.col("close").cast(pl.Float64, strict=False),
+            pl.col("pct_chg").cast(pl.Float64, strict=False),
+            pl.col("volume").cast(pl.Float64, strict=False),
+        ])
+        
+        # 简单评分：当日涨跌幅 + 成交量因子
+        df = df.with_columns(
+            (pl.col("pct_chg").fill_null(0.0) * 0.7 + 
+             pl.col("volume").fill_null(0.0).rank() / len(df) * 0.3).alias("predict_score")
+        )
+        
+        df = df.sort("predict_score", descending=True).head(10)
+        
+        results = []
+        current_threshold = self._get_current_threshold("")
+        
+        for row in df.iter_rows(named=True):
+            results.append({
+                "symbol": row["symbol"],
+                "close": float(row["close"]) if row["close"] else 0.0,
+                "pct_chg": float(row["pct_chg"]) if row["pct_chg"] else 0.0,
+                "predict_score": float(row["predict_score"]) if row["predict_score"] else 0.0,
+                "sharpe_label": 0.0,
+                "rsi_14": 50.0,
+                "volume_price_health": 0.0,
+                "meets_threshold": float(row["predict_score"]) >= current_threshold
+            })
+        
+        return results
+    
+    def _get_current_threshold(self, trade_date: str) -> float:
+        """
+        获取当前准入阈值。
+        
+        逻辑:
+        - 正常模式：使用基础阈值（默认 0.0）
+        - 防御模式：基础阈值 + 0.5（更严格筛选）
         
         Args:
-            trade_date: 交易日
+            trade_date: 交易日期（用于获取大盘状态）
             
         Returns:
-            DailyRecord: 当日交易记录
+            当前适用的阈值
+        """
+        base_threshold = self.config.min_score
+        
+        # 检查市场状态
+        market_mode = self._get_market_mode(trade_date)
+        
+        if market_mode == "DEFENSIVE":
+            # 防御模式：提高阈值
+            current_threshold = base_threshold + DEFENSIVE_THRESHOLD_ADDON
+            logger.info(f"[THRESHOLD] Defensive mode: threshold raised from {base_threshold:.2f} to {current_threshold:.2f}")
+        else:
+            current_threshold = base_threshold
+        
+        return current_threshold
+    
+    def _get_market_mode(self, trade_date: str) -> str:
+        """获取市场状态（NORMAL / DEFENSIVE）"""
+        index_data = self._get_index_data(trade_date)
+        if index_data:
+            close = index_data.get("close", 0)
+            ma20 = index_data.get("ma20", 0)
+            if close < ma20:
+                return "DEFENSIVE"
+        return "NORMAL"
+    
+    def simulate_daily_decision(self, trade_date: str, prev_date: str = None) -> DailyRecord:
+        """
+        模拟单日的 DailyTradeAdvisor 决策。
+        
+        【核心变更】
+        1. 防御模式动态阈值：自动提高 +0.5
+        2. 卖出风控增强：predict_score 降至负数也触发卖出
+        3. 日志格式更新：显示 Score/Sharpe/RSI
         """
         record = DailyRecord(
             trade_date=trade_date,
@@ -206,100 +410,183 @@ class BacktestEngine:
         )
         
         try:
-            # ========== Step 1: 获取大盘状态（中证 500） ==========
+            # Step 1: 获取大盘状态
             index_data = self._get_index_data(trade_date)
             if index_data:
                 record.index_close = float(index_data["close"])
                 record.index_ma20 = float(index_data["ma20"]) if index_data.get("ma20") else 0.0
                 
-                # 大盘择时判断
                 if record.index_close < record.index_ma20:
                     record.market_mode = "DEFENSIVE"
                     record.notes = "大盘低于均线，防守模式"
                 else:
                     record.market_mode = "NORMAL"
             
-            # ========== Step 2: 获取持仓股票当日价格 ==========
-            holding_values = {}
+            # 获取当前阈值（考虑防御模式调整）
+            current_threshold = self._get_current_threshold(trade_date)
+            
+            # Step 2: 获取预测分值
+            if self.config.verbose:
+                record.top_10_scores = self.get_top_10_predictions(trade_date)
+                
+                logger.info(f"[PREDICT] Top 10 scores (threshold={current_threshold:.2f}):")
+                for i, score in enumerate(record.top_10_scores, 1):
+                    status = "OK" if score["meets_threshold"] else "NO"
+                    # 新日志格式：Score | Sharpe | RSI
+                    rsi_status = "OVERBOUGHT" if score.get("rsi_14", 50) > 80 else "OK"
+                    logger.info(
+                        f"  #{i} {score['symbol']}: Score: {score['predict_score']:+.2f} | "
+                        f"Sharpe: {score.get('sharpe_label', 0):.2f} | "
+                        f"RSI: {score.get('rsi_14', 50):.0f} [{rsi_status}] [{status}]"
+                    )
+                
+                meets_count = sum(1 for s in record.top_10_scores if s["meets_threshold"])
+                logger.info(f"  Meets threshold: {meets_count}/10 stocks")
+            
+            # Step 3: 处理持仓卖出
+            to_sell = []
+            
             for symbol, pos in list(self.holdings.items()):
                 price_data = self._get_stock_price(symbol, trade_date)
                 if price_data:
                     current_price = float(price_data["close"])
-                    holding_values[symbol] = current_price * pos["shares"]
+                    buy_price = pos.get("buy_price", current_price)
+                    buy_date = pos.get("buy_date", "")
                     
-                    # 检查是否应该卖出（预测概率低于阈值或防守模式）
+                    # 计算持有天数
+                    hold_days = 1
+                    if buy_date and prev_date:
+                        try:
+                            buy_dt = datetime.strptime(buy_date, '%Y-%m-%d')
+                            curr_dt = datetime.strptime(trade_date, '%Y-%m-%d')
+                            hold_days = (curr_dt - buy_dt).days
+                        except ValueError:
+                            hold_days = 1
+                    
+                    # 计算当前盈亏比例
+                    pnl_pct = (current_price - buy_price) / buy_price if buy_price > 0 else 0
+                    
                     should_sell = False
+                    sell_reason = ""
                     
-                    # 防守模式：清空所有持仓
-                    if record.market_mode == "DEFENSIVE":
-                        should_sell = True
-                        record.notes += " 防守模式清仓;"
+                    # 检查是否达到最小持有天数
+                    if hold_days < MIN_HOLD_DAYS:
+                        logger.debug(f"  [HOLD] {symbol}: only held {hold_days} days (min={MIN_HOLD_DAYS})")
+                        continue
                     
-                    # 执行卖出
-                    if should_sell and symbol in self.holdings:
-                        sell_value = current_price * pos["shares"]
-                        
-                        # 计算交易成本
-                        commission = max(sell_value * self.config.commission_rate, self.config.commission_min)
-                        stamp_duty = sell_value * self.config.stamp_duty_rate
-                        
-                        self.cash += sell_value - commission - stamp_duty
-                        self.total_commission += commission
-                        self.total_stamp_duty += stamp_duty
-                        self.total_trades += 1
-                        
-                        record.sold_symbols.append(symbol)
-                        del self.holdings[symbol]
-                        logger.debug(f"  Sold {symbol} @ {current_price:.2f}")
-            
-            # ========== Step 3: 选股逻辑（简化版） ==========
-            # 在真实 Advisor 中，这里会运行模型预测和 AI 审计
-            # 回测中我们简化为：选取当日涨幅前 N 的股票（后视偏差，仅用于演示）
-            
-            if record.market_mode == "NORMAL" and len(self.holdings) < self.config.max_positions:
-                # 获取当日所有股票数据
-                query = f"""
-                    SELECT symbol, close, pct_chg, volume
-                    FROM stock_daily
-                    WHERE trade_date = '{trade_date}'
-                    AND pct_chg IS NOT NULL
-                    AND volume > 0
-                    ORDER BY pct_chg DESC
-                    LIMIT 10
-                """
-                candidates = self.db.read_sql(query)
-                
-                if not candidates.is_empty():
-                    # 计算可分配资金
-                    positions_left = self.config.max_positions - len(self.holdings)
-                    budget_per_stock = self.cash / positions_left * 0.95  # 留 5% 现金
-                    
-                    for row in candidates.iter_rows():
-                        if len(self.holdings) >= self.config.max_positions:
+                    # 获取该股票的当前评分
+                    stock_score = 0.0
+                    for s in record.top_10_scores:
+                        if s["symbol"] == symbol:
+                            stock_score = s["predict_score"]
                             break
+                    
+                    if record.market_mode == "DEFENSIVE":
+                        # 【增强】防御模式下的卖出逻辑
+                        # 1. 预测概率低于阈值
+                        # 2. 达到止损线
+                        # 3. 【新增】predict_score 降至负数（弱于平均）
                         
-                        symbol = row[0]
-                        close = float(row[1])
+                        # 条件 1: 预测分值低于阈值
+                        if stock_score < current_threshold:
+                            should_sell = True
+                            sell_reason = f"low score ({stock_score:+.2f} < {current_threshold:.2f})"
                         
-                        # 跳过已持仓股票
-                        if symbol in self.holdings:
-                            continue
+                        # 条件 2: 达到止损线
+                        if pnl_pct <= DEFENSIVE_STOP_LOSS:
+                            should_sell = True
+                            sell_reason = f"stop loss ({pnl_pct:.1%} <= {DEFENSIVE_STOP_LOSS:.1%})"
                         
-                        # 计算买入股数（100 股整数倍）
-                        raw_shares = int(budget_per_stock / close)
-                        shares = (raw_shares // 100) * 100
+                        # 条件 3: 【新增】predict_score 降至负数
+                        if stock_score < 0 and not should_sell:
+                            should_sell = True
+                            sell_reason = f"negative score ({stock_score:+.2f})"
                         
-                        if shares >= 100:
+                        if should_sell:
+                            logger.info(f"  [DEFENSIVE SELL] {symbol}: {sell_reason}")
+                    else:
+                        # 【增强】正常模式下的卖出逻辑
+                        # 如果 predict_score 降至负数，也触发卖出
+                        if stock_score < 0:
+                            should_sell = True
+                            sell_reason = f"negative score ({stock_score:+.2f})"
+                        
+                        if should_sell:
+                            logger.info(f"  [SELL] {symbol}: {sell_reason}")
+                    
+                    if should_sell:
+                        to_sell.append((symbol, pos, current_price))
+            
+            # 执行卖出
+            for symbol, pos, current_price in to_sell:
+                sell_value = current_price * pos["shares"]
+                commission = max(sell_value * self.config.commission_rate, self.config.commission_min)
+                stamp_duty = sell_value * self.config.stamp_duty_rate
+                
+                self.cash += sell_value - commission - stamp_duty
+                self.total_commission += commission
+                self.total_stamp_duty += stamp_duty
+                self.total_trades += 1
+                
+                record.sold_symbols.append(symbol)
+                del self.holdings[symbol]
+                logger.info(f"  [SOLD] {symbol} @ {current_price:.2f} x {pos['shares']} = ¥{sell_value:.2f}")
+            
+            # Step 4: 选股买入逻辑
+            # 防御模式下不买入新股
+            if record.market_mode == "DEFENSIVE":
+                logger.info("  [DEFENSIVE] No new buys allowed")
+            elif len(self.holdings) < self.config.max_positions:
+                if record.top_10_scores:
+                    # 使用当前阈值筛选
+                    qualified_stocks = [s for s in record.top_10_scores if s["meets_threshold"]]
+                    
+                    logger.info(f"  [SCAN] Qualified stocks: {len(qualified_stocks)} (threshold={current_threshold:.2f})")
+                    
+                    if qualified_stocks:
+                        positions_left = self.config.max_positions - len(self.holdings)
+                        budget_per_stock = self.cash / positions_left * 0.95
+                        
+                        logger.info(f"  [BUDGET] ¥{budget_per_stock:.2f} per stock (cash: ¥{self.cash:.2f}, positions left: {positions_left})")
+                        
+                        for stock in qualified_stocks:
+                            if len(self.holdings) >= self.config.max_positions:
+                                logger.info(f"  [LIMIT] Max positions ({self.config.max_positions}) reached")
+                                break
+                            
+                            symbol = stock["symbol"]
+                            close = stock["close"]
+                            
+                            if symbol in self.holdings:
+                                logger.debug(f"  [SKIP] {symbol}: already holding")
+                                continue
+                            
+                            # 检查价格有效性
+                            if close is None or close <= 0:
+                                logger.warning(f"  [SKIP] {symbol}: invalid close price ({close})")
+                                continue
+                            
+                            # 计算买入股数
+                            raw_shares = int(budget_per_stock / close)
+                            shares = (raw_shares // 100) * 100
+                            
+                            logger.debug(f"  [CALC] {symbol}: close=¥{close:.2f}, raw_shares={raw_shares}, rounded={shares}")
+                            
+                            if shares < 100:
+                                logger.info(f"  [SKIP] {symbol}: not enough budget for 100 shares (need ¥{close*100:.2f})")
+                                continue
+                            
                             # 计算买入成本
                             buy_value = shares * close
                             commission = max(buy_value * self.config.commission_rate, self.config.commission_min)
+                            total_cost = buy_value + commission
                             
-                            # 检查现金是否足够
-                            if buy_value + commission > self.cash:
+                            if total_cost > self.cash:
+                                logger.warning(f"  [SKIP] {symbol}: insufficient cash (need ¥{total_cost:.2f}, have ¥{self.cash:.2f})")
                                 continue
                             
                             # 执行买入
-                            self.cash -= (buy_value + commission)
+                            self.cash -= total_cost
                             self.total_commission += commission
                             self.total_trades += 1
                             
@@ -310,9 +597,10 @@ class BacktestEngine:
                             }
                             
                             record.bought_symbols.append(symbol)
-                            logger.debug(f"  Bought {symbol} @ {close:.2f} x {shares}")
+                            logger.info(f"  [BUY] {symbol} @ ¥{close:.2f} x {shares} = ¥{buy_value:.2f} (fee: ¥{commission:.2f})")
             
-            # ========== Step 4: 计算组合价值 ==========
+            # Step 5: 计算组合价值
+            prev_portfolio_value = self.portfolio_value
             self.portfolio_value = self.cash
             
             for symbol, pos in self.holdings.items():
@@ -323,33 +611,31 @@ class BacktestEngine:
             record.cash = self.cash
             record.portfolio_value = self.portfolio_value
             record.holding_symbols = list(self.holdings.keys())
+            record.daily_pnl = self.portfolio_value - prev_portfolio_value
             
-            # 计算日收益
-            if self.daily_records:
-                prev_value = self.daily_records[-1].portfolio_value
-                if prev_value > 0:
-                    record.daily_return = (self.portfolio_value - prev_value) / prev_value
+            if prev_portfolio_value > 0:
+                record.daily_return = (self.portfolio_value - prev_portfolio_value) / prev_portfolio_value
             
             record.holdings = [
-                {"symbol": s, "shares": p["shares"], "buy_price": p["buy_price"]}
+                {"symbol": s, "shares": p["shares"], "buy_price": p["buy_price"], "buy_date": p.get("buy_date", "")}
                 for s, p in self.holdings.items()
             ]
             
+            # 日志输出：每日总结
+            logger.info(f"  [DAILY SUMMARY] Date={trade_date}, Mode={record.market_mode}")
+            logger.info(f"  [DAILY SUMMARY] Portfolio Value: ¥{self.portfolio_value:,.2f}, Cash: ¥{self.cash:,.2f}")
+            logger.info(f"  [DAILY SUMMARY] Holdings: {record.holding_symbols}")
+            logger.info(f"  [DAILY SUMMARY] Daily P&L: ¥{record.daily_pnl:+,.2f} ({record.daily_return:+.2%})")
+            
         except Exception as e:
             logger.error(f"Error simulating {trade_date}: {e}")
-            record.notes += f" 错误：{e}"
+            record.notes += f" Error: {e}"
         
         return record
     
     def _get_index_data(self, trade_date: str) -> Optional[dict]:
         """获取指数数据（中证 500）"""
         try:
-            from datetime import date
-            
-            # 将字符串日期转换为 date 对象（数据库返回的是 date 类型）
-            target_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
-            
-            # 获取中证 500 数据（包含 MA20）
             query = f"""
                 SELECT trade_date, close, ma20
                 FROM index_daily
@@ -360,7 +646,6 @@ class BacktestEngine:
             result = self.db.read_sql(query)
             
             if result.is_empty():
-                # 尝试上证指数作为备选
                 query = f"""
                     SELECT trade_date, close
                     FROM index_daily
@@ -373,21 +658,15 @@ class BacktestEngine:
             if result.is_empty():
                 return None
             
-            # 计算 MA20（如果不存在）
             df = result.sort("trade_date")
             if "ma20" not in df.columns:
                 df = df.with_columns(
                     pl.col("close").rolling_mean(window_size=20).alias("ma20")
                 )
             
-            # 过滤出目标日期或之前的数据
-            # 数据库返回的 trade_date 是 date 类型，需要转换为字符串比较
-            latest = df.filter(
-                pl.col("trade_date").cast(pl.Utf8) == trade_date
-            )
+            latest = df.filter(pl.col("trade_date").cast(pl.Utf8) == trade_date)
             
             if latest.is_empty():
-                # 如果没有当天的，取最近一天
                 latest = df.tail(1)
             
             if latest.is_empty():
@@ -397,10 +676,7 @@ class BacktestEngine:
             if "ma20" in latest.columns:
                 ma20_raw = latest["ma20"][0]
                 if ma20_raw is not None:
-                    if isinstance(ma20_raw, Decimal):
-                        ma20_value = float(ma20_raw)
-                    else:
-                        ma20_value = float(ma20_raw)
+                    ma20_value = float(ma20_raw) if not isinstance(ma20_raw, Decimal) else float(ma20_raw)
             
             return {
                 "close": float(latest["close"][0]),
@@ -437,25 +713,22 @@ class BacktestEngine:
             return None
     
     def run(self) -> BacktestResult:
-        """
-        运行回测
-        
-        Returns:
-            BacktestResult: 回测结果
-        """
+        """运行回测"""
         logger.info("=" * 60)
-        logger.info("BACKTEST ENGINE - Starting")
+        logger.info("BACKTEST ENGINE (Multi-Factor Model) - Starting")
         logger.info(f"Lookback days: {self.config.lookback_days}")
         logger.info(f"Initial capital: {self.config.initial_capital:,.2f}")
+        logger.info(f"Score Threshold: {self.config.min_score:.2f} (Z-Score)")
+        logger.info(f"Defensive Threshold Addon: +{DEFENSIVE_THRESHOLD_ADDON:.2f}")
+        logger.info(f"Min Hold Days: {MIN_HOLD_DAYS}")
+        logger.info(f"Defensive Stop Loss: {DEFENSIVE_STOP_LOSS:.1%}")
         logger.info("=" * 60)
         
-        # 获取交易日列表
         trade_dates = self.get_trade_dates(days=self.config.lookback_days)
         
         if len(trade_dates) < self.config.lookback_days:
             logger.warning(f"Only {len(trade_dates)} days available, adjusting...")
         
-        # 只取需要的天数
         trade_dates = trade_dates[-self.config.lookback_days:]
         
         if not trade_dates:
@@ -468,28 +741,29 @@ class BacktestEngine:
         logger.info(f"Backtest period: {start_date} to {end_date}")
         logger.info(f"Total trading days: {len(trade_dates)}")
         
-        # 逐日模拟
+        prev_date = None
         for i, date in enumerate(trade_dates, 1):
+            logger.info(f"\n{'='*50}")
             logger.info(f"[{i}/{len(trade_dates)}] Simulating {date}...")
-            record = self.simulate_daily_decision(date)
+            record = self.simulate_daily_decision(date, prev_date)
             self.daily_records.append(record)
+            prev_date = date
             
             if record.bought_symbols or record.sold_symbols:
-                logger.info(f"  Buys: {record.bought_symbols}, Sells: {record.sold_symbols}")
+                logger.info(f"  [TRADES] Buys: {record.bought_symbols}, Sells: {record.sold_symbols}")
+                logger.info(f"  [PORTFOLIO] Value: ¥{record.portfolio_value:,.0f} (Cash: ¥{record.cash:,.0f})")
         
-        # 计算绩效指标
         metrics = self._calculate_metrics()
-        
-        # 计算基准收益（沪深 300）
         benchmark_return = self._calculate_benchmark_return(start_date, end_date)
         
-        logger.info("=" * 60)
+        logger.info("\n" + "=" * 60)
         logger.info("BACKTEST COMPLETE")
         logger.info("=" * 60)
         logger.info(f"Total Return: {metrics['total_return']:.2%}")
         logger.info(f"Benchmark Return: {benchmark_return:.2%}")
         logger.info(f"Max Drawdown: {metrics['max_drawdown']:.2%}")
         logger.info(f"Sharpe Ratio: {metrics['sharpe_ratio']:.2f}")
+        logger.info(f"Total Trades: {self.total_trades}")
         
         return BacktestResult(
             config=self.config,
@@ -514,7 +788,6 @@ class BacktestEngine:
         if not self.daily_records:
             return self._empty_metrics()
         
-        # 提取资金曲线
         values = [r.portfolio_value for r in self.daily_records]
         returns = []
         
@@ -527,15 +800,10 @@ class BacktestEngine:
             return self._empty_metrics()
         
         returns_arr = np.array(returns)
-        
-        # 总收益率
         total_return = (values[-1] - self.config.initial_capital) / self.config.initial_capital
-        
-        # 年化收益率
         days = len(self.daily_records)
         annualized_return = (1 + total_return) ** (252 / max(days, 1)) - 1
         
-        # 最大回撤
         peak = values[0]
         max_dd = 0.0
         for v in values:
@@ -545,16 +813,14 @@ class BacktestEngine:
             if dd > max_dd:
                 max_dd = dd
         
-        # 夏普比率
         mean_ret = float(np.mean(returns_arr))
         std_ret = float(np.std(returns_arr, ddof=1)) if len(returns_arr) > 1 else 0.0
         
         if std_ret > 1e-10:
-            sharpe = (mean_ret * 252 - 0.03) / std_ret  # 3% 无风险利率
+            sharpe = (mean_ret * 252 - 0.03) / std_ret
         else:
             sharpe = 0.0
         
-        # 胜率
         positive_days = sum(1 for r in returns if r > 0)
         win_rate = positive_days / len(returns) if returns else 0.0
         
@@ -568,7 +834,6 @@ class BacktestEngine:
         }
     
     def _empty_metrics(self) -> dict:
-        """返回空指标"""
         return {
             "total_return": 0.0,
             "annualized_return": 0.0,
@@ -592,14 +857,12 @@ class BacktestEngine:
             result = self.db.read_sql(query)
             
             if result.is_empty():
-                logger.warning("No benchmark data available")
                 return 0.0
             
             closes = result["close"].to_list()
             if len(closes) < 2:
                 return 0.0
             
-            # 处理 Decimal 类型
             start_close = float(closes[0]) if closes[0] else 0.0
             end_close = float(closes[-1]) if closes[-1] else 0.0
             
@@ -612,7 +875,6 @@ class BacktestEngine:
             return 0.0
     
     def _empty_result(self) -> BacktestResult:
-        """返回空结果"""
         return BacktestResult(
             config=self.config,
             start_date="",
@@ -635,47 +897,46 @@ class BacktestEngine:
         """生成 Markdown 报告"""
         lines = []
         
-        lines.append("# 📊 回测报告 - Backtest Report")
+        lines.append("# Backtest Report (Multi-Factor Model)")
         lines.append("")
-        lines.append(f"**回测期间**: {result.start_date} 至 {result.end_date}")
-        lines.append(f"**交易天数**: {result.total_days} 天")
-        lines.append(f"**初始资金**: ¥{result.config.initial_capital:,.2f}")
-        lines.append("")
-        
-        # 绩效对比表
-        lines.append("## 📈 绩效对比")
-        lines.append("")
-        lines.append("| 指标 | 策略值 | 基准值 |")
-        lines.append("|------|--------|--------|")
-        lines.append(f"| **总收益率** | {result.total_return:.2%} | {result.benchmark_return:.2%} |")
-        lines.append(f"| **年化收益率** | {result.annualized_return:.2%} | - |")
-        lines.append(f"| **最大回撤** | {result.max_drawdown:.2%} | - |")
-        lines.append(f"| **夏普比率** | {result.sharpe_ratio:.2f} | - |")
-        lines.append(f"| **胜率** | {result.win_rate:.2%} | - |")
+        lines.append(f"**Period**: {result.start_date} to {result.end_date}")
+        lines.append(f"**Trading Days**: {result.total_days}")
+        lines.append(f"**Initial Capital**: ¥{result.config.initial_capital:,.2f}")
+        lines.append(f"**Score Threshold**: {result.config.min_score:.2f} (Z-Score)")
+        lines.append(f"**Defensive Threshold Addon**: +{DEFENSIVE_THRESHOLD_ADDON:.2f}")
+        lines.append(f"**Min Hold Days**: {MIN_HOLD_DAYS}")
         lines.append("")
         
-        # 超额收益
+        lines.append("## Performance Summary")
+        lines.append("")
+        lines.append("| Metric | Strategy | Benchmark |")
+        lines.append("|--------|----------|-----------|")
+        lines.append(f"| **Total Return** | {result.total_return:.2%} | {result.benchmark_return:.2%} |")
+        lines.append(f"| **Annualized Return** | {result.annualized_return:.2%} | - |")
+        lines.append(f"| **Max Drawdown** | {result.max_drawdown:.2%} | - |")
+        lines.append(f"| **Sharpe Ratio** | {result.sharpe_ratio:.2f} | - |")
+        lines.append(f"| **Win Rate** | {result.win_rate:.2%} | - |")
+        lines.append("")
+        
         excess_return = result.total_return - result.benchmark_return
-        lines.append(f"**超额收益**: {excess_return:.2%} (策略 - 基准)")
+        lines.append(f"**Excess Return**: {excess_return:.2%} (Strategy - Benchmark)")
         lines.append("")
         
-        # 交易统计
-        lines.append("## 📝 交易统计")
+        lines.append("## Trade Statistics")
         lines.append("")
-        lines.append(f"- **总交易次数**: {result.total_trades}")
-        lines.append(f"- **总佣金**: ¥{result.total_commission:.2f}")
-        lines.append(f"- **总印花税**: ¥{result.total_stamp_duty:.2f}")
-        lines.append(f"- **总交易成本**: ¥{result.total_commission + result.total_stamp_duty:.2f}")
-        lines.append(f"- **成本率**: {(result.total_commission + result.total_stamp_duty) / result.config.initial_capital:.2%}")
+        lines.append(f"- **Total Trades**: {result.total_trades}")
+        lines.append(f"- **Total Commission**: ¥{result.total_commission:.2f}")
+        lines.append(f"- **Total Stamp Duty**: ¥{result.total_stamp_duty:.2f}")
+        lines.append(f"- **Total Cost**: ¥{result.total_commission + result.total_stamp_duty:.2f}")
+        lines.append(f"- **Cost Ratio**: {(result.total_commission + result.total_stamp_duty) / result.config.initial_capital:.2%}")
         lines.append("")
         
-        # 每日记录摘要
-        lines.append("## 📅 每日记录摘要")
+        lines.append("## Daily Records (Last 15 Days)")
         lines.append("")
-        lines.append("| 日期 | 市场模式 | 持仓数 | 买入 | 卖出 | 组合价值 | 日收益 |")
-        lines.append("|------|----------|--------|------|------|----------|--------|")
+        lines.append("| Date | Mode | Holdings | Buys | Sells | Portfolio | Daily Return |")
+        lines.append("|------|------|----------|------|-------|-----------|--------------|")
         
-        for record in result.daily_records[-15:]:  # 只显示最后 15 天
+        for record in result.daily_records[-15:]:
             buys = len(record.bought_symbols)
             sells = len(record.sold_symbols)
             lines.append(
@@ -684,29 +945,23 @@ class BacktestEngine:
             )
         
         lines.append("")
-        
-        # 资金曲线数据（可用于绘图）
-        lines.append("## 📉 资金曲线数据")
+        lines.append("## Equity Curve Data")
         lines.append("")
         lines.append("```")
-        lines.append("Date,Portfolio Value,Cash,Num Holdings")
+        lines.append("Date,Portfolio Value,Cash,Num Holdings,Daily P&L")
         for record in result.daily_records:
             lines.append(
-                f"{record.trade_date},{record.portfolio_value:.2f},{record.cash:.2f},{len(record.holding_symbols)}"
+                f"{record.trade_date},{record.portfolio_value:.2f},{record.cash:.2f},{len(record.holding_symbols)},{record.daily_pnl:.2f}"
             )
         lines.append("```")
         lines.append("")
         
-        # 风险提示
         lines.append("---")
         lines.append("")
-        lines.append("> ⚠️ **风险提示**: 本回测使用简化逻辑，未考虑:")
-        lines.append("> - 真实的模型预测和 AI 审计流程")
-        lines.append("> - 股票停牌、涨跌停限制")
-        lines.append("> - 流动性约束和冲击成本")
-        lines.append("> - 实际交易中的滑点")
-        lines.append("")
-        lines.append("> 回测结果仅供参考，不代表实际收益。")
+        lines.append("> Note: This backtest uses multi-factor model with Z-Score normalization.")
+        lines.append("> - predict_score: Z-Score standardized value (mean=0, std=1)")
+        lines.append("> - Threshold: 0.0 means above average")
+        lines.append("> - Defensive mode adds +0.5 threshold for stricter filtering")
         
         return "\n".join(lines)
 
@@ -714,20 +969,10 @@ class BacktestEngine:
 def run_backtest(
     days: int = 30,
     capital: float = 50000.0,
+    threshold: float = None,
     output_dir: str = "reports"
 ) -> BacktestResult:
-    """
-    便捷函数：运行回测并生成报告
-    
-    Args:
-        days: 回测天数
-        capital: 初始资金
-        output_dir: 报告输出目录
-        
-    Returns:
-        BacktestResult: 回测结果
-    """
-    # 配置日志
+    """便捷函数：运行回测并生成报告"""
     logger.remove()
     logger.add(
         sys.stderr,
@@ -735,22 +980,22 @@ def run_backtest(
         level="INFO"
     )
     
-    # 创建配置
+    score_threshold = threshold if threshold is not None else SCORE_THRESHOLD
+    
     config = BacktestConfig(
         lookback_days=days,
         initial_capital=capital,
+        min_score=score_threshold,
         use_mock_ai=True,
-        test_mode=True
+        test_mode=True,
+        verbose=True
     )
     
-    # 运行回测
     engine = BacktestEngine(config)
     result = engine.run()
     
-    # 生成报告
     report = engine.generate_report(result)
     
-    # 保存报告
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     report_path = Path(output_dir) / f"backtest_{timestamp}.md"
@@ -760,17 +1005,17 @@ def run_backtest(
     
     logger.info(f"Report saved to: {report_path}")
     
-    # 输出摘要
     print("\n" + "=" * 60)
-    print("📊 回测结果摘要")
+    print("BACKTEST SUMMARY (Multi-Factor Model)")
     print("=" * 60)
-    print(f"回测期间：{result.start_date} 至 {result.end_date}")
-    print(f"总收益率：{result.total_return:.2%}")
-    print(f"沪深 300 收益：{result.benchmark_return:.2%}")
-    print(f"超额收益：{result.total_return - result.benchmark_return:.2%}")
-    print(f"最大回撤：{result.max_drawdown:.2%}")
-    print(f"夏普比率：{result.sharpe_ratio:.2f}")
-    print(f"总交易次数：{result.total_trades}")
+    print(f"Period: {result.start_date} to {result.end_date}")
+    print(f"Score Threshold: {score_threshold:.2f} (Z-Score)")
+    print(f"Total Return: {result.total_return:.2%}")
+    print(f"Benchmark Return: {result.benchmark_return:.2%}")
+    print(f"Excess Return: {result.total_return - result.benchmark_return:.2%}")
+    print(f"Max Drawdown: {result.max_drawdown:.2%}")
+    print(f"Sharpe Ratio: {result.sharpe_ratio:.2f}")
+    print(f"Total Trades: {result.total_trades}")
     print("=" * 60)
     
     return result
@@ -780,14 +1025,20 @@ def main():
     """命令行入口"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Backtest Engine - 简易回测引擎')
-    parser.add_argument('--days', type=int, default=30, help='回测天数 (default: 30)')
-    parser.add_argument('--capital', type=float, default=50000.0, help='初始资金 (default: 50000)')
-    parser.add_argument('--output', type=str, default='reports', help='报告输出目录')
+    parser = argparse.ArgumentParser(description='Backtest Engine (Multi-Factor Model)')
+    parser.add_argument('--days', type=int, default=30, help='Backtest days')
+    parser.add_argument('--capital', type=float, default=50000.0, help='Initial capital')
+    parser.add_argument('--threshold', type=float, default=SCORE_THRESHOLD, help='Score threshold (Z-Score)')
+    parser.add_argument('--output', type=str, default='reports', help='Output directory')
     
     args = parser.parse_args()
     
-    run_backtest(days=args.days, capital=args.capital, output_dir=args.output)
+    run_backtest(
+        days=args.days, 
+        capital=args.capital, 
+        threshold=args.threshold,
+        output_dir=args.output
+    )
 
 
 if __name__ == "__main__":
