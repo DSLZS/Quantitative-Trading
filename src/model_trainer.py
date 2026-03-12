@@ -2,7 +2,7 @@
 Model Trainer Module - LightGBM model training for stock selection.
 
 This module handles:
-- Feature/label preparation from Parquet files
+- Feature/label preparation from Parquet files or Database
 - LightGBM model training with cross-validation
 - Model persistence and evaluation
 - Factor IC (Information Coefficient) analysis
@@ -28,6 +28,15 @@ from loguru import logger
 from sklearn.model_selection import TimeSeriesSplit
 import numpy as np
 from scipy.stats import spearmanr
+
+try:
+    from .db_manager import DatabaseManager
+    from .factor_engine import FactorEngine
+    from .feature_pipeline import FeaturePipeline
+except ImportError:
+    from db_manager import DatabaseManager
+    from factor_engine import FactorEngine
+    from feature_pipeline import FeaturePipeline
 
 
 class ModelTrainer:
@@ -81,6 +90,49 @@ class ModelTrainer:
         logger.info(f"Loading Parquet file: {path}")
         df = pl.read_parquet(path)
         logger.info(f"Loaded {len(df)} rows from {path}")
+        return df
+    
+    @staticmethod
+    def load_data_from_db(
+        db: DatabaseManager,
+        table_name: str = "stock_daily",
+        start_date: str = None,
+        end_date: str = None,
+        symbols: list[str] = None,
+    ) -> pl.DataFrame:
+        """
+        从数据库加载数据并计算因子。
+        
+        Args:
+            db (DatabaseManager): 数据库管理器
+            table_name (str): 数据表名
+            start_date (str): 开始日期 (YYYY-MM-DD)
+            end_date (str): 结束日期 (YYYY-MM-DD)
+            symbols (list[str]): 股票代码列表
+            
+        Returns:
+            pl.DataFrame: 包含因子的数据
+        """
+        logger.info("Loading data from database...")
+        
+        # 构建查询
+        conditions = []
+        if start_date:
+            conditions.append(f"trade_date >= '{start_date}'")
+        if end_date:
+            conditions.append(f"trade_date <= '{end_date}'")
+        if symbols:
+            symbols_str = "', '".join(symbols)
+            conditions.append(f"symbol IN ('{symbols_str}')")
+        
+        query = f"SELECT * FROM {table_name}"
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += " ORDER BY symbol, trade_date"
+        
+        df = db.read_sql(query)
+        logger.info(f"Loaded {len(df)} rows from database")
+        
         return df
     
     @staticmethod
@@ -741,6 +793,228 @@ class ModelTrainer:
         return self.model
 
 
+def run_training_from_db(
+    config_path: str = "config/factors.yaml",
+    model_output_path: str = "data/models/stock_model.txt",
+    start_date: str = None,
+    end_date: str = None,
+    n_estimators: int = 500,
+    learning_rate: float = 0.05,
+    max_depth: int = 4,
+    lambda_l1: float = 0.1,
+    lambda_l2: float = 0.1,
+    use_sample_weights: bool = True,
+) -> dict[str, Any]:
+    """
+    从数据库运行完整训练流程。
+    
+    执行流程:
+    1. 从数据库读取历史数据
+    2. 使用 FactorEngine 计算因子
+    3. 准备训练/验证/测试集
+    4. 计算因子 IC 分析
+    5. 训练 LightGBM 模型（带样本加权）
+    6. 保存模型到文件
+    7. 输出训练报告
+    
+    Args:
+        config_path (str): 因子配置文件路径
+        model_output_path (str): 模型输出文件路径
+        start_date (str, optional): 开始日期 (YYYY-MM-DD)
+        end_date (str, optional): 结束日期 (YYYY-MM-DD)
+        n_estimators (int): boosting 轮数
+        learning_rate (float): 学习率
+        max_depth (int): 树的最大深度
+        lambda_l1 (float): L1 正则化参数
+        lambda_l2 (float): L2 正则化参数
+        use_sample_weights (bool): 是否使用样本加权
+    
+    Returns:
+        dict[str, Any]: 训练结果
+    
+    使用示例:
+        >>> results = run_training_from_db()
+        >>> print(f"Model saved to: {model_output_path}")
+    """
+    logger.info("=" * 60)
+    logger.info("MODEL TRAINING - Starting Full Pipeline")
+    logger.info("=" * 60)
+    
+    # 初始化数据库和因子引擎
+    db = DatabaseManager.get_instance()
+    factor_engine = FactorEngine(config_path)
+    
+    # 获取因子列名
+    feature_columns = factor_engine.get_factor_names()
+    label_column = factor_engine.label_config["name"] if factor_engine.label_config else "future_return_5"
+    
+    logger.info(f"Feature columns ({len(feature_columns)}): {feature_columns}")
+    logger.info(f"Label column: {label_column}")
+    
+    # Step 1: 从数据库加载数据
+    logger.info("=" * 50)
+    logger.info("Step 1: Loading data from database")
+    logger.info("=" * 50)
+    
+    query = "SELECT * FROM stock_daily"
+    conditions = []
+    if start_date:
+        conditions.append(f"trade_date >= '{start_date}'")
+    if end_date:
+        conditions.append(f"trade_date <= '{end_date}'")
+    
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " ORDER BY symbol, trade_date"
+    
+    df = db.read_sql(query)
+    
+    if df.is_empty():
+        raise ValueError("No data found in database. Please run data sync first.")
+    
+    logger.info(f"Loaded {len(df)} rows")
+    
+    # Step 2: 准备数据 (计算 pct_change 等)
+    logger.info("=" * 50)
+    logger.info("Step 2: Preparing data")
+    logger.info("=" * 50)
+    
+    # 转换数值列为 Float64
+    numeric_columns = ["open", "high", "low", "close", "volume", "amount", "adj_factor", "turnover_rate", "pre_close", "change", "pct_chg"]
+    for col in numeric_columns:
+        if col in df.columns:
+            df = df.with_columns(
+                pl.col(col).cast(pl.Float64, strict=False)
+            )
+    
+    # 计算 pct_change
+    if "pct_change" not in df.columns:
+        df = df.with_columns(
+            (pl.col("close") / pl.col("close").shift(1) - 1)
+            .over("symbol")
+            .alias("pct_change")
+        )
+    
+    # 排序
+    df = df.sort(["symbol", "trade_date"])
+    
+    # Step 3: 计算因子
+    logger.info("=" * 50)
+    logger.info("Step 3: Computing factors")
+    logger.info("=" * 50)
+    
+    df_with_factors = factor_engine.compute_factors(df)
+    
+    # 计算标签
+    if factor_engine.label_config:
+        df_with_factors = factor_engine.compute_label(df_with_factors)
+    
+    logger.info(f"Computed factors. Columns: {df_with_factors.columns}")
+    
+    # Step 4: 准备训练数据
+    logger.info("=" * 50)
+    logger.info("Step 4: Preparing train/val/test split")
+    logger.info("=" * 50)
+    
+    data = ModelTrainer.prepare_data(
+        df=df_with_factors,
+        feature_columns=feature_columns,
+        label_column=label_column,
+    )
+    
+    # Step 5: 因子 IC 分析
+    logger.info("=" * 50)
+    logger.info("Step 5: Factor IC Analysis")
+    logger.info("=" * 50)
+    
+    factor_ic = ModelTrainer.calculate_factor_ic(
+        features=data["X_train"],
+        labels=data["y_train"],
+        feature_columns=feature_columns,
+    )
+    
+    # Step 6: 初始化训练器
+    trainer = ModelTrainer(
+        n_estimators=n_estimators,
+        learning_rate=learning_rate,
+        max_depth=max_depth,
+        lambda_l1=lambda_l1,
+        lambda_l2=lambda_l2,
+    )
+    
+    trainer.factor_ic_ = factor_ic
+    
+    # Step 7: 计算样本权重
+    sample_weights = None
+    if use_sample_weights:
+        logger.info("=" * 50)
+        logger.info("Step 7: Calculating sample weights")
+        logger.info("=" * 50)
+        sample_weights = ModelTrainer.calculate_sample_weights(
+            data["y_train"].to_numpy(),
+            weight_method="tail_focus",
+        )
+    
+    # Step 8: 训练模型
+    logger.info("=" * 50)
+    logger.info("Step 8: Training LightGBM model")
+    logger.info("=" * 50)
+    
+    trainer.train(
+        X_train=data["X_train"],
+        y_train=data["y_train"],
+        X_val=data["X_val"],
+        y_val=data["y_val"],
+        sample_weights=sample_weights,
+    )
+    
+    # Step 9: 输出特征重要性
+    top_features = trainer.get_top_features(n=10)
+    logger.info("=" * 50)
+    logger.info("Top 10 Most Important Features:")
+    logger.info("=" * 50)
+    for i, (name, importance) in enumerate(top_features, 1):
+        logger.info(f"  {i}. {name}: {importance:.2f}")
+    
+    # Step 10: 测试集评估
+    test_pred = trainer.predict(data["X_test"])
+    test_mse = np.mean((test_pred - data["y_test"].to_numpy()) ** 2)
+    
+    train_mse = np.mean((trainer.predict(data["X_train"]) - data["y_train"].to_numpy()) ** 2)
+    val_mse = np.mean((trainer.predict(data["X_val"]) - data["y_val"].to_numpy()) ** 2)
+    
+    logger.info("=" * 50)
+    logger.info("Model Evaluation:")
+    logger.info("=" * 50)
+    logger.info(f"  Train MSE: {train_mse:.6f}")
+    logger.info(f"  Valid  MSE: {val_mse:.6f}")
+    logger.info(f"  Test   MSE: {test_mse:.6f}")
+    
+    # Step 11: 保存模型
+    logger.info("=" * 50)
+    logger.info("Step 11: Saving model")
+    logger.info("=" * 50)
+    
+    trainer.save_model(model_output_path)
+    
+    logger.info("=" * 60)
+    logger.info("TRAINING COMPLETE!")
+    logger.info(f"Model saved to: {model_output_path}")
+    logger.info("=" * 60)
+    
+    return {
+        "model": trainer.model,
+        "top_features": top_features,
+        "factor_ic": factor_ic,
+        "test_mse": test_mse,
+        "train_mse": train_mse,
+        "val_mse": val_mse,
+        "train_samples": len(data["X_train"]),
+        "val_samples": len(data["X_val"]),
+        "test_samples": len(data["X_test"]),
+    }
+
+
 def run_training(
     parquet_path: str = "data/parquet/features_latest.parquet",
     feature_columns: list[str] = None,
@@ -753,7 +1027,7 @@ def run_training(
     use_sample_weights: bool = True,  # 新增参数
 ) -> dict[str, Any]:
     """
-    运行完整的训练流程。
+    运行完整的训练流程（从 Parquet 文件）。
     
     此函数执行:
     1. 从 Parquet 文件加载数据
@@ -801,6 +1075,8 @@ def run_training(
             "turnover_bias_20", "turnover_ma_ratio",  # 新增换手率因子
             "volume_price_divergence_5", "volume_price_divergence_20",
             "volume_price_correlation", "smart_money_flow",
+            "volatility_contraction_10", "volume_shrink_ratio",
+            "volume_price_stable", "accumulation_distribution_20",
         ]
     
     logger.info("=" * 50)
@@ -925,8 +1201,22 @@ def run_training(
 
 
 if __name__ == "__main__":
-    # 运行训练流程
-    results = run_training()
+    # 优先从数据库训练，如果 Parquet 文件不存在则回退到 Parquet
+    import os
+    
+    model_output = "data/models/stock_model.txt"
+    
+    # 检查 Parquet 文件是否存在
+    parquet_path = "data/parquet/features_latest.parquet"
+    
+    if os.path.exists(parquet_path):
+        print(f"Using Parquet file: {parquet_path}")
+        results = run_training(parquet_path=parquet_path)
+    else:
+        print("Parquet file not found, training from database...")
+        results = run_training_from_db(model_output_path=model_output)
+    
     print(f"\nTraining completed!")
     print(f"Top features: {results['top_features']}")
     print(f"Test MSE: {results['test_mse']:.6f}")
+    print(f"Model saved to: {model_output}")

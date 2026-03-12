@@ -120,9 +120,10 @@ factors:
 
   # Volatility Contraction Factors (波动率缩量因子)
   # 逻辑：波动率收缩 + 成交量萎缩，通常预示着即将突破
+  # 注意：使用内联表达式避免因子间依赖
   - name: volatility_contraction_10
-    description: "Volatility contraction ratio - measures 10-day volatility relative to 20-day volatility (low value = contraction)"
-    expression: "volatility_5 / (volatility_20 + 1e-10)"
+    description: "Volatility contraction ratio - measures 5-day volatility relative to 20-day volatility (low value = contraction)"
+    expression: "pct_change.rolling_std(window_size=5, ddof=1) / (pct_change.rolling_std(window_size=20, ddof=1) + 1e-10)"
     window: 10
   
   - name: volume_shrink_ratio
