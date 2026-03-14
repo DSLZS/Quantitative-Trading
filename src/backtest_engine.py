@@ -45,8 +45,8 @@ except ImportError:
 SCORE_THRESHOLD = 0.0  # 默认准入阈值（强于平均）
 DEFENSIVE_THRESHOLD_ADDON = 0.3  # 防御模式额外阈值（+0.3 个标准差，更平滑过渡）
 
-# 【重构 - 三分类模型 2026-03-14】换仓抑制参数 - 【Iteration 3】激进持有期约束
-MIN_HOLD_DAYS = 10  # 【Iter3】最小持有天数从 5 增至 10（激进抑制换仓）
+# 【重构 - 三分类模型 2026-03-14】换仓抑制参数 - 【Iteration 5】恢复灵活持有期
+MIN_HOLD_DAYS = 5  # 【Iter5】从 10 天恢复至 5 天（平衡换仓与收益）
 MIN_HOLD_DAYS_EXCEPTION = -0.05  # 【新增】硬止损阈值，触发时可突破最小持有期限制
 
 # 【重构 - 三分类模型 2026-03-14】分值缓冲带参数
@@ -60,8 +60,16 @@ HARD_STOP_LOSS = -0.05  # 【新增】硬止损阈值（任何模式下都触发
 SCORE_WEIGHT = 0.7  # predict_score 权重
 SHARPE_WEIGHT = 0.3  # hist_sharpe_20d 权重
 
-# 【新增 - 2026-03-14】强制止损
-HARD_STOP_LOSS = -0.05  # 持仓 2 天后收益<-5% 强制清仓
+# 【新增 - Iteration 4】ATR 动态止损与移动止盈参数 - 【Iteration 5 调优】
+ATR_STOP_MULTIPLIER = 2.5  # 【Iter5】从 2.0 提高至 2.5（减少频繁止损）
+ATR_WINDOW = 14  # ATR 计算窗口
+MAX_ATR_STOP = -0.08  # ATR 止损上限（-8%）
+MIN_ATR_STOP = -0.03  # ATR 止损下限（-3%）
+
+# 【新增 - Iteration 4】移动止盈参数 - 【Iteration 5 调优】
+TRAILING_STOP_ENABLED = True  # 启用移动止盈
+TRAILING_STOP_THRESHOLD = 0.025  # 【Iter5】从 3% 降至 2.5%（更早锁定利润）
+MIN_PROFIT_FOR_TRAILING = 0.04  # 【Iter5】从 2% 提高至 4%（避免微薄利润时过早被洗出）
 
 # 【新增 - 2026-03-14 重构】信心驱动型仓位分配参数
 CONFIDENCE_BASED_WEIGHTING = True  # 启用信心驱动型仓位分配
@@ -535,11 +543,37 @@ class BacktestEngine:
                     should_sell = False
                     sell_reason = ""
                     
+                    # 【新增 - Iteration 4】移动止盈检查
+                    high_since_buy = pos.get("high_since_buy", buy_price)
+                    # 更新最高价
+                    if current_price > high_since_buy:
+                        high_since_buy = current_price
+                        pos["high_since_buy"] = high_since_buy
+                    
+                    # 检查移动止盈
+                    trailing_triggered, trailing_reason = self._check_trailing_stop(
+                        symbol, current_price, buy_price, high_since_buy
+                    )
+                    if trailing_triggered:
+                        should_sell = True
+                        sell_reason = trailing_reason
+                        to_sell.append((symbol, pos, current_price))
+                        continue
+                    
                     # 【新增 - 2026-03-14】强制止损逻辑：持仓 2 天后收益<-5% 强制清仓
                     if hold_days >= 2 and pnl_pct < HARD_STOP_LOSS:
                         should_sell = True
                         sell_reason = f"hard stop loss ({pnl_pct:.1%} < {HARD_STOP_LOSS:.1%} after {hold_days} days)"
                         logger.info(f"  [HARD STOP] {symbol}: {sell_reason}")
+                        to_sell.append((symbol, pos, current_price))
+                        continue
+                    
+                    # 【新增 - Iteration 4】ATR 动态止损检查
+                    atr_stop_loss = self._calculate_dynamic_stop_loss(symbol, trade_date, buy_price)
+                    if pnl_pct < atr_stop_loss:
+                        should_sell = True
+                        sell_reason = f"ATR stop loss ({pnl_pct:.1%} < {atr_stop_loss:.1%})"
+                        logger.info(f"  [ATR STOP] {symbol}: {sell_reason}")
                         to_sell.append((symbol, pos, current_price))
                         continue
                     
@@ -651,6 +685,12 @@ class BacktestEngine:
                 # 按信心分降序排序，优先处理高分股票
                 positive_stocks.sort(key=lambda x: x.get("combined_score", 0), reverse=True)
                 
+                # 【新增 - Iteration 4】行业中性化约束
+                # 同一行业（sector）的股票在 Top 3 持仓中最多只能占 1 席
+                # 如果第 2 名和第 1 名同行业，则跳过第 2 名选择第 3 名
+                selected_symbols = set(self.holdings.keys())
+                selected_sectors = set()  # 已选行业集合
+                
                 for stock in positive_stocks:
                     if len(self.holdings) >= self.config.max_positions:
                         logger.info(f"  [LIMIT] Max positions ({self.config.max_positions}) reached")
@@ -660,13 +700,19 @@ class BacktestEngine:
                     close = stock["close"]
                     score = stock.get("combined_score", 0)
                     
+                    # 【行业中性化检查】获取股票所属行业
+                    stock_sector = self._get_stock_sector(symbol)
+                    if stock_sector and stock_sector in selected_sectors:
+                        logger.info(f"  [SKIP] {symbol}: sector '{stock_sector}' already held (industry neutralization)")
+                        continue
+                    
                     # 【信心权重计算】
                     # Target_Weight = score / total_score
                     # 但受限于 max_positions，需要调整
                     target_weight = max(score / total_score, 1.0 / self.config.max_positions)
                     budget_for_stock = available_cash * target_weight
                     
-                    logger.info(f"  [BUDGET] {symbol}: score={score:+.2f}, weight={target_weight:.1%}, budget=¥{budget_for_stock:.2f}")
+                    logger.info(f"  [BUDGET] {symbol}: score={score:+.2f}, weight={target_weight:.1%}, budget=¥{budget_for_stock:.2f}, sector={stock_sector}")
                     
                     # 【新增】RSI 超买过滤
                     rsi_14 = stock.get("rsi_14", 50)
@@ -679,6 +725,11 @@ class BacktestEngine:
                     if symbol in self.holdings:
                         logger.debug(f"  [SKIP] {symbol}: already holding")
                         continue
+                    
+                    # 检查通过，添加到已选列表
+                    selected_symbols.add(symbol)
+                    if stock_sector:
+                        selected_sectors.add(stock_sector)
                     
                     # 检查价格有效性
                     if close is None or close <= 0:
@@ -818,6 +869,112 @@ class BacktestEngine:
             logger.error(f"Failed to get index data: {e}")
             return None
     
+    def _get_atr(self, symbol: str, trade_date: str, window: int = 14) -> Optional[float]:
+        """
+        计算 ATR (Average True Range) - 平均真实波幅。
+        
+        ATR 原理:
+            - True Range = max(high - low, |high - prev_close|, |low - prev_close|)
+            - ATR = True Range 的 N 日移动平均
+            - 用于衡量股票的波动性，波动越大 ATR 越高
+        
+        Args:
+            symbol (str): 股票代码
+            trade_date (str): 交易日期
+            window (int): ATR 计算窗口，默认 14 日
+        
+        Returns:
+            Optional[float]: ATR 值，如果计算失败返回 None
+        """
+        try:
+            # 获取历史价格数据
+            query = f"""
+                SELECT symbol, trade_date, open, high, low, close, pre_close
+                FROM stock_daily
+                WHERE symbol = '{symbol}'
+                AND trade_date <= '{trade_date}'
+                ORDER BY trade_date DESC
+                LIMIT {window + 10}
+            """
+            result = self.db.read_sql(query)
+            
+            if result.is_empty() or len(result) < window:
+                return None
+            
+            # 按日期正序排列
+            df = result.sort("trade_date")
+            
+            # 计算 True Range
+            high = pl.col("high")
+            low = pl.col("low")
+            pre_close = pl.col("pre_close")
+            
+            tr1 = high - low
+            tr2 = (high - pre_close).abs()
+            tr3 = (low - pre_close).abs()
+            
+            true_range = pl.max_horizontal([tr1, tr2, tr3])
+            
+            # 计算 ATR (使用 rolling_mean)
+            atr = true_range.rolling_mean(window_size=window)
+            
+            # 获取最新一行的 ATR 值
+            atr_values = df.with_columns([
+                true_range.alias("tr"),
+                atr.alias("atr")
+            ])["atr"].to_list()
+            
+            # 返回最后一个非 null 值
+            for val in reversed(atr_values):
+                if val is not None and val > 0:
+                    return float(val)
+            
+            return None
+            
+        except Exception as e:
+            logger.debug(f"Failed to calculate ATR for {symbol}: {e}")
+            return None
+    
+    def _get_stock_sector(self, symbol: str) -> Optional[str]:
+        """
+        获取股票所属行业/板块。
+        
+        Args:
+            symbol (str): 股票代码
+        
+        Returns:
+            Optional[str]: 行业名称，如果无法获取返回 None
+        """
+        try:
+            query = f"""
+                SELECT symbol, industry_name
+                FROM stock_info
+                WHERE symbol = '{symbol}'
+                LIMIT 1
+            """
+            result = self.db.read_sql(query)
+            
+            if result.is_empty():
+                # 尝试从 stock_daily 获取行业信息
+                query = f"""
+                    SELECT DISTINCT symbol, industry
+                    FROM stock_daily
+                    WHERE symbol = '{symbol}'
+                    LIMIT 1
+                """
+                result = self.db.read_sql(query)
+                
+                if result.is_empty() or "industry" not in result.columns:
+                    return None
+                
+                return str(result["industry"][0]) if result["industry"][0] else None
+            
+            return str(result["industry_name"][0]) if result["industry_name"][0] else None
+            
+        except Exception as e:
+            logger.debug(f"Failed to get sector for {symbol}: {e}")
+            return None
+    
     def _get_stock_price(self, symbol: str, trade_date: str) -> Optional[dict]:
         """获取股票价格"""
         try:
@@ -842,6 +999,90 @@ class BacktestEngine:
         except Exception as e:
             logger.error(f"Failed to get stock price for {symbol}: {e}")
             return None
+    
+    def _calculate_dynamic_stop_loss(self, symbol: str, trade_date: str, buy_price: float) -> float:
+        """
+        计算 ATR 动态止损位。
+        
+        逻辑:
+            1. 计算当前 ATR 值
+            2. 止损位 = buy_price * (1 - ATR_STOP_MULTIPLIER * ATR / close)
+            3. 限制在 [MIN_ATR_STOP, MAX_ATR_STOP] 范围内
+        
+        Args:
+            symbol (str): 股票代码
+            trade_date (str): 交易日期
+            buy_price (float): 买入价格
+        
+        Returns:
+            float: 动态止损阈值（负数，如 -0.05 表示 -5%）
+        """
+        # 获取当前价格
+        price_data = self._get_stock_price(symbol, trade_date)
+        if not price_data:
+            return HARD_STOP_LOSS
+        
+        current_price = price_data["close"]
+        
+        # 计算 ATR
+        atr = self._get_atr(symbol, trade_date, window=ATR_WINDOW)
+        
+        if atr is None or atr <= 0:
+            # 如果无法计算 ATR，使用默认止损
+            return HARD_STOP_LOSS
+        
+        # 计算 ATR 百分比
+        atr_pct = atr / current_price
+        
+        # 计算动态止损阈值
+        dynamic_stop = -ATR_STOP_MULTIPLIER * atr_pct
+        
+        # 限制在 [MIN_ATR_STOP, MAX_ATR_STOP] 范围内
+        dynamic_stop = max(MIN_ATR_STOP, min(MAX_ATR_STOP, dynamic_stop))
+        
+        logger.debug(f"[ATR STOP] {symbol}: ATR={atr:.2f}, ATR%={atr_pct:.2%}, dynamic_stop={dynamic_stop:.1%}")
+        
+        return dynamic_stop
+    
+    def _check_trailing_stop(self, symbol: str, current_price: float, buy_price: float, high_since_buy: float) -> tuple[bool, str]:
+        """
+        检查是否触发移动止盈。
+        
+        逻辑:
+            1. 计算从最高点回落的幅度
+            2. 如果回落幅度 > TRAILING_STOP_THRESHOLD 且当前盈利 > MIN_PROFIT_FOR_TRAILING
+            3. 则触发止盈
+        
+        Args:
+            symbol (str): 股票代码
+            current_price (float): 当前价格
+            buy_price (float): 买入价格
+            high_since_buy (float): 买入以来的最高价
+        
+        Returns:
+            tuple[bool, str]: (是否触发止盈，止盈原因)
+        """
+        if not TRAILING_STOP_ENABLED:
+            return False, ""
+        
+        # 计算当前盈利
+        pnl_pct = (current_price - buy_price) / buy_price if buy_price > 0 else 0
+        
+        # 检查是否达到最小盈利要求
+        if pnl_pct < MIN_PROFIT_FOR_TRAILING:
+            return False, ""
+        
+        # 计算从最高点回落的幅度
+        if high_since_buy > 0:
+            pullback_pct = (high_since_buy - current_price) / high_since_buy
+            
+            # 检查是否触发移动止盈
+            if pullback_pct >= TRAILING_STOP_THRESHOLD:
+                reason = f"trailing stop (pullback {pullback_pct:.1%} >= {TRAILING_STOP_THRESHOLD:.1%}, profit {pnl_pct:.1%})"
+                logger.info(f"[TRAILING STOP] {symbol}: {reason}")
+                return True, reason
+        
+        return False, ""
     
     def run(self) -> BacktestResult:
         """运行回测"""

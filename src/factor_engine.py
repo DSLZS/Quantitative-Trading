@@ -122,32 +122,37 @@ class FactorEngine:
     
     # 多因子模型权重配置
     # 这些权重决定了各个因子对最终预测分值的贡献
+    # 【新增 - Iteration 4】私募级微观结构因子权重
     FACTOR_WEIGHTS = {
         # 动量因子权重 - 短期动量权重较高
-        "momentum_5": 0.15,
-        "momentum_10": 0.10,
-        "momentum_20": 0.05,
+        "momentum_5": 0.12,
+        "momentum_10": 0.08,
+        "momentum_20": 0.04,
         
         # 波动率因子权重 - 低波动率偏好
-        "volatility_5": -0.05,
-        "volatility_20": -0.05,
+        "volatility_5": -0.04,
+        "volatility_20": -0.04,
         
         # 成交量因子权重 - 放量偏好
-        "volume_ma_ratio_5": 0.10,
-        "volume_ma_ratio_20": 0.05,
+        "volume_ma_ratio_5": 0.08,
+        "volume_ma_ratio_20": 0.04,
         
         # 技术指标因子权重
-        "rsi_14": 0.05,  # RSI 适中偏好
-        "macd": 0.15,    # MACD 金叉偏好
-        "macd_signal": 0.10,
+        "rsi_14": 0.04,  # RSI 适中偏好
+        "macd": 0.12,    # MACD 金叉偏好
+        "macd_signal": 0.08,
         
         # 量价协同因子权重
-        "volume_price_divergence_5": 0.10,
-        "smart_money_flow": 0.10,
+        "volume_price_divergence_5": 0.08,
+        
+        # 【新增】私募级微观结构因子权重
+        "vcp_score": 0.10,        # VCP 突破潜力 (越低分越高，需反向处理)
+        "turnover_stable": 0.08,  # 换手率稳定性 (越高越稳定)
+        "smart_money_signal": 0.10,  # 聪明钱流向 (越高越看涨)
         
         # 价格位置因子权重
-        "price_position_20": 0.05,
-        "ma_deviation_5": 0.05,
+        "price_position_20": 0.04,
+        "ma_deviation_5": 0.04,
     }
     
     # RSI 过滤阈值
@@ -844,7 +849,7 @@ class FactorEngine:
     # =========================================================================
     
     def compute_volume_price_coordination(
-        self, 
+        self,
         df: pl.DataFrame,
         volume_window: int = 5,
         price_window: int = 5
@@ -936,6 +941,257 @@ class FactorEngine:
             volume_price_health.alias("volume_price_health"),
             volume_shrink_flag.alias("volume_shrink_flag"),
             price_volume_divergence.alias("price_volume_divergence"),
+        ])
+        
+        return result
+    
+    # =========================================================================
+    # 私募级微观结构因子模块 - VCP, Turnover_Vol, Smart_Money
+    # =========================================================================
+    
+    def compute_vcp(self, df: pl.DataFrame, lookback: int = 10) -> pl.DataFrame:
+        """
+        计算 VCP (成交量萎缩突破) 因子 - 私募级微观结构因子。
+        
+        VCP 原理 (Volume Contraction Pattern):
+            - VCP 是 Mark Minervini 提出的经典形态
+            - 核心逻辑：价格波动收敛 + 成交量萎缩 = 主力吸筹完成
+            - 当波动率收缩到极低水平时，往往预示着即将突破
+        
+        计算逻辑:
+            1. 计算过去 N 日的价格振幅 (high - low) / close
+            2. 计算振幅的标准差 (波动率收敛程度)
+            3. 计算成交量相对水平
+            4. VCP 分数 = 低波动率 + 低成交量 = 高突破潜力
+        
+        VCP 解读:
+            - VCP < 0.5: 波动率收缩 + 成交量萎缩，突破潜力高
+            - VCP > 1.0: 波动率扩张 + 成交量放大，观望
+        
+        Args:
+            df (pl.DataFrame): 包含 OHLCV 数据的 DataFrame
+            lookback (int): 回看窗口，默认 10 日
+        
+        Returns:
+            pl.DataFrame: 添加了 vcp_score 和 vcp_contraction 列的 DataFrame
+        
+        使用示例:
+            >>> df_vcp = engine.compute_vcp(df, lookback=10)
+            >>> # 筛选 VCP 突破潜力的股票
+            >>> breakout_candidates = df_vcp.filter(pl.col("vcp_contraction") < 0.5)
+        """
+        result = df.clone()
+        
+        # 确保数值列为 Float64
+        result = result.with_columns([
+            pl.col("close").cast(pl.Float64, strict=False),
+            pl.col("high").cast(pl.Float64, strict=False),
+            pl.col("low").cast(pl.Float64, strict=False),
+            pl.col("volume").cast(pl.Float64, strict=False),
+        ])
+        
+        # 1. 计算价格振幅 (Amplitude)
+        amplitude = (pl.col("high") - pl.col("low")) / (pl.col("close") + self.EPSILON)
+        
+        # 2. 计算振幅的标准差 (波动率收敛程度)
+        # 使用 rolling_std 计算波动率的波动率
+        amplitude_std = amplitude.rolling_std(window_size=lookback, ddof=1)
+        
+        # 3. 计算振幅的均值 (归一化用)
+        amplitude_mean = amplitude.rolling_mean(window_size=lookback)
+        
+        # 4. 计算成交量相对水平
+        volume_ma = pl.col("volume").rolling_mean(window_size=lookback)
+        volume_ratio = pl.col("volume") / (volume_ma + self.EPSILON)
+        
+        # 5. VCP 收缩分数 (0-1 范围，越低表示收缩越明显)
+        # 振幅标准差越小 + 成交量越低 = VCP 分数越低
+        vcp_contraction = (amplitude_std / (amplitude_mean + self.EPSILON)) * volume_ratio
+        
+        # 6. 归一化到 0-1 范围 (使用 clip 和分位数)
+        vcp_score = vcp_contraction.clip(0.0, 2.0) / 2.0
+        
+        result = result.with_columns([
+            vcp_score.alias("vcp_score"),
+            vcp_contraction.alias("vcp_contraction"),
+            amplitude.alias("price_amplitude"),
+            amplitude_std.alias("amplitude_std"),
+        ])
+        
+        return result
+    
+    def compute_turnover_vol(self, df: pl.DataFrame, lookback: int = 20) -> pl.DataFrame:
+        """
+        计算 Turnover_Vol (换手率标准差) 因子 - 过滤散户博弈噪音。
+        
+        原理:
+            - 换手率剧烈波动 = 散户博弈激烈 = 噪音大
+            - 换手率稳定 = 主力控盘 = 趋势可靠
+            - 通过计算换手率的标准差，过滤掉不稳定的股票
+        
+        计算逻辑:
+            1. 计算换手率 (如果有 turnover_rate 字段)
+            2. 或使用成交量变化率作为替代
+            3. 计算过去 N 日的标准差
+            4. 标准差越低，表示换手率越稳定
+        
+        Turnover_Vol 解读:
+            - Turnover_Vol < 0.5: 换手率稳定，主力控盘
+            - Turnover_Vol > 1.5: 换手率剧烈波动，散户博弈
+        
+        Args:
+            df (pl.DataFrame): 包含 OHLCV 数据的 DataFrame
+            lookback (int): 回看窗口，默认 20 日
+        
+        Returns:
+            pl.DataFrame: 添加了 turnover_vol 和 turnover_stable 列的 DataFrame
+        
+        使用示例:
+            >>> df_tv = engine.compute_turnover_vol(df, lookback=20)
+            >>> # 筛选换手率稳定的股票
+            >>> stable_stocks = df_tv.filter(pl.col("turnover_stable") > 0.5)
+        """
+        result = df.clone()
+        
+        # 确保数值列为 Float64
+        result = result.with_columns([
+            pl.col("volume").cast(pl.Float64, strict=False),
+        ])
+        
+        # 1. 计算换手率 (如果有 turnover_rate 字段，否则使用成交量变化率)
+        if "turnover_rate" in result.columns:
+            turnover = pl.col("turnover_rate").fill_null(0.0)
+        else:
+            # 使用成交量变化率作为替代
+            volume_ma = pl.col("volume").rolling_mean(window_size=5)
+            turnover = (pl.col("volume") / (volume_ma + self.EPSILON) - 1.0).abs()
+        
+        # 2. 计算换手率的标准差
+        turnover_vol = turnover.rolling_std(window_size=lookback, ddof=1)
+        
+        # 3. 计算换手率的均值 (用于归一化)
+        turnover_mean = turnover.rolling_mean(window_size=lookback)
+        
+        # 4. 计算换手率稳定性分数 (标准差/均值，越低越稳定)
+        turnover_cv = turnover_vol / (turnover_mean + self.EPSILON)  # 变异系数
+        
+        # 5. 稳定性评分 (0-1 范围，越高表示越稳定)
+        # 使用 1 / (1 + CV) 转换，CV 越低评分越高
+        turnover_stable = 1.0 / (1.0 + turnover_cv)
+        
+        result = result.with_columns([
+            turnover_vol.alias("turnover_vol"),
+            turnover_cv.alias("turnover_cv"),
+            turnover_stable.alias("turnover_stable"),
+            turnover_mean.alias("turnover_mean"),
+        ])
+        
+        return result
+    
+    def compute_smart_money(self, df: pl.DataFrame, lookback: int = 10) -> pl.DataFrame:
+        """
+        计算 Smart_Money (聪明钱流向) 因子 - 识别主力行为。
+        
+        原理:
+            - 聪明钱特征：缩量上涨、放量下跌 (背离)
+            - 缩量上涨：主力控盘，少量资金就能推动价格上涨
+            - 放量下跌：主力出货，大量成交量伴随价格下跌
+        
+        计算逻辑:
+            1. 识别上涨日和下跌日
+            2. 计算上涨日的平均成交量和下跌日的平均成交量
+            3. Smart_Money = 下跌成交量 / 上涨成交量
+            4. 比率 > 1 表示放量下跌 (聪明钱流出)
+            5. 比率 < 1 表示缩量上涨 (聪明钱流入)
+        
+        Smart_Money 解读:
+            - Smart_Money < 1: 缩量上涨，聪明钱流入 (看涨)
+            - Smart_Money > 1: 放量下跌，聪明钱流出 (看跌)
+            - Smart_Money ≈ 1: 中性
+        
+        Args:
+            df (pl.DataFrame): 包含 OHLCV 数据的 DataFrame
+            lookback (int): 回看窗口，默认 10 日
+        
+        Returns:
+            pl.DataFrame: 添加了 smart_money_flow 和 smart_money_signal 列的 DataFrame
+        
+        使用示例:
+            >>> df_sm = engine.compute_smart_money(df, lookback=10)
+            >>> # 筛选聪明钱流入的股票
+            >>> smart_stocks = df_sm.filter(pl.col("smart_money_signal") > 0.5)
+        """
+        result = df.clone()
+        
+        # 确保数值列为 Float64
+        result = result.with_columns([
+            pl.col("close").cast(pl.Float64, strict=False),
+            pl.col("volume").cast(pl.Float64, strict=False),
+        ])
+        
+        # 确保 pct_change 存在
+        if "pct_change" not in result.columns:
+            if "pct_chg" in result.columns:
+                result = result.with_columns([
+                    pl.col("pct_chg").alias("pct_change")
+                ])
+            else:
+                result = result.with_columns([
+                    (pl.col("close") / pl.col("close").shift(1) - 1).alias("pct_change")
+                ])
+        
+        result = result.with_columns([
+            pl.col("pct_change").cast(pl.Float64, strict=False)
+        ])
+        
+        # 1. 识别上涨日和下跌日
+        is_up = (pl.col("pct_change") > 0).cast(pl.Float64)
+        is_down = (pl.col("pct_change") < 0).cast(pl.Float64)
+        
+        # 2. 计算上涨成交量和下跌成交量
+        up_volume = is_up * pl.col("volume")
+        down_volume = is_down * pl.col("volume")
+        
+        # 3. 计算过去 N 日的累计上涨/下跌成交量
+        up_volume_sum = up_volume.rolling_sum(window_size=lookback)
+        down_volume_sum = down_volume.rolling_sum(window_size=lookback)
+        
+        # 4. 计算上涨天数和下跌天数
+        up_days = is_up.rolling_sum(window_size=lookback)
+        down_days = is_down.rolling_sum(window_size=lookback)
+        
+        # 5. 计算平均上涨成交量和平均下跌成交量
+        avg_up_volume = up_volume_sum / (up_days + self.EPSILON)
+        avg_down_volume = down_volume_sum / (down_days + self.EPSILON)
+        
+        # 6. Smart_Money 比率
+        # 比率 < 1: 缩量上涨 (聪明钱流入)
+        # 比率 > 1: 放量下跌 (聪明钱流出)
+        smart_money_ratio = avg_down_volume / (avg_up_volume + self.EPSILON)
+        
+        # 7. Smart_Money 信号 (0-1 范围，越高表示聪明钱流入)
+        # 使用 1 / (1 + ratio) 转换，ratio 越低信号越强
+        smart_money_signal = 1.0 / (1.0 + smart_money_ratio)
+        
+        # 8. 聪明钱背离度 (价格与成交量的相关性)
+        # 负相关表示背离 (价格上涨但成交量下降)
+        price_change = pl.col("close") / pl.col("close").shift(lookback) - 1
+        volume_change = pl.col("volume") / pl.col("volume").shift(lookback) - 1
+        
+        # 计算相关性 (简化版：使用协方差/标准差)
+        price_mean = price_change.rolling_mean(window_size=lookback)
+        volume_mean = volume_change.rolling_mean(window_size=lookback)
+        covariance = ((price_change - price_mean) * (volume_change - volume_mean)).rolling_mean(window_size=lookback)
+        price_std = price_change.rolling_std(window_size=lookback, ddof=1)
+        volume_std = volume_change.rolling_std(window_size=lookback, ddof=1)
+        price_volume_correlation = covariance / (price_std * volume_std + self.EPSILON)
+        
+        result = result.with_columns([
+            smart_money_ratio.alias("smart_money_ratio"),
+            smart_money_signal.alias("smart_money_signal"),
+            avg_up_volume.alias("avg_up_volume"),
+            avg_down_volume.alias("avg_down_volume"),
+            price_volume_correlation.alias("price_volume_correlation"),
         ])
         
         return result
@@ -1584,7 +1840,12 @@ class FactorEngine:
         # 步骤 3: 计算量价协同因子
         result = self.compute_volume_price_coordination(result)
         
-        # 步骤 3.5: 计算历史夏普比率因子 (关键修复 - 之前未在主流程中调用)
+        # 步骤 3.6: 【新增 - Iteration 4】私募级微观结构因子
+        result = self.compute_vcp(result, lookback=10)
+        result = self.compute_turnover_vol(result, lookback=20)
+        result = self.compute_smart_money(result, lookback=10)
+        
+        # 步骤 3.7: 计算历史夏普比率因子
         result = self.compute_hist_sharpe(result, window=20)
         
         # 步骤 4: 数据预处理 (Winsorize + Z-Score)
@@ -1794,6 +2055,10 @@ class FactorEngine:
         columns.extend(["rsi_14", "macd", "macd_signal", "macd_hist"])
         # 添加量价协同列
         columns.extend(["volume_price_health", "volume_shrink_flag", "price_volume_divergence"])
+        # 【新增 - Iteration 4】私募级微观结构因子列
+        columns.extend(["vcp_score", "vcp_contraction", "price_amplitude", "amplitude_std"])
+        columns.extend(["turnover_vol", "turnover_cv", "turnover_stable", "turnover_mean"])
+        columns.extend(["smart_money_ratio", "smart_money_signal", "avg_up_volume", "avg_down_volume", "price_volume_correlation"])
         # 添加标签列
         if self.label_config:
             columns.append(self.label_config["name"])

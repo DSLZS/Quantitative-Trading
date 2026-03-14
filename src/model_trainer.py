@@ -268,34 +268,48 @@ class ModelTrainer:
     @staticmethod
     def convert_to_multiclass_labels(
         y: np.ndarray,
-        upper_threshold: float = 0.03,
-        lower_threshold: float = -0.03,
+        use_quantiles: bool = True,   # 【Iteration 7】启用分位数方法
+        quantile_threshold: float = 0.15,  # 【Iteration 7】上下各 15% 分位数
     ) -> np.ndarray:
         """
         将连续收益率转换为三分类标签。
         
         【重构 - 三分类模型 2026-03-14】
-        标签定义:
-            - 类别 2 (Long): 未来 5 日超额收益 > +3% (看涨)
-            - 类别 1 (Hold): 未来 5 日超额收益在 [-3%, +3%] 之间 (持有)
-            - 类别 0 (Short): 未来 5 日超额收益 < -3% (看跌)
+        【Iteration 7 调优 - 2026-03-14】
+        标签定义 (分位数方法):
+            - 类别 2 (Long): 未来 5 日超额收益 > 上分位数 (约前 15%)
+            - 类别 1 (Hold): 未来 5 日超额收益在中间 (约 70%)
+            - 类别 0 (Short): 未来 5 日超额收益 < 下分位数 (约后 15%)
         
         Args:
             y (np.ndarray): 连续收益率值
-            upper_threshold (float): 上阈值，默认 0.03 (3%)
-            lower_threshold (float): 下阈值，默认 -0.03 (-3%)
+            use_quantiles (bool): 是否使用分位数方法
+            quantile_threshold (float): 分位数阈值 (0-0.5)
         
         Returns:
             np.ndarray: 三分类标签数组 (0, 1, 2)
         
         使用示例:
             >>> y = np.array([0.05, 0.01, -0.05, 0.0, -0.01])
-            >>> labels = ModelTrainer.convert_to_multiclass_labels(y)
-            >>> print(labels)  # [2, 1, 0, 1, 1]
+            >>> labels = ModelTrainer.convert_to_multiclass_labels(y, use_quantiles=True)
         """
         labels = np.ones_like(y, dtype=np.int32)  # 默认为类别 1 (Hold)
-        labels[y > upper_threshold] = 2  # 类别 2 (Long)
-        labels[y < lower_threshold] = 0  # 类别 0 (Short)
+        
+        if use_quantiles:
+            # 使用分位数方法，确保类别平衡
+            upper_quantile = np.quantile(y, 1 - quantile_threshold)
+            lower_quantile = np.quantile(y, quantile_threshold)
+            
+            logger.info(f"Using quantile method: upper={upper_quantile:.4f}, lower={lower_quantile:.4f}")
+            
+            labels[y > upper_quantile] = 2  # 类别 2 (Long) - 前 15%
+            labels[y < lower_quantile] = 0  # 类别 0 (Short) - 后 15%
+        else:
+            # 使用固定阈值方法
+            upper_threshold = 0.05
+            lower_threshold = -0.05
+            labels[y > upper_threshold] = 2
+            labels[y < lower_threshold] = 0
         
         logger.info(f"Converted to multiclass labels: Class 0={np.sum(labels==0)}, Class 1={np.sum(labels==1)}, Class 2={np.sum(labels==2)}")
         return labels
@@ -1192,9 +1206,11 @@ def run_training(
     lambda_l1: float = 0.0,
     lambda_l2: float = 0.0,
     use_sample_weights: bool = True,
-    # 【重构 - 三分类】标签转换参数 - 【Iteration 2】调整阈值平衡类别
-    upper_threshold: float = 0.02,  # 【Iter2】类别 2 (Long) 阈值从 3% 降至 2%
-    lower_threshold: float = -0.02,  # 【Iter2】类别 0 (Short) 阈值从 -3% 降至 -2%
+    # 【重构 - 三分类】标签转换参数 - 【Iteration 7】使用分位数方法平衡类别
+    use_quantiles: bool = True,       # 【Iter7】启用分位数方法
+    quantile_threshold: float = 0.15,  # 【Iter7】上下各 15% 分位数
+    upper_threshold: float = 0.05,    # 【Iter6】固定阈值方法用
+    lower_threshold: float = -0.05,   # 【Iter6】固定阈值方法用
 ) -> dict[str, Any]:
     """
     运行完整的训练流程（从 Parquet 文件）。
@@ -1269,21 +1285,21 @@ def run_training(
     y_val_continuous = data["y_val"].to_numpy()
     y_test_continuous = data["y_test"].to_numpy()
     
-    # 转换为三分类标签 (0, 1, 2)
+    # 转换为三分类标签 (0, 1, 2) - 【Iteration 7】使用分位数方法
     y_train_multiclass = ModelTrainer.convert_to_multiclass_labels(
         y_train_continuous,
-        upper_threshold=upper_threshold,
-        lower_threshold=lower_threshold,
+        use_quantiles=use_quantiles,
+        quantile_threshold=quantile_threshold,
     )
     y_val_multiclass = ModelTrainer.convert_to_multiclass_labels(
         y_val_continuous,
-        upper_threshold=upper_threshold,
-        lower_threshold=lower_threshold,
+        use_quantiles=use_quantiles,
+        quantile_threshold=quantile_threshold,
     )
     y_test_multiclass = ModelTrainer.convert_to_multiclass_labels(
         y_test_continuous,
-        upper_threshold=upper_threshold,
-        lower_threshold=lower_threshold,
+        use_quantiles=use_quantiles,
+        quantile_threshold=quantile_threshold,
     )
     
     # 更新 data 中的标签为多分类标签
