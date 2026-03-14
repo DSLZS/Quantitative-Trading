@@ -266,6 +266,41 @@ class ModelTrainer:
         }
     
     @staticmethod
+    def convert_to_multiclass_labels(
+        y: np.ndarray,
+        upper_threshold: float = 0.03,
+        lower_threshold: float = -0.03,
+    ) -> np.ndarray:
+        """
+        将连续收益率转换为三分类标签。
+        
+        【重构 - 三分类模型 2026-03-14】
+        标签定义:
+            - 类别 2 (Long): 未来 5 日超额收益 > +3% (看涨)
+            - 类别 1 (Hold): 未来 5 日超额收益在 [-3%, +3%] 之间 (持有)
+            - 类别 0 (Short): 未来 5 日超额收益 < -3% (看跌)
+        
+        Args:
+            y (np.ndarray): 连续收益率值
+            upper_threshold (float): 上阈值，默认 0.03 (3%)
+            lower_threshold (float): 下阈值，默认 -0.03 (-3%)
+        
+        Returns:
+            np.ndarray: 三分类标签数组 (0, 1, 2)
+        
+        使用示例:
+            >>> y = np.array([0.05, 0.01, -0.05, 0.0, -0.01])
+            >>> labels = ModelTrainer.convert_to_multiclass_labels(y)
+            >>> print(labels)  # [2, 1, 0, 1, 1]
+        """
+        labels = np.ones_like(y, dtype=np.int32)  # 默认为类别 1 (Hold)
+        labels[y > upper_threshold] = 2  # 类别 2 (Long)
+        labels[y < lower_threshold] = 0  # 类别 0 (Short)
+        
+        logger.info(f"Converted to multiclass labels: Class 0={np.sum(labels==0)}, Class 1={np.sum(labels==1)}, Class 2={np.sum(labels==2)}")
+        return labels
+    
+    @staticmethod
     def calculate_sample_weights(
         y: np.ndarray,
         weight_method: str = "tail_focus",
@@ -481,52 +516,40 @@ class ModelTrainer:
     
     def __init__(
         self,
-        n_estimators: int = 1500,  # 【重构】增加至 1500 轮，让模型充分学习
-        learning_rate: float = 0.001,  # 【修复 - 2026-03-14】降至 0.001，更缓慢学习提升泛化
-        max_depth: int = 5,  # 【重构】略微增加深度至 5
-        num_leaves: int = 24,  # 【重构】增加至 24，配合深度
-        min_child_samples: int = 20,  # 【修复 - 2026-03-14】设为 20，防止过拟合
-        subsample: float = 0.85,
-        colsample_bytree: float = 0.85,
+        n_estimators: int = 1500,  # 【重构 - 三分类】增加至 1500 轮，让模型充分学习
+        learning_rate: float = 0.005,  # 【重构 - 三分类】学习率
+        max_depth: int = 6,  # 【重构 - 三分类】增加深度
+        num_leaves: int = 31,  # 【重构 - 三分类】增加叶子节点
+        min_child_samples: int = 30,  # 【重构 - 三分类】增加样本数防止过拟合
+        subsample: float = 0.8,
+        colsample_bytree: float = 0.8,
         random_state: int = 42,
-        lambda_l1: float = 0.0,  # 【重构】移除 L1 正则化
-        lambda_l2: float = 0.0,  # 【重构】移除 L2 正则化
+        lambda_l1: float = 0.0,
+        lambda_l2: float = 0.0,
+        # 【重构 - 三分类】多分类参数
+        num_class: int = 3,  # 三分类：0=Short, 1=Hold, 2=Long
     ) -> None:
         """
         使用超参数初始化模型训练器。
         
-        【重构 - 2026-03-14】强化模型拟合深度，彻底解决负 IC 问题
+        【重构 - 三分类模型 2026-03-14】
+        将回归模型改为三分类模型，预测股票未来 5 日趋势：
+        - 类别 0 (Short): 未来 5 日超额收益 < -3%
+        - 类别 1 (Hold): 未来 5 日超额收益在 [-3%, +3%] 之间
+        - 类别 2 (Long): 未来 5 日超额收益 > +3%
         
         Args:
-            n_estimators (int):  boosting 轮数 (树的数量)，默认 1500
-                【重构】增加至 1500 轮，让模型充分学习
-            
+            n_estimators (int): boosting 轮数 (树的数量)，默认 1500
             learning_rate (float): 每棵树的学习率，默认 0.005
-                【重构】降低至 0.005，更缓慢学习提升泛化
-            
-            max_depth (int): 树的最大深度，默认 5
-                【重构】略微增加深度至 5，增强拟合能力
-            
-            num_leaves (int): 每棵树的叶子节点数，默认 24
-                【重构】增加至 24，配合深度提升
-            
-            min_child_samples (int): 每个叶子节点的最小样本数，默认 10
-                【重构】降低至 10，让模型更充分拟合小样本
-            
-            subsample (float): 行采样比例，默认 0.85
-                【重构】略微提高至 0.85，增加数据利用率
-            
-            colsample_bytree (float): 列采样比例，默认 0.85
-                【重构】略微提高至 0.85，增加特征利用率
-            
+            max_depth (int): 树的最大深度，默认 6
+            num_leaves (int): 每棵树的叶子节点数，默认 31
+            min_child_samples (int): 每个叶子节点的最小样本数，默认 30
+            subsample (float): 行采样比例，默认 0.8
+            colsample_bytree (float): 列采样比例，默认 0.8
             random_state (int): 随机种子，默认 42
-                确保结果可复现
-            
             lambda_l1 (float): L1 正则化参数，默认 0.0
-                【重构】移除 L1 正则化，让模型充分拟合
-            
             lambda_l2 (float): L2 正则化参数，默认 0.0
-                【重构】移除 L2 正则化，让模型充分拟合
+            num_class (int): 分类数量，默认 3（三分类）
         
         初始化后创建的属性:
             - self.params: LightGBM 参数字典
@@ -534,36 +557,36 @@ class ModelTrainer:
             - self.model: 训练后的模型 (初始为 None)
             - self.feature_importance_: 特征重要性字典
             - self.factor_ic_: 因子 IC 值
-            - self.negative_ic_factors: 负 IC 因子列表（用于推理时取反）
+            - self.num_class: 分类数量
         """
-        # LightGBM 模型参数配置 - 【修复 - 2026-03-14】强化拟合深度，verbosity=1 输出每轮 Loss
+        # LightGBM 模型参数配置 - 【重构 - 三分类】使用多分类目标
         self.params = {
-            "objective": "regression",  # 【重构】使用 MSE 损失，更关注整体拟合
-            "metric": "mse",  # 【重构】MSE 评估指标
+            "objective": "multiclass",  # 【重构 - 三分类】多分类任务
+            "num_class": num_class,  # 【重构 - 三分类】三分类
+            "metric": "multi_logloss",  # 【重构 - 三分类】多分类对数损失
             "boosting_type": "gbdt",  # 梯度提升树
             "num_leaves": num_leaves,  # 叶子节点数
             "max_depth": max_depth,  # 最大深度
-            "learning_rate": learning_rate,  # 学习率 (降至 0.001)
-            "min_child_samples": min_child_samples,  # 【修复】设为 20
+            "learning_rate": learning_rate,  # 学习率
+            "min_child_samples": min_child_samples,  # 最小样本数
             "subsample": subsample,  # 行采样比例
             "colsample_bytree": colsample_bytree,  # 列采样比例
-            "feature_fraction": 0.85,  # 【重构】列采样
-            "bagging_fraction": 0.85,  # 【重构】行采样
+            "feature_fraction": 0.8,  # 列采样
+            "bagging_fraction": 0.8,  # 行采样
             "bagging_freq": 5,  # 每 5 轮进行一次 bagging
             "random_state": random_state,  # 随机种子
             "n_jobs": -1,  # 使用所有 CPU 核心
-            "verbose": 1,  # 【修复】设为 1，输出每一轮 Loss
-            # 【重构】移除正则化
-            "lambda_l1": lambda_l1,  # L1 正则化 (0.0)
-            "lambda_l2": lambda_l2,  # L2 正则化 (0.0)
-            # 【修复】min_data_in_leaf 参数
-            "min_data_in_leaf": 20,  # 【修复】硬编码为 20
+            "verbose": 1,  # 输出训练日志
+            # 正则化
+            "lambda_l1": lambda_l1,  # L1 正则化
+            "lambda_l2": lambda_l2,  # L2 正则化
+            "min_data_in_leaf": min_child_samples,  # 叶子节点最小样本数
         }
         self.n_estimators = n_estimators  # boosting 轮数
         self.model: lgb.Booster | None = None  # 训练后的模型
         self.feature_importance_: dict[str, float] = {}  # 特征重要性
         self.factor_ic_: dict[str, float] = {}  # 因子 IC 值
-        self.negative_ic_factors: list[str] = []  # 【新增】负 IC 因子列表
+        self.num_class = num_class  # 【重构 - 三分类】分类数量
     
     def train(
         self,
@@ -751,6 +774,7 @@ class ModelTrainer:
             
         Returns:
             np.ndarray: 预测值数组
+                对于多分类模型，返回形状为 (n_samples, n_classes) 的概率矩阵
             
         Raises:
             ValueError: 如果模型尚未训练
@@ -759,12 +783,55 @@ class ModelTrainer:
             >>> trainer = ModelTrainer()
             >>> trainer.train(X_train, y_train)
             >>> predictions = trainer.predict(X_test)
-            >>> print(f"预测收益率：{predictions[:5]}")
+            >>> print(f"预测概率：{predictions[:5]}")
         """
         if self.model is None:
             raise ValueError("Model not trained yet")
         
         return self.model.predict(X.to_numpy())
+    
+    def predict_class2_prob(self, X: pl.DataFrame) -> np.ndarray:
+        """
+        获取类别 2 (Long) 的概率值。
+        
+        【重构 - 三分类模型 2026-03-14】
+        对于多分类模型，predict() 返回每个类别的概率分布。
+        此方法提取类别 2 (大涨) 的概率作为选股依据。
+        
+        Args:
+            X (pl.DataFrame): 用于预测的特征 DataFrame
+                列必须与训练时相同
+            
+        Returns:
+            np.ndarray: 类别 2 的概率数组，范围 [0, 1]
+                值越大表示股票大涨的可能性越高
+            
+        Raises:
+            ValueError: 如果模型尚未训练
+            AssertionError: 如果模型不是三分类模型
+            
+        使用示例:
+            >>> trainer = ModelTrainer()
+            >>> trainer.train(X_train, y_train_multiclass)
+            >>> long_probs = trainer.predict_class2_prob(X_test)
+            >>> print(f"Long 概率：{long_probs[:5]}")
+            >>> # 选取概率>0.4 的股票
+            >>> top_stocks = long_probs > 0.4
+        """
+        if self.model is None:
+            raise ValueError("Model not trained yet")
+        
+        if self.num_class != 3:
+            raise ValueError(f"predict_class2_prob requires num_class=3, got num_class={self.num_class}")
+        
+        # 获取所有类别的概率
+        all_probs = self.model.predict(X.to_numpy())
+        
+        # 提取类别 2 (Long) 的概率 - 索引 2 对应类别 2
+        # LightGBM 多分类输出形状：(n_samples, n_classes)
+        class2_prob = all_probs[:, 2]
+        
+        return class2_prob
     
     def get_top_features(self, n: int = 10) -> list[tuple[str, float]]:
         """
@@ -1115,16 +1182,19 @@ def run_training_from_db(
 def run_training(
     parquet_path: str = "data/parquet/features_latest.parquet",
     feature_columns: list[str] = None,
-    label_column: str = "label_5d_target",  # 【重构】使用 5 日趋势标签
-    n_estimators: int = 1000,  # 【重构】增加至 1000 轮
-    learning_rate: float = 0.01,  # 【重构】降低至 0.01
-    max_depth: int = 4,
-    min_child_samples: int = 50,  # 【重构】提高到 50
+    label_column: str = "label_5d",  # 【重构 - 三分类】使用 5 日趋势标签
+    n_estimators: int = 1500,  # 【重构 - 三分类】增加至 1500 轮
+    learning_rate: float = 0.005,  # 【重构 - 三分类】学习率
+    max_depth: int = 6,  # 【重构 - 三分类】增加深度
+    min_child_samples: int = 30,  # 【重构 - 三分类】最小样本数
     feature_fraction: float = 0.8,  # 【重构】列采样
     bagging_fraction: float = 0.8,  # 【重构】行采样
     lambda_l1: float = 0.0,
     lambda_l2: float = 0.0,
     use_sample_weights: bool = True,
+    # 【重构 - 三分类】标签转换参数 - 【Iteration 2】调整阈值平衡类别
+    upper_threshold: float = 0.02,  # 【Iter2】类别 2 (Long) 阈值从 3% 降至 2%
+    lower_threshold: float = -0.02,  # 【Iter2】类别 0 (Short) 阈值从 -3% 降至 -2%
 ) -> dict[str, Any]:
     """
     运行完整的训练流程（从 Parquet 文件）。
@@ -1193,6 +1263,34 @@ def run_training(
         label_column=label_column,
     )
     
+    # 【重构 - 三分类模型 2026-03-14】将连续标签转换为三分类标签
+    # 获取未来收益率用于转换
+    y_train_continuous = data["y_train"].to_numpy()
+    y_val_continuous = data["y_val"].to_numpy()
+    y_test_continuous = data["y_test"].to_numpy()
+    
+    # 转换为三分类标签 (0, 1, 2)
+    y_train_multiclass = ModelTrainer.convert_to_multiclass_labels(
+        y_train_continuous,
+        upper_threshold=upper_threshold,
+        lower_threshold=lower_threshold,
+    )
+    y_val_multiclass = ModelTrainer.convert_to_multiclass_labels(
+        y_val_continuous,
+        upper_threshold=upper_threshold,
+        lower_threshold=lower_threshold,
+    )
+    y_test_multiclass = ModelTrainer.convert_to_multiclass_labels(
+        y_test_continuous,
+        upper_threshold=upper_threshold,
+        lower_threshold=lower_threshold,
+    )
+    
+    # 更新 data 中的标签为多分类标签
+    data["y_train"] = pl.Series("y_train", y_train_multiclass)
+    data["y_val"] = pl.Series("y_val", y_val_multiclass)
+    data["y_test"] = pl.Series("y_test", y_test_multiclass)
+    
     # Step 2.5: 【新增】因子 IC 分析
     logger.info("=" * 50)
     logger.info("Factor IC Analysis")
@@ -1254,18 +1352,47 @@ def run_training(
         logger.info(f"  {i}. {name}: {importance:.2f}")
     
     # Step 7: 测试集评估
-    test_pred = trainer.predict(data["X_test"])
-    test_mse = np.mean((test_pred - data["y_test"].to_numpy()) ** 2)
+    # 【重构 - 三分类】多分类模型输出形状为 (n_samples, n_classes)
+    # 需要提取预测类别（概率最大的类别）
+    test_pred_probs = trainer.predict(data["X_test"])
+    test_pred_classes = np.argmax(test_pred_probs, axis=1)
+    y_test_np = data["y_test"].to_numpy()
     
-    train_mse = np.mean((trainer.predict(data["X_train"]) - data["y_train"].to_numpy()) ** 2)
-    val_mse = np.mean((trainer.predict(data["X_val"]) - data["y_val"].to_numpy()) ** 2)
+    # 计算分类准确率
+    test_accuracy = np.mean(test_pred_classes == y_test_np)
+    
+    # 计算类别 2 (Long) 的预测准确率
+    class2_mask = y_test_np == 2
+    if np.sum(class2_mask) > 0:
+        class2_accuracy = np.mean(test_pred_classes[class2_mask] == 2)
+    else:
+        class2_accuracy = 0.0
+    
+    train_pred_probs = trainer.predict(data["X_train"])
+    train_pred_classes = np.argmax(train_pred_probs, axis=1)
+    train_accuracy = np.mean(train_pred_classes == data["y_train"].to_numpy())
+    
+    val_pred_probs = trainer.predict(data["X_val"])
+    val_pred_classes = np.argmax(val_pred_probs, axis=1)
+    val_accuracy = np.mean(val_pred_classes == data["y_val"].to_numpy())
     
     logger.info("=" * 50)
-    logger.info("Model Evaluation:")
+    logger.info("Model Evaluation (Classification):")
     logger.info("=" * 50)
-    logger.info(f"  Train MSE: {train_mse:.6f}")
-    logger.info(f"  Valid  MSE: {val_mse:.6f}")
-    logger.info(f"  Test   MSE: {test_mse:.6f}")
+    logger.info(f"  Train Accuracy: {train_accuracy:.4f}")
+    logger.info(f"  Valid Accuracy: {val_accuracy:.4f}")
+    logger.info(f"  Test  Accuracy: {test_accuracy:.4f}")
+    logger.info(f"  Class 2 (Long) Accuracy: {class2_accuracy:.4f}")
+    
+    # 输出混淆矩阵统计
+    logger.info("=" * 50)
+    logger.info("Prediction Distribution:")
+    logger.info("=" * 50)
+    for true_class in range(3):
+        mask = y_test_np == true_class
+        if np.sum(mask) > 0:
+            pred_dist = test_pred_classes[mask]
+            logger.info(f"  True Class {true_class}: Pred as 0={np.sum(pred_dist==0)}, 1={np.sum(pred_dist==1)}, 2={np.sum(pred_dist==2)}")
     
     # 判断模型是否收敛
     logger.info("=" * 50)
@@ -1273,18 +1400,18 @@ def run_training(
     logger.info("=" * 50)
     
     # 计算训练集和验证集的差距
-    gap = val_mse - train_mse
-    if gap < 0.0001:
-        logger.info("  Model is well-fitted (train/val gap is small)")
-    elif gap < 0.001:
-        logger.info("  Model shows slight overfitting (acceptable)")
+    gap = val_accuracy - train_accuracy
+    if abs(gap) < 0.001:
+        logger.info(f"  Model is well-fitted (train={train_accuracy:.4f}, val={val_accuracy:.4f})")
+    elif abs(gap) < 0.01:
+        logger.info(f"  Model shows slight overfitting (gap={gap:.4f}, acceptable)")
     else:
-        logger.info(f"  Model shows overfitting (gap={gap:.6f})")
+        logger.info(f"  Model shows overfitting (gap={gap:.4f})")
     
     # 检查测试集表现
-    if test_mse < 0.0001:
+    if test_accuracy > 0.95:
         logger.info("  Test performance is EXCELLENT")
-    elif test_mse < 0.001:
+    elif test_accuracy > 0.90:
         logger.info("  Test performance is GOOD")
     else:
         logger.info("  Test performance needs improvement")
@@ -1297,9 +1424,10 @@ def run_training(
         "model": trainer.model,
         "top_features": top_features,
         "factor_ic": factor_ic,
-        "test_mse": test_mse,
-        "train_mse": train_mse,
-        "val_mse": val_mse,
+        "test_accuracy": test_accuracy,
+        "train_accuracy": train_accuracy,
+        "val_accuracy": val_accuracy,
+        "class2_accuracy": class2_accuracy,
         "train_samples": len(data["X_train"]),
         "val_samples": len(data["X_val"]),
         "test_samples": len(data["X_test"]),
@@ -1332,5 +1460,9 @@ if __name__ == "__main__":
     
     print(f"\nTraining completed!")
     print(f"Top features: {results['top_features']}")
-    print(f"Test MSE: {results['test_mse']:.6f}")
+    if 'test_accuracy' in results:
+        print(f"Test Accuracy: {results['test_accuracy']:.4f}")
+        print(f"Class 2 (Long) Accuracy: {results.get('class2_accuracy', 0):.4f}")
+    else:
+        print(f"Test MSE: {results.get('test_mse', 0):.6f}")
     print(f"Model saved to: {model_output}")

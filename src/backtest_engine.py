@@ -45,8 +45,16 @@ except ImportError:
 SCORE_THRESHOLD = 0.0  # 默认准入阈值（强于平均）
 DEFENSIVE_THRESHOLD_ADDON = 0.3  # 防御模式额外阈值（+0.3 个标准差，更平滑过渡）
 
-MIN_HOLD_DAYS = 2  # 最小持有天数（防止频繁换手）
+# 【重构 - 三分类模型 2026-03-14】换仓抑制参数 - 【Iteration 3】激进持有期约束
+MIN_HOLD_DAYS = 10  # 【Iter3】最小持有天数从 5 增至 10（激进抑制换仓）
+MIN_HOLD_DAYS_EXCEPTION = -0.05  # 【新增】硬止损阈值，触发时可突破最小持有期限制
+
+# 【重构 - 三分类模型 2026-03-14】分值缓冲带参数
+PREDICT_SCORE_BUFFER = 0.4  # 【新增】类别 2 概率阈值，低于此值触发卖出
+TOP_N_PERCENTILE = 20  # 【重构】从"前 10 名"改为"前 N%"，更灵活
+
 DEFENSIVE_STOP_LOSS = -0.05  # 防御模式下止损线（-5%）
+HARD_STOP_LOSS = -0.05  # 【新增】硬止损阈值（任何模式下都触发）
 
 # 【新增 - 2026-03-14】评分融合权重
 SCORE_WEIGHT = 0.7  # predict_score 权重
