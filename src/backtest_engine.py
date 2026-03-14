@@ -69,7 +69,6 @@ class BacktestConfig:
     use_mock_ai: bool = True
     test_mode: bool = True
     verbose: bool = True
-    reverse_signal: bool = True  # 【重构 - 2026-03-14】默认启用反向选股：IC 分析显示大部分因子为负相关
 
 
 @dataclass
@@ -165,10 +164,9 @@ class BacktestEngine:
         except Exception as e:
             logger.warning(f"Failed to initialize FactorEngine: {e}")
         
-        reverse_note = " [REVERSE SIGNAL]" if self.config.reverse_signal else ""
         logger.info(f"BacktestEngine initialized: days={self.config.lookback_days}, "
                    f"capital={self.config.initial_capital}, "
-                   f"score_threshold={self.config.min_score:.2f}{reverse_note}")
+                   f"score_threshold={self.config.min_score:.2f}")
     
     def get_trade_dates(self, end_date: str = None, days: int = 60) -> list[str]:
         """获取历史交易日列表"""
@@ -307,14 +305,9 @@ class BacktestEngine:
                     # 第一步：获取当前阈值（考虑防御模式调整）
                     current_threshold = self._get_current_threshold(trade_date)
                     
-                    # 第二步：【反向选股逻辑】
-                    if self.config.reverse_signal:
-                        # 【反向选股】按 predict_score 升序排序（选取最低分）
-                        results.sort(key=lambda x: x["predict_score"], reverse=False)
-                        logger.info(f"[REVERSE SIGNAL] Sorting by predict_score ASC (selecting lowest scores)")
-                    else:
-                        # 【正向选股】按 predict_score 降序排序（选取最高分）
-                        results.sort(key=lambda x: x["predict_score"], reverse=True)
+                    # 第二步：【正向选股逻辑】按 predict_score 降序排序（选取最高分）
+                    results.sort(key=lambda x: x["predict_score"], reverse=True)
+                    logger.info(f"[FORWARD SIGNAL] Sorting by predict_score DESC (selecting highest scores)")
                     
                     # 第三步：取前 10 名
                     top_10_by_score = results[:10]
@@ -329,15 +322,9 @@ class BacktestEngine:
                         stock["combined_score"] = combined_score
                         logger.debug(f"  {stock['symbol']}: combined={combined_score:+.2f} (0.7*{stock['predict_score']:+.2f} + 0.3*{stock['hist_sharpe_20d']:+.2f})")
                     
-                    # 第五步：【反向选股逻辑】按融合分数排序选取
-                    if self.config.reverse_signal:
-                        # 【反向选股】按融合分数升序排序（选取最低分）
-                        top_10_by_score.sort(key=lambda x: x["combined_score"], reverse=False)
-                        logger.info(f"[REVERSE SIGNAL] Selecting {len(top_10_by_score[:2])} stocks with LOWEST combined scores")
-                    else:
-                        # 【正向选股】按融合分数降序排序（选取最高分）
-                        top_10_by_score.sort(key=lambda x: x["combined_score"], reverse=True)
-                        logger.info(f"[FORWARD SIGNAL] Selecting {len(top_10_by_score[:2])} stocks with HIGHEST combined scores")
+                    # 第五步：【正向选股】按融合分数降序排序选取
+                    top_10_by_score.sort(key=lambda x: x["combined_score"], reverse=True)
+                    logger.info(f"[FORWARD SIGNAL] Selecting {len(top_10_by_score[:2])} stocks with HIGHEST combined scores")
                     
                     top_2 = top_10_by_score[:2]
                     top_10 = top_2
@@ -1072,7 +1059,6 @@ def run_backtest(
     capital: float = 50000.0,
     threshold: float = None,
     output_dir: str = "reports",
-    reverse_signal: bool = True  # 【重构 - 2026-03-14】默认启用反向选股
 ) -> BacktestResult:
     """便捷函数：运行回测并生成报告"""
     logger.remove()
@@ -1084,7 +1070,6 @@ def run_backtest(
     
     score_threshold = threshold if threshold is not None else SCORE_THRESHOLD
     
-    # 【重构 - 2026-03-14】确保 reverse_signal 参数正确传递
     config = BacktestConfig(
         lookback_days=days,
         initial_capital=capital,
@@ -1092,10 +1077,8 @@ def run_backtest(
         use_mock_ai=True,
         test_mode=True,
         verbose=True,
-        reverse_signal=reverse_signal
     )
     
-    logger.info(f"[CONFIG] reverse_signal={reverse_signal}")
     
     engine = BacktestEngine(config)
     result = engine.run()
@@ -1136,19 +1119,15 @@ def main():
     parser.add_argument('--capital', type=float, default=50000.0, help='Initial capital')
     parser.add_argument('--threshold', type=float, default=SCORE_THRESHOLD, help='Score threshold (Z-Score)')
     parser.add_argument('--output', type=str, default='reports', help='Output directory')
-    parser.add_argument('--forward_signal', action='store_true', help='[EXPERIMENTAL] Use forward signal (select stocks with highest predict_score) - DEFAULT is REVERSE signal')
     
     args = parser.parse_args()
     
-    # 【重构 - 2026-03-14】默认启用反向选股，只有显式指定 --forward_signal 才使用正向选股
-    reverse_signal = not args.forward_signal
-    
+    # 【修复 - 2026-03-14】彻底删除反向选股逻辑，仅使用正向选股
     run_backtest(
         days=args.days, 
         capital=args.capital, 
         threshold=args.threshold,
         output_dir=args.output,
-        reverse_signal=reverse_signal
     )
 
 

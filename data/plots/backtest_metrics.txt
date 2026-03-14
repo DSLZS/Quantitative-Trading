@@ -1,22 +1,22 @@
 Backtest Performance Metrics
 ========================================
-Generated at: 2026-03-11 00:26:22
+Generated at: 2026-03-14 11:47:17
 
-Total Return:      0.3455 (34.55%)
-Annualized Return: 0.5486 (54.86%)
-Max Drawdown:      0.1017 (10.17%)
-Sharpe Ratio:      1.9201
+Total Return:      0.0683 (6.83%)
+Annualized Return: 0.2136 (21.36%)
+Max Drawdown:      0.0257 (2.57%)
+Sharpe Ratio:      1.6226
 Calmar Ratio:      0.0000
-Volatility:        0.2269 (22.69%)
-Final Value:       $1,345,515
+Volatility:        0.1057 (10.57%)
+Final Value:       $1,068,307
 Initial Capital:   $1,000,000
-Trading Days:      171
-Total Trades:      45
-Win Rate:          55.56%
-Profit Factor:     2.05
+Trading Days:      86
+Total Trades:      88
+Win Rate:          55.68%
+Profit Factor:     1.48
 Stop Loss Count:   1
 Strategy Rating:   EXCELLENT
 
 Transaction Cost Analysis:
-  Total Cost:        $29,629.20
-  Cost Ratio:        2.963%
+  Total Cost:        $13,480.48
+  Cost Ratio:        1.348%

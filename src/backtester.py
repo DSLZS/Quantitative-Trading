@@ -172,7 +172,7 @@ class Backtester:
         self,
         df: pl.DataFrame,
         feature_columns: list[str],
-        label_column: str = "future_return_5",
+        label_column: str = "label_5d_target",  # 【修复】使用 Parquet 文件中的实际标签列名
     ) -> tuple[pl.DataFrame, pl.DataFrame]:
         """准备回测数据，按日期分割训练集和测试集。"""
         df = df.sort(["trade_date"])
@@ -265,14 +265,16 @@ class Backtester:
             if train_data.is_empty() or current_data.is_empty():
                 continue
             
-            train_data_clean = train_data.drop_nulls(subset=feature_columns + ["future_return_5"])
+            # 【修复】使用 label_5d_target 替代 future_return_5
+            train_data_clean = train_data.drop_nulls(subset=feature_columns + ["label_5d_target"])
             current_data_clean = current_data.drop_nulls(subset=feature_columns)
             
             if train_data_clean.is_empty() or current_data_clean.is_empty():
                 continue
             
             X_train = train_data_clean.select(feature_columns).to_numpy()
-            y_train = train_data_clean["future_return_5"].to_numpy()
+            # 【修复】使用 label_5d_target 替代 future_return_5
+            y_train = train_data_clean["label_5d_target"].to_numpy()
             
             train_dataset = lgb.Dataset(X_train, label=y_train)
             params = {

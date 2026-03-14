@@ -1260,12 +1260,23 @@ class FactorEngine:
         self,
         df: pl.DataFrame,
         future_window: int = 5,
-        use_quantile: bool = True
+        use_quantile: bool = True,
+        index_return: Optional[pl.Series] = None
     ) -> pl.DataFrame:
         """
-        计算未来 5 日趋势标签（新增 - 2026-03-14）。
+        计算未来 5 日趋势标签（修复 - 2026-03-14）。
         
         【重要】此标签包含未来数据，仅用于模型训练，不可用于回测或实盘决策！
+        
+        【修复 - 2026-03-14】Label 偏移修复:
+            - 原始：label = close.shift(-5) / close - 1
+            - 修复：label = close.shift(-5) / close.shift(-1) - 1
+            - 说明：使用 T+1 日的收盘价作为基准，确保 Label 是未来收益
+        
+        【新增 - 2026-03-14】超额收益标签:
+            - 引入中证 500 指数收益率
+            - label = 个股收益 - 指数收益
+            - 目标：选择 Alpha，而非市场 Beta
         
         标签设计原理:
             - 从"日频噪音预测"转向"趋势窗口预测"
@@ -1274,12 +1285,15 @@ class FactorEngine:
         
         标签定义:
             1. future_return_5d: 未来 5 日收盘价涨幅
-               = close.shift(-5) / close - 1
+               = close.shift(-5) / close.shift(-1) - 1  # 【修复】使用 T+1 作为基准
             
             2. future_max_return_5d: 未来 5 日内最高价涨幅
                = max(high.shift(-1), ..., high.shift(-5)) / close - 1
             
-            3. label_5d: 分位数标签（如果 use_quantile=True）
+            3. excess_return_5d: 超额收益（个股收益 - 指数收益）
+               = future_return_5d - index_return
+            
+            4. label_5d: 分位数标签（如果 use_quantile=True）
                - 涨幅前 20% 为 1
                - 涨幅后 20% 为 0
                - 中间为线性插值
@@ -1288,11 +1302,13 @@ class FactorEngine:
             df (pl.DataFrame): 包含价格数据的 DataFrame
             future_window (int): 预测窗口，默认 5 日
             use_quantile (bool): 是否使用分位数标签
+            index_return (pl.Series, optional): 指数收益率（用于计算超额收益）
         
         Returns:
             pl.DataFrame: 添加了 label_5d 及相关列的 DataFrame
                 - future_return_5d: 未来 5 日收益率
                 - future_max_return_5d: 未来 5 日最高涨幅
+                - excess_return_5d: 超额收益（如果提供指数数据）
                 - label_5d: 分位数标签（0-1 范围）
         
         使用示例:
@@ -1313,24 +1329,32 @@ class FactorEngine:
                 pl.col("high").cast(pl.Float64, strict=False),
             ])
         
-        # 计算未来 5 日收益率
-        future_return_5d = (pl.col("close").shift(-future_window) / pl.col("close") - 1.0).alias("future_return_5d")
+        # 【修复 - 2026-03-14】计算未来 5 日收益率 - 使用 T+1 作为基准
+        # 原始公式：close.shift(-5) / close - 1
+        # 修复公式：close.shift(-5) / close.shift(-1) - 1
+        future_return_5d = (pl.col("close").shift(-future_window) / (pl.col("close").shift(-1) + self.EPSILON) - 1.0).alias("future_return_5d")
         
         # 计算未来 5 日内最高价涨幅
         if "high" in result.columns:
             future_highs = [pl.col("high").shift(-i) for i in range(1, future_window + 1)]
             future_max_price = pl.max_horizontal(future_highs)
-            future_max_return_5d = (future_max_price / pl.col("close") - 1.0).alias("future_max_return_5d")
+            future_max_return_5d = (future_max_price / (pl.col("close") + self.EPSILON) - 1.0).alias("future_max_return_5d")
         else:
             # 如果没有 high 列，使用 close 作为替代
             future_closes = [pl.col("close").shift(-i) for i in range(1, future_window + 1)]
             future_max_price = pl.max_horizontal(future_closes)
-            future_max_return_5d = (future_max_price / pl.col("close") - 1.0).alias("future_max_return_5d")
+            future_max_return_5d = (future_max_price / (pl.col("close") + self.EPSILON) - 1.0).alias("future_max_return_5d")
         
         result = result.with_columns([
             future_return_5d,
             future_max_return_5d,
         ])
+        
+        # 【新增 - 2026-03-14】计算超额收益标签（个股收益 - 指数收益）
+        if index_return is not None:
+            excess_return = (pl.col("future_return_5d") - index_return).alias("excess_return_5d")
+            result = result.with_columns([excess_return])
+            logger.info("Excess return label computed (stock return - index return)")
         
         # 计算分位数标签
         if use_quantile:
