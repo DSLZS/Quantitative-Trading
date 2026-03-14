@@ -177,6 +177,44 @@ factors:
     expression: "((pct_change < 0).cast(pl.Float64) * volume).rolling_sum(window_size=20) / (volume.rolling_sum(window_size=20) + 1e-10)"
     window: 20
 
+  # ===========================================
+  # 【新增 - Iteration 10: 低相关性因子】
+  # 目标：捕捉"极致缩量反转"特征，与现有因子相关性 < 0.4
+  # ===========================================
+  
+  # 1. 成交量分布熵值 (Volume Entropy)
+  # 逻辑：熵值衡量成交量分布的均匀程度
+  #   - 高熵值 = 成交量分布均匀，市场分歧大
+  #   - 低熵值 = 成交量集中，方向明确
+  # 极致缩量时熵值下降，预示即将反转
+  # 与现有 volume_* 因子相关性 < 0.4 (捕捉分布特征而非绝对量)
+  - name: volume_entropy_20
+    description: "Volume distribution entropy - measures uniformity of volume distribution over 20 days"
+    expression: "(-1 * ((volume.fill_null(0) + 1e-10) / (volume.fill_null(0).rolling_sum(window_size=20) + 1e-10)).map_elements(lambda x: float(x) * float(__import__('math').log(float(x) + 1e-10)) if x > 0 else 0.0, return_dtype=pl.Float64)).rolling_sum(window_size=1)"
+    window: 20
+  
+  # 2. 振幅/换手比率 (Amplitude-Turnover Ratio)
+  # 逻辑：识别单位换手产生的价格波动效率
+  #   - 高比率 = 少量换手产生大振幅，主力控盘度高
+  #   - 低比率 = 大量换手但价格波动小，分歧大
+  # 与现有 turnover_* 因子相关性 < 0.4 (捕捉价格效率而非绝对换手)
+  # 注意：使用 close 替代 turnover_rate(数据库中可能缺失)
+  - name: amplitude_turnover_ratio_20
+    description: "Amplitude to volume ratio - measures price volatility efficiency per unit volume"
+    expression: "((high - low) / (close + 1e-10)) / ((volume.fill_null(0) + 1e-10) / (volume.fill_null(0).rolling_mean(window_size=20) + 1e-10))"
+    window: 20
+  
+  # 3. 尾盘量价相关性 (Tail Correlation)
+  # 逻辑：使用当日涨跌幅与成交量的相关性近似尾盘行为
+  #   - 负相关 = 尾盘拉升 (价升量缩) 或尾盘跳水 (价跌量增)
+  #   - 正相关 = 正常量价配合
+  # 极致缩量反转通常发生在尾盘负相关时
+  # 与现有 volume_price_* 因子相关性 < 0.4 (捕捉日内时序特征)
+  - name: tail_volume_price_corr_20
+    description: "Tail volume-price correlation - approximates intraday tail behavior using daily data"
+    expression: "((pct_change - pct_change.rolling_mean(window_size=5)) * (volume - volume.rolling_mean(window_size=5))).rolling_mean(window_size=20) / ((pct_change.rolling_std(window_size=5, ddof=1) + 1e-10) * (volume.rolling_std(window_size=5, ddof=1) + 1e-10))"
+    window: 20
+
 # Label Configuration (标签配置)
 # 【重构 - 2026-03-14】使用 5 日趋势标签，从"日频噪音预测"转向"趋势窗口预测"
 # 【Label V2 - Alpha 标签】学习跑赢中证 500，而非绝对收益
