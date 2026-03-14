@@ -1,0 +1,154 @@
+# Production Parameters - Iteration 10
+# 生产级参数配置 - Final Strategy V1
+# 
+# 此文件包含 Iteration 10 的所有生产级参数配置
+# 用于实盘交易和回测测试
+
+# ===========================================
+# 基础交易成本参数
+# ===========================================
+trading_costs:
+  slippage_rate: 0.002        # 0.2% 滑点
+  commission_rate: 0.0003     # 0.03% 佣金
+  commission_min: 5.0         # 最低佣金 5 元
+  stamp_duty_rate: 0.001      # 0.1% 印花税
+
+# ===========================================
+# 涨跌停限制
+# ===========================================
+price_limits:
+  limit_up_ratio: 1.098       # 涨停判定阈值
+  limit_down_ratio: 0.902     # 跌停判定阈值
+
+# ===========================================
+# 流动性过滤
+# ===========================================
+liquidity_filter:
+  min_avg_amount_5d: 50000000  # 5000 万最小 5 日平均成交额
+
+# ===========================================
+# 基础评分参数
+# ===========================================
+scoring:
+  score_threshold: 0.0         # 基础阈值
+  score_weight: 0.7            # 预测评分权重
+  sharpe_weight: 0.3           # 历史夏普权重
+
+# ===========================================
+# Iteration 10: 动态 Top-N 配置
+# ===========================================
+dynamic_top_n:
+  # 进攻模式 (指数 > MA20)
+  aggressive:
+    threshold_addon: 0.0        # 基础门槛
+    threshold_addon_bull: -0.1  # 牛市模式额外降低
+    max_positions: 5            # 基础最大持仓
+    max_positions_bull: 8       # 牛市模式最大持仓
+    atr_multiplier: 3.0         # ATR 止损倍数
+    min_hold_days: 3            # 最小持有期
+  
+  # 防御模式 (指数 <= MA20)
+  defensive:
+    threshold_addon: 0.3        # 严格筛选
+    max_positions: 3            # 保守持仓
+    atr_multiplier: 2.5         # 标准 ATR 止损
+    min_hold_days: 5            # 较长持有期
+
+# ===========================================
+# Iteration 10: 止盈豁免配置
+# ===========================================
+profit_exemption:
+  threshold: 0.03               # 盈利 > 3% 时豁免
+  min_hold_days: 1              # 豁免后最小持有天数
+
+# ===========================================
+# 成本优化参数 (持仓底线)
+# ===========================================
+cost_optimization:
+  cost_threshold: 0.006         # 0.6% 成本线
+  score_hold_buffer: -0.5       # 预测分缓冲线
+  min_hold_days_cheap: 3        # 低成本强制持有期
+
+# ===========================================
+# ATR 动态止损参数
+# ===========================================
+atr_stop:
+  window: 14                    # ATR 计算窗口
+  max_stop: -0.08               # 最大止损 -8%
+  min_stop: -0.03               # 最小止损 -3%
+
+# ===========================================
+# 硬止损参数
+# ===========================================
+hard_stop:
+  loss_threshold: -0.05         # -5% 硬止损
+
+# ===========================================
+# 压力测试参数 (Monte Carlo)
+# ===========================================
+stress_test:
+  price_noise_std: 0.001        # ±0.1% 高斯噪声
+  blind_test_start: "2024-01-01"
+  blind_test_end: "2024-04-30"
+  blind_test_days: 120
+
+# ===========================================
+# 市场环境识别参数
+# ===========================================
+market_regime:
+  index_symbol: "000905.SH"     # 中证 500 指数
+  ma_window: 20                 # MA20 周期
+  bull_median_threshold: 0.5    # 全市场预测中位数阈值
+
+# ===========================================
+# 初始资金配置
+# ===========================================
+capital:
+  initial_capital: 100000.0     # 初始资金 10 万
+
+# ===========================================
+# 新增低相关性因子配置 (Iteration 10)
+# ===========================================
+low_correlation_factors:
+  # 1. 成交量分布熵值
+  volume_entropy:
+    name: "volume_entropy"
+    description: "成交量分布熵值，捕捉成交量分布的均匀程度"
+    window: 20
+    target_correlation: 0.4     # 与现有因子相关性 < 0.4
+  
+  # 2. 振幅/换手比率
+  amplitude_turnover_ratio:
+    name: "amplitude_turnover_ratio"
+    description: "振幅/换手比率，识别单位换手产生的价格波动"
+    window: 20
+    target_correlation: 0.4
+  
+  # 3. 尾盘量价相关性
+  tail_correlation:
+    name: "tail_correlation"
+    description: "尾盘 30 分钟量价相关性 (使用日线数据近似)"
+    window: 20
+    target_correlation: 0.4
+
+# ===========================================
+# 标签与训练配置 (Iteration 10)
+# ===========================================
+training:
+  # 收益/波动比标签
+  return_volatility_ratio:
+    window: 20
+    description: "区分单边市与宽幅震荡"
+  
+  # ICIR 动态权重
+  icir_weight:
+    window: 20
+    description: "根据滚动 20 日 ICIR 值动态调整训练集样本权重"
+
+# ===========================================
+# 鲁棒性评估配置
+# ===========================================
+robustness:
+  monthly_consistency: true     # 月度超额收益一致性
+  noise_sensitivity: true       # 价格扰动敏感度
+  min_beat_ratio: 0.75          # 最小跑赢基准月份比例 (75%)

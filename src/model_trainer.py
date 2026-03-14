@@ -315,6 +315,149 @@ class ModelTrainer:
         return labels
     
     @staticmethod
+    def calculate_return_volatility_ratio(
+        returns: np.ndarray,
+        volatility: np.ndarray,
+        window: int = 20,
+    ) -> np.ndarray:
+        """
+        Iteration 10: 计算收益/波动比标签。
+        
+        逻辑：区分单边市与宽幅震荡
+        - 高收益/波动比 = 单边市（趋势明确）
+        - 低收益/波动比 = 宽幅震荡（噪音大）
+        
+        Args:
+            returns (np.ndarray): 收益率序列
+            volatility (np.ndarray): 波动率序列
+            window (int): 滚动窗口
+        
+        Returns:
+            np.ndarray: 收益/波动比数组
+        """
+        # 避免除零
+        volatility_safe = np.where(volatility > 1e-10, volatility, 1e-10)
+        
+        # 计算滚动收益/波动比
+        ratio = np.abs(returns) / volatility_safe
+        
+        # 滚动平均平滑
+        if len(ratio) >= window:
+            ratio_smooth = np.convolve(ratio, np.ones(window)/window, mode='valid')
+            # 填充前面的值
+            ratio = np.concatenate([np.full(len(ratio) - len(ratio_smooth), ratio[0]), ratio_smooth])
+        
+        return ratio
+    
+    @staticmethod
+    def calculate_icir_weights(
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+        window: int = 20,
+    ) -> np.ndarray:
+        """
+        Iteration 10: 根据滚动 ICIR 计算动态样本权重。
+        
+        ICIR (Information Coefficient Information Ratio) = IC 均值 / IC 标准差
+        
+        逻辑：
+        - 高 ICIR 时期样本赋予更高权重
+        - 低 ICIR 时期样本赋予较低权重
+        
+        Args:
+            y_true (np.ndarray): 真实标签
+            y_pred (np.ndarray): 预测值
+            window (int): 滚动窗口
+        
+        Returns:
+            np.ndarray: ICIR 权重数组
+        """
+        n = len(y_true)
+        weights = np.ones(n)
+        
+        # 计算滚动 IC
+        for i in range(window, n):
+            ic_window = []
+            for j in range(i - window, i):
+                if j >= 0:
+                    try:
+                        ic, _ = spearmanr([y_pred[j]], [y_true[j]])
+                        ic_window.append(ic if not np.isnan(ic) else 0.0)
+                    except:
+                        ic_window.append(0.0)
+            
+            if len(ic_window) > 1:
+                ic_mean = np.mean(ic_window)
+                ic_std = np.std(ic_window, ddof=1) if len(ic_window) > 1 else 1.0
+                icir = ic_mean / (ic_std + 1e-10)
+                # 归一化到 0-2 范围
+                weights[i] = 1.0 + np.tanh(icir)
+        
+        return weights
+    
+    @staticmethod
+    def calculate_dynamic_sample_weights(
+        y: np.ndarray,
+        predictions: np.ndarray = None,
+        volatility: np.ndarray = None,
+        weight_method: str = "icir_enhanced",
+        window: int = 20,
+    ) -> np.ndarray:
+        """
+        Iteration 10: 动态样本权重计算。
+        
+        结合 ICIR 动态权重和收益/波动比标签：
+        1. 基础权重：使用 ICIR 方法
+        2. 增强权重：乘以收益/波动比调整因子
+        
+        Args:
+            y (np.ndarray): 标签值（未来收益率）
+            predictions (np.ndarray, optional): 预测值（用于 ICIR 计算）
+            volatility (np.ndarray, optional): 波动率序列
+            weight_method (str): 权重计算方法
+                - "icir_enhanced": ICIR + 收益/波动比增强
+                - "icir_only": 仅 ICIR
+                - "tail_focus": 尾部聚焦（默认方法）
+                - "uniform": 均匀权重
+            window (int): 滚动窗口
+        
+        Returns:
+            np.ndarray: 动态样本权重数组
+        """
+        if weight_method == "uniform":
+            return np.ones_like(y)
+        
+        if weight_method == "tail_focus":
+            return ModelTrainer.calculate_sample_weights(y, weight_method="tail_focus")
+        
+        # ICIR 基础权重
+        if predictions is not None:
+            icir_weights = ModelTrainer.calculate_icir_weights(y, predictions, window)
+        else:
+            icir_weights = np.ones_like(y)
+        
+        if weight_method == "icir_only":
+            # 归一化
+            icir_weights = icir_weights / np.mean(icir_weights)
+            return icir_weights
+        
+        # icir_enhanced: 结合收益/波动比
+        if volatility is not None:
+            rv_ratio = ModelTrainer.calculate_return_volatility_ratio(y, volatility, window)
+            # 归一化收益/波动比
+            rv_ratio_norm = rv_ratio / (np.mean(rv_ratio) + 1e-10)
+            # 综合权重
+            weights = icir_weights * rv_ratio_norm
+        else:
+            weights = icir_weights
+        
+        # 归一化权重，使平均权重为 1
+        weights = weights / np.mean(weights)
+        
+        logger.info(f"Dynamic sample weights (method={weight_method}): min={weights.min():.3f}, max={weights.max():.3f}, mean={weights.mean():.3f}")
+        return weights
+    
+    @staticmethod
     def calculate_sample_weights(
         y: np.ndarray,
         weight_method: str = "tail_focus",
