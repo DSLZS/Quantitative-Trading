@@ -358,6 +358,8 @@ class ModelTrainer:
         features: pl.DataFrame,
         labels: pl.Series,
         feature_columns: list[str],
+        save_polarity: bool = True,
+        polarity_output_path: str = "data/factor_polarity.json",
     ) -> dict[str, float]:
         """
         计算各因子与标签的 IC（信息系数）- 秩相关性。
@@ -365,10 +367,17 @@ class ModelTrainer:
         IC（Information Coefficient）是衡量因子预测能力的重要指标，
         通过计算因子值与未来收益率的 Spearman 秩相关系数得到。
         
+        【新增 - Iteration 2: 滚动 IC 极性管理】
+        - 若某个因子的 IC 为负且统计显著，自动对其取反（X = -X）
+        - 将此操作记录在 data/factor_polarity.json 中
+        - 目的：将"因子失效"转化为"反转信号"，实现顺势交易
+        
         Args:
             features (pl.DataFrame): 特征 DataFrame
             labels (pl.Series): 标签 Series（未来收益率）
             feature_columns (list[str]): 特征列名列表
+            save_polarity (bool): 是否保存因子极性信息
+            polarity_output_path (str): 极性输出文件路径
         
         Returns:
             dict[str, float]: 各因子的 IC 值字典
@@ -381,6 +390,7 @@ class ModelTrainer:
         logger.info(f"Calculating Factor IC for {len(feature_columns)} factors...")
         
         ic_dict = {}
+        polarity_dict = {}  # 记录因子极性：{factor_name: {"ic": float, "polarity": str, "reversed": bool}}
         labels_np = labels.to_numpy()
         
         for col in feature_columns:
@@ -391,15 +401,45 @@ class ModelTrainer:
                 valid_mask = ~(np.isnan(factor_values) | np.isnan(labels_np))
                 if valid_mask.sum() < 10:
                     ic_dict[col] = 0.0
+                    polarity_dict[col] = {"ic": 0.0, "polarity": "neutral", "reversed": False, "reason": "insufficient_data"}
                     continue
                 
                 # 计算 Spearman 秩相关系数
-                ic, _ = spearmanr(factor_values[valid_mask], labels_np[valid_mask])
-                ic_dict[col] = ic if not np.isnan(ic) else 0.0
+                ic, p_value = spearmanr(factor_values[valid_mask], labels_np[valid_mask])
+                ic = ic if not np.isnan(ic) else 0.0
+                ic_dict[col] = ic
+                
+                # 【Iteration 2: 滚动 IC 极性管理】
+                # 判断 IC 是否统计显著 (p < 0.05)
+                is_significant = p_value < 0.05 if not np.isnan(p_value) else False
+                
+                # 确定因子极性
+                if ic > 0.02 and is_significant:
+                    polarity = "positive"
+                    reversed_flag = False
+                    reason = "significant_positive_ic"
+                elif ic < -0.02 and is_significant:
+                    polarity = "negative"
+                    reversed_flag = True  # 需要取反
+                    reason = "significant_negative_ic_reversal_signal"
+                else:
+                    polarity = "neutral"
+                    reversed_flag = False
+                    reason = "ic_not_significant_or_weak"
+                
+                polarity_dict[col] = {
+                    "ic": float(ic),
+                    "p_value": float(p_value) if not np.isnan(p_value) else None,
+                    "polarity": polarity,
+                    "reversed": reversed_flag,
+                    "reason": reason,
+                    "is_significant": is_significant,
+                }
                 
             except Exception as e:
                 logger.warning(f"Failed to calculate IC for {col}: {e}")
                 ic_dict[col] = 0.0
+                polarity_dict[col] = {"ic": 0.0, "polarity": "neutral", "reversed": False, "reason": f"error: {str(e)}"}
         
         # 按 IC 绝对值排序
         ic_sorted = sorted(ic_dict.items(), key=lambda x: abs(x[1]), reverse=True)
@@ -408,29 +448,62 @@ class ModelTrainer:
         logger.info("Factor IC Analysis (Top 10):")
         logger.info("=" * 50)
         
-        # 【重构 - 2026-03-14】检测整体 IC 极性，如果负 IC 占主导，说明需要反向选股
-        negative_ic_count = sum(1 for _, ic in ic_dict.items() if ic < 0)
-        total_factors = len(ic_dict)
-        negative_ratio = negative_ic_count / total_factors if total_factors > 0 else 0
+        # 统计极性分布
+        positive_count = sum(1 for p in polarity_dict.values() if p["polarity"] == "positive")
+        negative_count = sum(1 for p in polarity_dict.values() if p["polarity"] == "negative")
+        neutral_count = sum(1 for p in polarity_dict.values() if p["polarity"] == "neutral")
+        reversed_count = sum(1 for p in polarity_dict.values() if p["reversed"])
+        total_factors = len(polarity_dict)
         
         for i, (name, ic) in enumerate(ic_sorted[:10], 1):
-            # 【重构】IC 极性检查日志 - 如果负 IC 因子占多数，标记为"反向信号"
-            if negative_ratio > 0.6:
-                # 大部分因子 IC 为负，说明需要反向选股
-                if ic < 0:
-                    logger.warning(f"  {i}. {name}: IC = {ic:.4f} ⚠️ [反向预测力 - 系统极性反转]")
-                else:
-                    logger.info(f"  {i}. {name}: IC = {ic:.4f} ✓ [正向预测力]")
-            elif ic < -0.02 and i <= 3:
-                logger.warning(f"  {i}. {name}: IC = {ic:.4f} ⚠️ [反向预测力 - Top{i}]")
+            polarity_info = polarity_dict.get(name, {})
+            polarity = polarity_info.get("polarity", "unknown")
+            reversed_flag = polarity_info.get("reversed", False)
+            
+            if polarity == "negative":
+                logger.warning(f"  {i}. {name}: IC = {ic:.4f} ⚠️ [{polarity}] -> 需要取反 (反转信号)")
+            elif polarity == "positive":
+                logger.info(f"  {i}. {name}: IC = {ic:.4f} ✓ [{polarity}]")
             else:
-                logger.info(f"  {i}. {name}: IC = {ic:.4f}")
+                logger.info(f"  {i}. {name}: IC = {ic:.4f} [{polarity}]")
         
-        if negative_ratio > 0.6:
-            logger.warning(f"\n{'='*50}")
-            logger.warning(f"[IC POLARITY WARNING] {negative_ic_count}/{total_factors} factors have negative IC ({negative_ratio:.1%})")
-            logger.warning("This indicates systematic polarity reversal - model predictions should be INVERTED")
-            logger.warning(f"{'='*50}")
+        # 输出极性统计
+        logger.info(f"\n{'='*50}")
+        logger.info(f"[IC POLARITY SUMMARY]")
+        logger.info(f"  Total factors: {total_factors}")
+        logger.info(f"  Positive IC (significant): {positive_count}")
+        logger.info(f"  Negative IC (significant): {negative_count} -> 需要取反")
+        logger.info(f"  Neutral/Weak IC: {neutral_count}")
+        logger.info(f"  Factors to be reversed: {reversed_count}")
+        logger.info(f"{'='*50}")
+        
+        # 【Iteration 2: 保存因子极性信息】
+        if save_polarity:
+            import json
+            from pathlib import Path
+            
+            # 确保输出目录存在
+            output_path = Path(polarity_output_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # 构建输出数据
+            polarity_data = {
+                "timestamp": str(datetime.now()) if 'datetime' in globals() else str(__import__('datetime').datetime.now()),
+                "summary": {
+                    "total_factors": total_factors,
+                    "positive_count": positive_count,
+                    "negative_count": negative_count,
+                    "neutral_count": neutral_count,
+                    "reversed_count": reversed_count,
+                },
+                "factors": polarity_dict,
+            }
+            
+            # 保存为 JSON
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(polarity_data, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"Factor polarity saved to: {output_path}")
         
         return ic_dict
     

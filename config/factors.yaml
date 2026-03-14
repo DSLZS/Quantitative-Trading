@@ -143,6 +143,40 @@ factors:
     expression: "((close - low) - (high - close)).rolling_sum(window_size=20) / ((high - low + 1e-10).rolling_sum(window_size=20) * volume.rolling_sum(window_size=20) + 1e-10) * volume"
     window: 20
 
+  # 【新增 - Iteration 3: WorldQuant Alpha 101 因子】
+  # 来源：WorldQuant Alpha 101 因子库，针对 A 股短线（5 日）优化
+  # 相关性检查：与 momentum_* 因子相关性 < 0.3
+  
+  # Alpha 101 #001 - 超跌反弹类因子
+  # 逻辑：识别价格远离均值后的回归机会
+  - name: alpha101_mean_reversion
+    description: "WorldQuant Alpha 101 #001 - Mean reversion signal for oversold bounce"
+    expression: "(close - close.rolling_mean(window_size=20)) / (close.rolling_std(window_size=20, ddof=1) + 1e-10)"
+    window: 20
+  
+  # Alpha 101 #002 - 成交量分布类因子
+  # 逻辑：识别成交量异常放大后的价格反应
+  - name: alpha101_volume_price_rank
+    description: "WorldQuant Alpha 101 #002 - Volume-price rank correlation for distribution analysis"
+    expression: "((volume - volume.rolling_mean(window_size=10)) / (volume.rolling_std(window_size=10, ddof=1) + 1e-10)) * ((close - close.rolling_mean(window_size=10)) / (close.rolling_std(window_size=10, ddof=1) + 1e-10))"
+    window: 10
+  
+  # Alpha 101 #003 - 价格动量反转因子
+  # 逻辑：短期反转效应，识别超跌反弹
+  - name: alpha101_reversal_5d
+    description: "WorldQuant Alpha 101 #003 - Short-term reversal for 5-day bounce prediction"
+    expression: "-1 * (close.shift(1) / close.shift(5) - 1)"
+    window: 5
+  
+  # Alpha 101 #004 - 量价协同因子
+  # 逻辑：成交量加权价格变化，识别主力行为
+  # 【修复 - Iteration 7】使用 Polars 原生 when/then/otherwise 语法
+  # 【注意】使用 volume 替代 amount（数据库中没有 amount 字段）
+  - name: alpha101_downside_volume
+    description: "WorldQuant Alpha 101 #004 - Downside volume ratio for distribution analysis"
+    expression: "((pct_change < 0).cast(pl.Float64) * volume).rolling_sum(window_size=20) / (volume.rolling_sum(window_size=20) + 1e-10)"
+    window: 20
+
 # Label Configuration (标签配置)
 # 【重构 - 2026-03-14】使用 5 日趋势标签，从"日频噪音预测"转向"趋势窗口预测"
 # 【Label V2 - Alpha 标签】学习跑赢中证 500，而非绝对收益

@@ -1534,10 +1534,18 @@ class FactorEngine:
             - label = 个股收益 - 指数收益
             - 目标：选择 Alpha，而非市场 Beta
         
+        【新增 - Iteration 1: 截面 Rank 分类】
+        标签定义（截面排序方法）:
+            - 将 T+5 日收益率在全市场（当天所有样本）进行排序
+            - 前 20% 标记为类别 2 (Outperform)
+            - 后 20% 标记为类别 0 (Underperform)
+            - 中间 60% 标记为类别 1 (Neutral)
+        
         标签设计原理:
             - 从"日频噪音预测"转向"趋势窗口预测"
             - 预测 T+5 收益而非 T+1，减少日频噪音
-            - 使用分位数标签，让模型学习相对强弱而非绝对值
+            - 使用截面排序，让模型学习"选出相对最强的票"
+            - 强制模型学习相对强弱，无论大盘是涨是跌
         
         标签定义:
             1. future_return_5d: 未来 5 日收盘价涨幅
@@ -1549,10 +1557,10 @@ class FactorEngine:
             3. excess_return_5d: 超额收益（个股收益 - 指数收益）
                = future_return_5d - index_return
             
-            4. label_5d: 分位数标签（如果 use_quantile=True）
-               - 涨幅前 20% 为 1
-               - 涨幅后 20% 为 0
-               - 中间为线性插值
+            4. label_5d: 截面 Rank 分类标签（三分类）
+               - 前 20% (Rank > 0.8) -> 类别 2 (Outperform)
+               - 后 20% (Rank < 0.2) -> 类别 0 (Underperform)
+               - 中间 60% -> 类别 1 (Neutral)
         
         Args:
             df (pl.DataFrame): 包含价格数据的 DataFrame
@@ -1565,7 +1573,7 @@ class FactorEngine:
                 - future_return_5d: 未来 5 日收益率
                 - future_max_return_5d: 未来 5 日最高涨幅
                 - excess_return_5d: 超额收益（如果提供指数数据）
-                - label_5d: 分位数标签（0-1 范围）
+                - label_5d: 截面 Rank 分类标签（0, 1, 2）
         
         使用示例:
             >>> df_with_label = engine.compute_label_5d(df)
@@ -1586,8 +1594,6 @@ class FactorEngine:
             ])
         
         # 【修复 - 2026-03-14】计算未来 5 日收益率 - 使用 T+1 作为基准
-        # 原始公式：close.shift(-5) / close - 1
-        # 修复公式：close.shift(-5) / close.shift(-1) - 1
         future_return_5d = (pl.col("close").shift(-future_window) / (pl.col("close").shift(-1) + self.EPSILON) - 1.0).alias("future_return_5d")
         
         # 计算未来 5 日内最高价涨幅
@@ -1596,7 +1602,6 @@ class FactorEngine:
             future_max_price = pl.max_horizontal(future_highs)
             future_max_return_5d = (future_max_price / (pl.col("close") + self.EPSILON) - 1.0).alias("future_max_return_5d")
         else:
-            # 如果没有 high 列，使用 close 作为替代
             future_closes = [pl.col("close").shift(-i) for i in range(1, future_window + 1)]
             future_max_price = pl.max_horizontal(future_closes)
             future_max_return_5d = (future_max_price / (pl.col("close") + self.EPSILON) - 1.0).alias("future_max_return_5d")
@@ -1612,22 +1617,55 @@ class FactorEngine:
             result = result.with_columns([excess_return])
             logger.info("Excess return label computed (stock return - index return)")
         
-        # 计算分位数标签
+        # 【Iteration 1: 截面 Rank 分类】计算截面排序标签
         if use_quantile:
-            # 按 symbol 分组计算分位数排名
-            # 前 20% 为 1，后 20% 为 0，中间线性插值
-            label_5d = (
+            # 【截面排序逻辑】
+            # 1. 按 trade_date 分组，对 future_return_5d 进行截面排序
+            # 2. 前 20% -> 类别 2 (Outperform)
+            # 3. 后 20% -> 类别 0 (Underperform)
+            # 4. 中间 60% -> 类别 1 (Neutral)
+            
+            # 计算截面排名（按 trade_date 分组）
+            label_rank = (
                 pl.col("future_return_5d")
                 .rank("dense")
-                .over("symbol")
+                .over("trade_date")
                 .cast(pl.Float64)
             )
-            # 归一化到 0-1 范围
-            label_5d = (label_5d - label_5d.min().over("symbol")) / (label_5d.max().over("symbol") - label_5d.min().over("symbol") + self.EPSILON)
+            
+            # 归一化排名到 0-1 范围
+            label_rank_norm = (label_rank - label_rank.min().over("trade_date")) / (
+                label_rank.max().over("trade_date") - label_rank.min().over("trade_date") + self.EPSILON
+            )
+            
+            # 【截面 Rank 分类】三分类标签
+            # 前 20% (rank > 0.8) -> 2
+            # 后 20% (rank < 0.2) -> 0
+            # 中间 60% -> 1
+            label_5d = pl.when(
+                label_rank_norm >= 0.8
+            ).then(2).when(
+                label_rank_norm <= 0.2
+            ).then(0).otherwise(1)
             
             result = result.with_columns([
-                label_5d.alias("label_5d")
+                label_5d.alias("label_5d"),
+                label_rank_norm.alias("label_rank_norm"),  # 保留归一化排名用于诊断
             ])
+            
+            # 输出分类统计
+            logger.info("[截面 Rank 分类] 标签分布统计:")
+            try:
+                label_stats = result.group_by("label_5d").agg(
+                    pl.col("symbol").count().alias("count")
+                ).sort("label_5d")
+                for row in label_stats.iter_rows():
+                    label_val = int(row[0]) if row[0] is not None else -1
+                    count = row[1] if row[1] is not None else 0
+                    label_name = {0: "Underperform", 1: "Neutral", 2: "Outperform"}.get(label_val, "Unknown")
+                    logger.info(f"  类别 {label_val} ({label_name}): {count} 样本")
+            except Exception as e:
+                logger.warning(f"无法输出标签统计：{e}")
         else:
             # 直接使用未来收益率作为标签
             result = result.with_columns([
