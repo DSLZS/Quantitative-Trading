@@ -62,6 +62,7 @@ class BacktestConfig:
     use_mock_ai: bool = True
     test_mode: bool = True
     verbose: bool = True
+    reverse_signal: bool = False  # 【新增】反向选股开关：选取 predict_score 最低的股票
 
 
 @dataclass
@@ -157,9 +158,10 @@ class BacktestEngine:
         except Exception as e:
             logger.warning(f"Failed to initialize FactorEngine: {e}")
         
+        reverse_note = " [REVERSE SIGNAL]" if self.config.reverse_signal else ""
         logger.info(f"BacktestEngine initialized: days={self.config.lookback_days}, "
                    f"capital={self.config.initial_capital}, "
-                   f"score_threshold={self.config.min_score:.2f}")
+                   f"score_threshold={self.config.min_score:.2f}{reverse_note}")
     
     def get_trade_dates(self, end_date: str = None, days: int = 60) -> list[str]:
         """获取历史交易日列表"""
@@ -298,10 +300,16 @@ class BacktestEngine:
                     # 第一步：获取当前阈值（考虑防御模式调整）
                     current_threshold = self._get_current_threshold(trade_date)
                     
-                    # 第二步：按 predict_score（Z-Score）降序排序所有股票
-                    results.sort(key=lambda x: x["predict_score"], reverse=True)
+                    # 第二步：【反向选股逻辑】
+                    if self.config.reverse_signal:
+                        # 【反向选股】按 predict_score 升序排序（选取最低分）
+                        results.sort(key=lambda x: x["predict_score"], reverse=False)
+                        logger.info(f"[REVERSE SIGNAL] Sorting by predict_score ASC (selecting lowest scores)")
+                    else:
+                        # 【正向选股】按 predict_score 降序排序（选取最高分）
+                        results.sort(key=lambda x: x["predict_score"], reverse=True)
                     
-                    # 第三步：取 predict_score 前 10 名（保证预测强度）
+                    # 第三步：取前 10 名
                     top_10_by_score = results[:10]
                     
                     logger.info(f"[DYNAMIC TOP-N] Top 10 by predict_score (threshold={current_threshold:.2f}):")
@@ -1042,7 +1050,8 @@ def run_backtest(
     days: int = 30,
     capital: float = 50000.0,
     threshold: float = None,
-    output_dir: str = "reports"
+    output_dir: str = "reports",
+    reverse_signal: bool = False  # 【新增】反向选股开关
 ) -> BacktestResult:
     """便捷函数：运行回测并生成报告"""
     logger.remove()
@@ -1060,7 +1069,8 @@ def run_backtest(
         min_score=score_threshold,
         use_mock_ai=True,
         test_mode=True,
-        verbose=True
+        verbose=True,
+        reverse_signal=reverse_signal  # 【新增】反向选股开关
     )
     
     engine = BacktestEngine(config)
@@ -1102,6 +1112,7 @@ def main():
     parser.add_argument('--capital', type=float, default=50000.0, help='Initial capital')
     parser.add_argument('--threshold', type=float, default=SCORE_THRESHOLD, help='Score threshold (Z-Score)')
     parser.add_argument('--output', type=str, default='reports', help='Output directory')
+    parser.add_argument('--reverse_signal', action='store_true', help='[EXPERIMENTAL] Select stocks with lowest predict_score (reverse signal)')
     
     args = parser.parse_args()
     
@@ -1109,7 +1120,8 @@ def main():
         days=args.days, 
         capital=args.capital, 
         threshold=args.threshold,
-        output_dir=args.output
+        output_dir=args.output,
+        reverse_signal=args.reverse_signal  # 【新增】反向选股开关
     )
 
 

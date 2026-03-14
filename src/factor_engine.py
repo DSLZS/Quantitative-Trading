@@ -643,6 +643,54 @@ class FactorEngine:
     # 技术指标因子模块 - RSI 和 MACD
     # =========================================================================
     
+    def compute_bias(
+        self,
+        df: pl.DataFrame,
+        period: int = 60,
+        column: str = "close"
+    ) -> pl.DataFrame:
+        """
+        计算乖离率因子 (BIAS) - 【新增 2026-03-14】。
+        
+        BIAS 原理:
+            BIAS = (close - MA_N) / MA_N = close / MA_N - 1
+        
+        解读:
+            - BIAS > 0: 价格在均线之上，正向乖离
+            - BIAS < 0: 价格在均线之下，负向乖离
+            - BIAS 过大：可能即将回调（均值回归）
+        
+        Args:
+            df (pl.DataFrame): 包含价格数据的 DataFrame
+            period (int): 均线周期，默认 60 日
+            column (str): 用于计算的价格列，默认 "close"
+        
+        Returns:
+            pl.DataFrame: 添加了 bias_{period} 列的 DataFrame
+        
+        使用示例:
+            >>> df_with_bias = engine.compute_bias(df, period=60)
+            >>> # BIAS > 0.2 表示价格远高于 60 日均线
+        """
+        result = df.clone()
+        
+        # 确保价格列为 Float64
+        result = result.with_columns([
+            pl.col(column).cast(pl.Float64, strict=False)
+        ])
+        
+        # 计算 N 日移动平均
+        ma_n = pl.col(column).rolling_mean(window_size=period)
+        
+        # 计算乖离率
+        bias = (pl.col(column) / (ma_n + self.EPSILON) - 1.0)
+        
+        result = result.with_columns([
+            bias.alias(f"bias_{period}")
+        ])
+        
+        return result
+    
     def compute_rsi(
         self, 
         df: pl.DataFrame, 
@@ -1384,9 +1432,10 @@ class FactorEngine:
         # 步骤 1: 计算基础因子
         result = self._compute_base_factors(result)
         
-        # 步骤 2: 计算技术指标 (RSI, MACD)
+        # 步骤 2: 计算技术指标 (RSI, MACD, BIAS)
         result = self.compute_rsi(result, period=14)
         result = self.compute_macd(result)
+        result = self.compute_bias(result, period=60)  # 【新增】乖离率因子
         
         # 步骤 3: 计算量价协同因子
         result = self.compute_volume_price_coordination(result)
