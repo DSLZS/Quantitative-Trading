@@ -28,6 +28,7 @@ from loguru import logger
 from sklearn.model_selection import TimeSeriesSplit
 import numpy as np
 from scipy.stats import spearmanr
+import os
 
 try:
     from .db_manager import DatabaseManager
@@ -136,6 +137,44 @@ class ModelTrainer:
         return df
     
     @staticmethod
+    def filter_constant_features(
+        df: pl.DataFrame,
+        feature_columns: list[str],
+        std_threshold: float = 1e-6,
+    ) -> list[str]:
+        """
+        过滤掉标准差接近 0 的常量特征。
+        
+        Args:
+            df (pl.DataFrame): 输入 DataFrame
+            feature_columns (list[str]): 特征列名列表
+            std_threshold (float): 标准差阈值，低于此值视为常量特征
+        
+        Returns:
+            list[str]: 过滤后的特征列名列表
+        """
+        logger.info(f"Filtering constant features (threshold={std_threshold})...")
+        
+        valid_features = []
+        removed_features = []
+        
+        for col in feature_columns:
+            if col in df.columns:
+                std_val = df[col].std()
+                if std_val is not None and std_val > std_threshold:
+                    valid_features.append(col)
+                else:
+                    removed_features.append((col, std_val))
+        
+        if removed_features:
+            logger.info(f"Removed {len(removed_features)} constant features:")
+            for name, std in removed_features[:10]:
+                logger.info(f"  - {name}: std={std:.6e}")
+        
+        logger.info(f"Remaining features: {len(valid_features)} (removed {len(removed_features)})")
+        return valid_features
+    
+    @staticmethod
     def prepare_data(
         df: pl.DataFrame,
         feature_columns: list[str],
@@ -143,6 +182,7 @@ class ModelTrainer:
         train_ratio: float = 0.7,
         val_ratio: float = 0.15,
         test_ratio: float = 0.15,
+        filter_constant_features: bool = True,
     ) -> dict[str, Any]:
         """
         准备训练/验证/测试数据，执行时间序列切分。
@@ -164,13 +204,14 @@ class ModelTrainer:
             train_ratio (float): 训练集比例，默认 0.7
             val_ratio (float): 验证集比例，默认 0.15
             test_ratio (float): 测试集比例，默认 0.15
-            
+            filter_constant_features (bool): 是否过滤常量特征
+        
         Returns:
             dict[str, Any]: 包含以下键的字典:
                 - "X_train", "y_train": 训练集
                 - "X_val", "y_val": 验证集
                 - "X_test", "y_test": 测试集
-                - "feature_columns": 特征列名列表
+                - "feature_columns": 特征列名列表（过滤后）
             
         使用示例:
             >>> df = pl.read_parquet("data/parquet/features_latest.parquet")
@@ -187,6 +228,10 @@ class ModelTrainer:
         # 删除标签列的空值
         df = df.drop_nulls(subset=[label_column])
         logger.info(f"After dropping null labels: {len(df)} rows")
+        
+        # 【新增】过滤常量特征
+        if filter_constant_features:
+            feature_columns = ModelTrainer.filter_constant_features(df, feature_columns)
         
         # 计算切分点
         n = len(df)
@@ -314,7 +359,11 @@ class ModelTrainer:
         logger.info("Factor IC Analysis (Top 10):")
         logger.info("=" * 50)
         for i, (name, ic) in enumerate(ic_sorted[:10], 1):
-            logger.info(f"  {i}. {name}: IC = {ic:.4f}")
+            # 【新增】IC 极性检查日志
+            if ic < -0.02 and i <= 3:
+                logger.warning(f"  {i}. {name}: IC = {ic:.4f} ⚠️ [反向预测力 - Top{i}]")
+            else:
+                logger.info(f"  {i}. {name}: IC = {ic:.4f}")
         
         return ic_dict
     
@@ -471,23 +520,26 @@ class ModelTrainer:
             - self.model: 训练后的模型 (初始为 None)
             - self.feature_importance_: 特征重要性字典
         """
-        # LightGBM 模型参数配置 - 【优化】降低学习率，增加迭代轮数，移除正则化
+        # LightGBM 模型参数配置 - 【重构】增强鲁棒性和随机性
         self.params = {
-            "objective": "regression",  # 回归任务
-            "metric": "mse",  # 评估指标：均方误差
+            "objective": "regression_l1",  # 【重构】MAE 损失，对离群值更鲁棒
+            "metric": "mae",  # 【重构】MAE 评估指标
             "boosting_type": "gbdt",  # 梯度提升树
             "num_leaves": num_leaves,  # 叶子节点数
             "max_depth": max_depth,  # 最大深度
             "learning_rate": learning_rate,  # 学习率 (降至 0.01)
-            "min_child_samples": min_child_samples,  # 最小叶子样本数 (降至 20)
+            "min_child_samples": min_child_samples,  # 【重构】提高到 50
             "subsample": subsample,  # 行采样比例
             "colsample_bytree": colsample_bytree,  # 列采样比例
+            "feature_fraction": 0.8,  # 【新增】列采样，增加随机性
+            "bagging_fraction": 0.8,  # 【新增】行采样，增加随机性
+            "bagging_freq": 5,  # 【新增】每 5 轮进行一次 bagging
             "random_state": random_state,  # 随机种子
             "n_jobs": -1,  # 使用所有 CPU 核心
             "verbose": -1,  # 关闭训练日志输出
-            # 【优化】正则化参数设为 0，让模型充分拟合
-            "lambda_l1": lambda_l1,  # L1 正则化 (设为 0)
-            "lambda_l2": lambda_l2,  # L2 正则化 (设为 0)
+            # 【重构】正则化参数
+            "lambda_l1": lambda_l1,  # L1 正则化
+            "lambda_l2": lambda_l2,  # L2 正则化
             # 【新增】min_data_in_leaf 参数
             "min_data_in_leaf": min_child_samples,  # 每个叶子节点的最小数据量
         }
@@ -763,10 +815,20 @@ class ModelTrainer:
         if self.model is None:
             raise ValueError("No model to save")
         
+        # 【修复】使用绝对路径
+        abs_path = os.path.abspath(path)
+        
         # 确保目录存在
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.model.save_model(path)
-        logger.info(f"Model saved to {path}")
+        Path(abs_path).parent.mkdir(parents=True, exist_ok=True)
+        self.model.save_model(abs_path)
+        
+        # 【新增】文件存在性校验
+        if os.path.exists(abs_path):
+            file_size = os.path.getsize(abs_path)
+            logger.info(f"Model saved to {abs_path} ({file_size:,} bytes) ✓")
+        else:
+            logger.error(f"Model save failed: {abs_path} does not exist ✗")
+            raise IOError(f"Failed to save model to {abs_path}")
     
     def load_model(self, path: str) -> lgb.Booster:
         """
@@ -1021,11 +1083,14 @@ def run_training(
     parquet_path: str = "data/parquet/features_latest.parquet",
     feature_columns: list[str] = None,
     label_column: str = "future_return_5",
-    n_estimators: int = 1000,  # 【优化】增加至 1000 轮
-    learning_rate: float = 0.01,  # 【优化】降低至 0.01
-    max_depth: int = 4,  # 【优化】限制深度
-    lambda_l1: float = 0.0,  # 【优化】移除 L1 正则化
-    lambda_l2: float = 0.0,  # 【优化】移除 L2 正则化
+    n_estimators: int = 1000,  # 【重构】增加至 1000 轮
+    learning_rate: float = 0.01,  # 【重构】降低至 0.01
+    max_depth: int = 4,
+    min_child_samples: int = 50,  # 【重构】提高到 50
+    feature_fraction: float = 0.8,  # 【重构】列采样
+    bagging_fraction: float = 0.8,  # 【重构】行采样
+    lambda_l1: float = 0.0,
+    lambda_l2: float = 0.0,
     use_sample_weights: bool = True,
 ) -> dict[str, Any]:
     """
@@ -1105,14 +1170,20 @@ def run_training(
         feature_columns=feature_columns,
     )
     
-    # Step 3: 初始化训练器 - 【优化】增强正则化
+    # Step 3: 初始化训练器 - 【重构】增强鲁棒性和随机性
     trainer = ModelTrainer(
         n_estimators=n_estimators,
         learning_rate=learning_rate,
         max_depth=max_depth,
+        min_child_samples=min_child_samples,
         lambda_l1=lambda_l1,
         lambda_l2=lambda_l2,
     )
+    
+    # 更新参数
+    trainer.params["feature_fraction"] = feature_fraction
+    trainer.params["bagging_fraction"] = bagging_fraction
+    trainer.params["bagging_freq"] = 5
     
     # 保存因子 IC 值
     trainer.factor_ic_ = factor_ic
