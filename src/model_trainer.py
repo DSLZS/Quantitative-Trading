@@ -415,15 +415,15 @@ class ModelTrainer:
     def __init__(
         self,
         n_estimators: int = 1000,
-        learning_rate: float = 0.05,
-        max_depth: int = 4,  # 【防御性调优】限制在 3-5 层
-        num_leaves: int = 18,  # 【防御性调优】降至 15-20
-        min_child_samples: int = 100,
-        subsample: float = 0.8,  # 【防御性调优】采样扰动
-        colsample_bytree: float = 0.8,  # 【防御性调优】采样扰动
+        learning_rate: float = 0.01,  # 【优化】降低学习率至 0.01，提升泛化能力
+        max_depth: int = 4,
+        num_leaves: int = 18,
+        min_child_samples: int = 20,  # 【优化】降低至 20，让模型更充分拟合
+        subsample: float = 0.8,
+        colsample_bytree: float = 0.8,
         random_state: int = 42,
-        lambda_l1: float = 0.1,  # 【防御性调优】增加正则化
-        lambda_l2: float = 0.1,  # 【防御性调优】增加正则化
+        lambda_l1: float = 0.0,  # 【优化】移除 L1 正则化，让模型充分拟合
+        lambda_l2: float = 0.0,  # 【优化】移除 L2 正则化，让模型充分拟合
     ) -> None:
         """
         使用超参数初始化模型训练器。
@@ -471,23 +471,25 @@ class ModelTrainer:
             - self.model: 训练后的模型 (初始为 None)
             - self.feature_importance_: 特征重要性字典
         """
-        # LightGBM 模型参数配置 - 【优化】增强正则化防止过拟合
+        # LightGBM 模型参数配置 - 【优化】降低学习率，增加迭代轮数，移除正则化
         self.params = {
             "objective": "regression",  # 回归任务
             "metric": "mse",  # 评估指标：均方误差
             "boosting_type": "gbdt",  # 梯度提升树
             "num_leaves": num_leaves,  # 叶子节点数
             "max_depth": max_depth,  # 最大深度
-            "learning_rate": learning_rate,  # 学习率
-            "min_child_samples": min_child_samples,  # 最小叶子样本数
+            "learning_rate": learning_rate,  # 学习率 (降至 0.01)
+            "min_child_samples": min_child_samples,  # 最小叶子样本数 (降至 20)
             "subsample": subsample,  # 行采样比例
             "colsample_bytree": colsample_bytree,  # 列采样比例
             "random_state": random_state,  # 随机种子
             "n_jobs": -1,  # 使用所有 CPU 核心
             "verbose": -1,  # 关闭训练日志输出
-            # 【新增】正则化参数
-            "lambda_l1": lambda_l1,  # L1 正则化
-            "lambda_l2": lambda_l2,  # L2 正则化
+            # 【优化】正则化参数设为 0，让模型充分拟合
+            "lambda_l1": lambda_l1,  # L1 正则化 (设为 0)
+            "lambda_l2": lambda_l2,  # L2 正则化 (设为 0)
+            # 【新增】min_data_in_leaf 参数
+            "min_data_in_leaf": min_child_samples,  # 每个叶子节点的最小数据量
         }
         self.n_estimators = n_estimators  # boosting 轮数
         self.model: lgb.Booster | None = None  # 训练后的模型
@@ -553,10 +555,10 @@ class ModelTrainer:
         # 创建 LightGBM 训练数据集（带样本权重）
         train_data = lgb.Dataset(X_np, label=y_np, weight=sample_weights)
         
-        # 配置回调函数
+        # 配置回调函数 - 【优化】调整早停和日志频率
         callbacks = [
-            lgb.early_stopping(stopping_rounds=50),  # 早停：50 轮不改善则停止
-            lgb.log_evaluation(period=100),  # 每 100 轮记录日志
+            lgb.early_stopping(stopping_rounds=100),  # 【优化】早停：100 轮不改善则停止
+            lgb.log_evaluation(period=50),  # 【优化】每 50 轮记录日志，更细致观察训练过程
         ]
         
         # 根据是否有验证集选择训练方式
@@ -798,11 +800,11 @@ def run_training_from_db(
     model_output_path: str = "data/models/stock_model.txt",
     start_date: str = None,
     end_date: str = None,
-    n_estimators: int = 500,
-    learning_rate: float = 0.05,
+    n_estimators: int = 1000,  # 【优化】增加至 1000 轮
+    learning_rate: float = 0.01,  # 【优化】降低至 0.01
     max_depth: int = 4,
-    lambda_l1: float = 0.1,
-    lambda_l2: float = 0.1,
+    lambda_l1: float = 0.0,  # 【优化】移除 L1 正则化
+    lambda_l2: float = 0.0,  # 【优化】移除 L2 正则化
     use_sample_weights: bool = True,
 ) -> dict[str, Any]:
     """
@@ -1019,12 +1021,12 @@ def run_training(
     parquet_path: str = "data/parquet/features_latest.parquet",
     feature_columns: list[str] = None,
     label_column: str = "future_return_5",
-    n_estimators: int = 500,
-    learning_rate: float = 0.05,
-    max_depth: int = 6,
-    lambda_l1: float = 0.1,  # 新增参数
-    lambda_l2: float = 0.1,  # 新增参数
-    use_sample_weights: bool = True,  # 新增参数
+    n_estimators: int = 1000,  # 【优化】增加至 1000 轮
+    learning_rate: float = 0.01,  # 【优化】降低至 0.01
+    max_depth: int = 4,  # 【优化】限制深度
+    lambda_l1: float = 0.0,  # 【优化】移除 L1 正则化
+    lambda_l2: float = 0.0,  # 【优化】移除 L2 正则化
+    use_sample_weights: bool = True,
 ) -> dict[str, Any]:
     """
     运行完整的训练流程（从 Parquet 文件）。
