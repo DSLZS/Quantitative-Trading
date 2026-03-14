@@ -358,12 +358,30 @@ class ModelTrainer:
         logger.info("=" * 50)
         logger.info("Factor IC Analysis (Top 10):")
         logger.info("=" * 50)
+        
+        # 【重构 - 2026-03-14】检测整体 IC 极性，如果负 IC 占主导，说明需要反向选股
+        negative_ic_count = sum(1 for _, ic in ic_dict.items() if ic < 0)
+        total_factors = len(ic_dict)
+        negative_ratio = negative_ic_count / total_factors if total_factors > 0 else 0
+        
         for i, (name, ic) in enumerate(ic_sorted[:10], 1):
-            # 【新增】IC 极性检查日志
-            if ic < -0.02 and i <= 3:
+            # 【重构】IC 极性检查日志 - 如果负 IC 因子占多数，标记为"反向信号"
+            if negative_ratio > 0.6:
+                # 大部分因子 IC 为负，说明需要反向选股
+                if ic < 0:
+                    logger.warning(f"  {i}. {name}: IC = {ic:.4f} ⚠️ [反向预测力 - 系统极性反转]")
+                else:
+                    logger.info(f"  {i}. {name}: IC = {ic:.4f} ✓ [正向预测力]")
+            elif ic < -0.02 and i <= 3:
                 logger.warning(f"  {i}. {name}: IC = {ic:.4f} ⚠️ [反向预测力 - Top{i}]")
             else:
                 logger.info(f"  {i}. {name}: IC = {ic:.4f}")
+        
+        if negative_ratio > 0.6:
+            logger.warning(f"\n{'='*50}")
+            logger.warning(f"[IC POLARITY WARNING] {negative_ic_count}/{total_factors} factors have negative IC ({negative_ratio:.1%})")
+            logger.warning("This indicates systematic polarity reversal - model predictions should be INVERTED")
+            logger.warning(f"{'='*50}")
         
         return ic_dict
     
@@ -463,90 +481,89 @@ class ModelTrainer:
     
     def __init__(
         self,
-        n_estimators: int = 1000,
-        learning_rate: float = 0.01,  # 【优化】降低学习率至 0.01，提升泛化能力
-        max_depth: int = 4,
-        num_leaves: int = 18,
-        min_child_samples: int = 20,  # 【优化】降低至 20，让模型更充分拟合
-        subsample: float = 0.8,
-        colsample_bytree: float = 0.8,
+        n_estimators: int = 1500,  # 【重构】增加至 1500 轮，让模型充分学习
+        learning_rate: float = 0.005,  # 【重构】降低至 0.005，更缓慢学习提升泛化
+        max_depth: int = 5,  # 【重构】略微增加深度至 5
+        num_leaves: int = 24,  # 【重构】增加至 24，配合深度
+        min_child_samples: int = 10,  # 【重构】降低至 10，让模型更充分拟合小样本
+        subsample: float = 0.85,
+        colsample_bytree: float = 0.85,
         random_state: int = 42,
-        lambda_l1: float = 0.0,  # 【优化】移除 L1 正则化，让模型充分拟合
-        lambda_l2: float = 0.0,  # 【优化】移除 L2 正则化，让模型充分拟合
+        lambda_l1: float = 0.0,  # 【重构】移除 L1 正则化
+        lambda_l2: float = 0.0,  # 【重构】移除 L2 正则化
     ) -> None:
         """
         使用超参数初始化模型训练器。
         
+        【重构 - 2026-03-14】强化模型拟合深度，彻底解决负 IC 问题
+        
         Args:
-            n_estimators (int):  boosting 轮数 (树的数量)，默认 1000
-                增加轮数可以提高性能，但会增加训练时间和过拟合风险
+            n_estimators (int):  boosting 轮数 (树的数量)，默认 1500
+                【重构】增加至 1500 轮，让模型充分学习
             
-            learning_rate (float): 每棵树的学习率，默认 0.05
-                较小的学习率需要更多的树，但通常能获得更好的泛化能力
-                常用范围：0.01 - 0.1
+            learning_rate (float): 每棵树的学习率，默认 0.005
+                【重构】降低至 0.005，更缓慢学习提升泛化
             
-            max_depth (int): 树的最大深度，默认 6
-                控制模型复杂度，深度越大越容易过拟合
-                常用范围：3 - 8
+            max_depth (int): 树的最大深度，默认 5
+                【重构】略微增加深度至 5，增强拟合能力
             
-            num_leaves (int): 每棵树的叶子节点数，默认 31
-                LightGBM 的主要复杂度参数，应设为 2^max_depth 以下
-                常用范围：15 - 63
+            num_leaves (int): 每棵树的叶子节点数，默认 24
+                【重构】增加至 24，配合深度提升
             
-            min_child_samples (int): 每个叶子节点的最小样本数，默认 100
-                控制叶子节点的最小样本数，防止过拟合
-                常用范围：20 - 200
+            min_child_samples (int): 每个叶子节点的最小样本数，默认 10
+                【重构】降低至 10，让模型更充分拟合小样本
             
-            subsample (float): 行采样比例，默认 0.8
-                每棵树使用的数据比例，<1 可以减少过拟合
-                常用范围：0.6 - 1.0
+            subsample (float): 行采样比例，默认 0.85
+                【重构】略微提高至 0.85，增加数据利用率
             
-            colsample_bytree (float): 列采样比例，默认 0.8
-                每棵树使用的特征比例，<1 可以减少过拟合
-                常用范围：0.6 - 1.0
+            colsample_bytree (float): 列采样比例，默认 0.85
+                【重构】略微提高至 0.85，增加特征利用率
             
             random_state (int): 随机种子，默认 42
                 确保结果可复现
             
-            lambda_l1 (float): L1 正则化参数，默认 0.1
-                增加稀疏性，防止过拟合
+            lambda_l1 (float): L1 正则化参数，默认 0.0
+                【重构】移除 L1 正则化，让模型充分拟合
             
-            lambda_l2 (float): L2 正则化参数，默认 0.1
-                平滑权重，防止过拟合
+            lambda_l2 (float): L2 正则化参数，默认 0.0
+                【重构】移除 L2 正则化，让模型充分拟合
         
         初始化后创建的属性:
             - self.params: LightGBM 参数字典
             - self.n_estimators: boosting 轮数
             - self.model: 训练后的模型 (初始为 None)
             - self.feature_importance_: 特征重要性字典
+            - self.factor_ic_: 因子 IC 值
+            - self.negative_ic_factors: 负 IC 因子列表（用于推理时取反）
         """
-        # LightGBM 模型参数配置 - 【重构】增强鲁棒性和随机性
+        # LightGBM 模型参数配置 - 【重构】强化拟合深度
         self.params = {
-            "objective": "regression_l1",  # 【重构】MAE 损失，对离群值更鲁棒
-            "metric": "mae",  # 【重构】MAE 评估指标
+            "objective": "regression",  # 【重构】使用 MSE 损失，更关注整体拟合
+            "metric": "mse",  # 【重构】MSE 评估指标
             "boosting_type": "gbdt",  # 梯度提升树
             "num_leaves": num_leaves,  # 叶子节点数
             "max_depth": max_depth,  # 最大深度
-            "learning_rate": learning_rate,  # 学习率 (降至 0.01)
-            "min_child_samples": min_child_samples,  # 【重构】提高到 50
+            "learning_rate": learning_rate,  # 学习率 (降至 0.005)
+            "min_child_samples": min_child_samples,  # 【重构】降低至 10
             "subsample": subsample,  # 行采样比例
             "colsample_bytree": colsample_bytree,  # 列采样比例
-            "feature_fraction": 0.8,  # 【新增】列采样，增加随机性
-            "bagging_fraction": 0.8,  # 【新增】行采样，增加随机性
-            "bagging_freq": 5,  # 【新增】每 5 轮进行一次 bagging
+            "feature_fraction": 0.85,  # 【重构】列采样
+            "bagging_fraction": 0.85,  # 【重构】行采样
+            "bagging_freq": 5,  # 每 5 轮进行一次 bagging
             "random_state": random_state,  # 随机种子
             "n_jobs": -1,  # 使用所有 CPU 核心
             "verbose": -1,  # 关闭训练日志输出
-            # 【重构】正则化参数
-            "lambda_l1": lambda_l1,  # L1 正则化
-            "lambda_l2": lambda_l2,  # L2 正则化
-            # 【新增】min_data_in_leaf 参数
+            # 【重构】移除正则化
+            "lambda_l1": lambda_l1,  # L1 正则化 (0.0)
+            "lambda_l2": lambda_l2,  # L2 正则化 (0.0)
+            # 【重构】min_data_in_leaf 参数
             "min_data_in_leaf": min_child_samples,  # 每个叶子节点的最小数据量
         }
         self.n_estimators = n_estimators  # boosting 轮数
         self.model: lgb.Booster | None = None  # 训练后的模型
         self.feature_importance_: dict[str, float] = {}  # 特征重要性
         self.factor_ic_: dict[str, float] = {}  # 因子 IC 值
+        self.negative_ic_factors: list[str] = []  # 【新增】负 IC 因子列表
     
     def train(
         self,
@@ -1082,7 +1099,7 @@ def run_training_from_db(
 def run_training(
     parquet_path: str = "data/parquet/features_latest.parquet",
     feature_columns: list[str] = None,
-    label_column: str = "future_return_5",
+    label_column: str = "label_5d_target",  # 【重构】使用 5 日趋势标签
     n_estimators: int = 1000,  # 【重构】增加至 1000 轮
     learning_rate: float = 0.01,  # 【重构】降低至 0.01
     max_depth: int = 4,

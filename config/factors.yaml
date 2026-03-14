@@ -144,8 +144,9 @@ factors:
     window: 20
 
 # Label Configuration (标签配置)
+# 【重构 - 2026-03-14】使用 5 日趋势标签，从"日频噪音预测"转向"趋势窗口预测"
 label:
-  name: future_return_5
-  description: "5-day forward return"
+  name: label_5d
+  description: "5-day forward return (quantile-based)"
   expression: "close.shift(-5) / close - 1"
   window: 5

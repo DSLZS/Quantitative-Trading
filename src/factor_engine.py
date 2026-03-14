@@ -650,15 +650,26 @@ class FactorEngine:
         column: str = "close"
     ) -> pl.DataFrame:
         """
-        计算乖离率因子 (BIAS) - 【新增 2026-03-14】。
+        计算乖离率因子 (BIAS) - 【重构 2026-03-14】。
+        
+        【重要修改】bias_60 现在反映超卖后的反弹潜力，而非持续下跌。
         
         BIAS 原理:
             BIAS = (close - MA_N) / MA_N = close / MA_N - 1
         
+        【重构前问题】:
+            - 原始 BIAS 正值表示价格在均线之上（看涨）
+            - 但对于超跌反弹策略，我们需要识别的是负向乖离过大后的反弹机会
+        
+        【重构后逻辑】:
+            - bias_60 取反，使得负值（超卖）变为正值（反弹潜力）
+            - BIAS < -0.2（价格低于均线 20%）-> bias_60 = 0.2（高反弹潜力）
+            - BIAS > 0.2（价格高于均线 20%）-> bias_60 = -0.2（低反弹潜力）
+        
         解读:
-            - BIAS > 0: 价格在均线之上，正向乖离
-            - BIAS < 0: 价格在均线之下，负向乖离
-            - BIAS 过大：可能即将回调（均值回归）
+            - bias_60 > 0: 超卖区域，具有反弹潜力（看涨）
+            - bias_60 < 0: 超买区域，可能回调（看跌）
+            - bias_60 过大：强烈反弹信号
         
         Args:
             df (pl.DataFrame): 包含价格数据的 DataFrame
@@ -666,11 +677,11 @@ class FactorEngine:
             column (str): 用于计算的价格列，默认 "close"
         
         Returns:
-            pl.DataFrame: 添加了 bias_{period} 列的 DataFrame
+            pl.DataFrame: 添加了 bias_{period} 列的 DataFrame（已取反）
         
         使用示例:
             >>> df_with_bias = engine.compute_bias(df, period=60)
-            >>> # BIAS > 0.2 表示价格远高于 60 日均线
+            >>> # bias_60 > 0.2 表示价格远低于 60 日均线，具有反弹潜力
         """
         result = df.clone()
         
@@ -683,10 +694,13 @@ class FactorEngine:
         ma_n = pl.col(column).rolling_mean(window_size=period)
         
         # 计算乖离率
-        bias = (pl.col(column) / (ma_n + self.EPSILON) - 1.0)
+        bias_raw = (pl.col(column) / (ma_n + self.EPSILON) - 1.0)
+        
+        # 【重构】取反，使得负向乖离（超卖）变为正值（反弹潜力）
+        bias_inverted = -bias_raw
         
         result = result.with_columns([
-            bias.alias(f"bias_{period}")
+            bias_inverted.alias(f"bias_{period}")
         ])
         
         return result
@@ -1242,6 +1256,106 @@ class FactorEngine:
         
         return result
     
+    def compute_label_5d(
+        self,
+        df: pl.DataFrame,
+        future_window: int = 5,
+        use_quantile: bool = True
+    ) -> pl.DataFrame:
+        """
+        计算未来 5 日趋势标签（新增 - 2026-03-14）。
+        
+        【重要】此标签包含未来数据，仅用于模型训练，不可用于回测或实盘决策！
+        
+        标签设计原理:
+            - 从"日频噪音预测"转向"趋势窗口预测"
+            - 预测 T+5 收益而非 T+1，减少日频噪音
+            - 使用分位数标签，让模型学习相对强弱而非绝对值
+        
+        标签定义:
+            1. future_return_5d: 未来 5 日收盘价涨幅
+               = close.shift(-5) / close - 1
+            
+            2. future_max_return_5d: 未来 5 日内最高价涨幅
+               = max(high.shift(-1), ..., high.shift(-5)) / close - 1
+            
+            3. label_5d: 分位数标签（如果 use_quantile=True）
+               - 涨幅前 20% 为 1
+               - 涨幅后 20% 为 0
+               - 中间为线性插值
+        
+        Args:
+            df (pl.DataFrame): 包含价格数据的 DataFrame
+            future_window (int): 预测窗口，默认 5 日
+            use_quantile (bool): 是否使用分位数标签
+        
+        Returns:
+            pl.DataFrame: 添加了 label_5d 及相关列的 DataFrame
+                - future_return_5d: 未来 5 日收益率
+                - future_max_return_5d: 未来 5 日最高涨幅
+                - label_5d: 分位数标签（0-1 范围）
+        
+        使用示例:
+            >>> df_with_label = engine.compute_label_5d(df)
+            >>> # 使用 label_5d 作为分类目标
+            >>> model.fit(X=df_with_factors, y=df_with_label["label_5d"])
+        """
+        result = df.clone()
+        
+        # 确保价格列为 Float64
+        result = result.with_columns([
+            pl.col("close").cast(pl.Float64, strict=False),
+        ])
+        
+        # 检查是否有 high 列
+        if "high" in result.columns:
+            result = result.with_columns([
+                pl.col("high").cast(pl.Float64, strict=False),
+            ])
+        
+        # 计算未来 5 日收益率
+        future_return_5d = (pl.col("close").shift(-future_window) / pl.col("close") - 1.0).alias("future_return_5d")
+        
+        # 计算未来 5 日内最高价涨幅
+        if "high" in result.columns:
+            future_highs = [pl.col("high").shift(-i) for i in range(1, future_window + 1)]
+            future_max_price = pl.max_horizontal(future_highs)
+            future_max_return_5d = (future_max_price / pl.col("close") - 1.0).alias("future_max_return_5d")
+        else:
+            # 如果没有 high 列，使用 close 作为替代
+            future_closes = [pl.col("close").shift(-i) for i in range(1, future_window + 1)]
+            future_max_price = pl.max_horizontal(future_closes)
+            future_max_return_5d = (future_max_price / pl.col("close") - 1.0).alias("future_max_return_5d")
+        
+        result = result.with_columns([
+            future_return_5d,
+            future_max_return_5d,
+        ])
+        
+        # 计算分位数标签
+        if use_quantile:
+            # 按 symbol 分组计算分位数排名
+            # 前 20% 为 1，后 20% 为 0，中间线性插值
+            label_5d = (
+                pl.col("future_return_5d")
+                .rank("dense")
+                .over("symbol")
+                .cast(pl.Float64)
+            )
+            # 归一化到 0-1 范围
+            label_5d = (label_5d - label_5d.min().over("symbol")) / (label_5d.max().over("symbol") - label_5d.min().over("symbol") + self.EPSILON)
+            
+            result = result.with_columns([
+                label_5d.alias("label_5d")
+            ])
+        else:
+            # 直接使用未来收益率作为标签
+            result = result.with_columns([
+                pl.col("future_return_5d").alias("label_5d")
+            ])
+        
+        return result
+    
     def compute_sharpe_target(
         self, 
         df: pl.DataFrame,
@@ -1343,9 +1457,12 @@ class FactorEngine:
         """
         在 DataFrame 上计算预测标签（仅用于模型训练）。
         
-        支持两种标签模式:
-            1. 传统标签：future_return_5_target (简单收益率，带 _target 后缀)
-            2. 夏普风格标签：sharpe_target (风险调整后收益，带 _target 后缀)
+        【重构 - 2026-03-14】使用 label_5d 替代 sharpe_target，从"日频噪音预测"转向"趋势窗口预测"。
+        
+        标签模式:
+            1. label_5d: 未来 5 日趋势标签（分位数标签，0-1 范围）
+            2. future_return_5d: 未来 5 日收益率（连续值）
+            3. sharpe_target: 夏普风格标签（保留用于兼容）
         
         【重要】标签包含未来数据，仅用于模型训练，不可用于回测或实盘决策！
         
@@ -1353,18 +1470,21 @@ class FactorEngine:
             df (pl.DataFrame): 包含 OHLCV 数据的 Polars DataFrame
             
         Returns:
-            pl.DataFrame: 添加了标签列的 DataFrame（列名带 _target 后缀）
+            pl.DataFrame: 添加了标签列的 DataFrame
             
         使用示例:
             >>> df = pl.DataFrame({"close": [10.0, 10.5, 11.0, 10.8, 11.2]})
             >>> engine = FactorEngine("config/factors.yaml")
             >>> result = engine.compute_label(df)
-            >>> print(result["sharpe_target"])  # 夏普风格标签（仅用于训练）
+            >>> print(result["label_5d"])  # 5 日趋势标签
         """
         # 创建工作副本
         result = df.clone()
         
-        # 计算夏普风格标签（使用新命名，带 _target 后缀）
+        # 【重构】计算 5 日趋势标签（新增）
+        result = self.compute_label_5d(result, future_window=5, use_quantile=True)
+        
+        # 计算夏普风格标签（保留用于兼容）
         result = self.compute_sharpe_target(result)
         
         # 同时计算传统标签 (如果配置存在)
