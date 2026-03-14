@@ -601,17 +601,24 @@ class DeepSeekAgent(AIAgentBase):
     注意：此模块的配置被原封不动保留，仅将底层请求封装进 OpenAI SDK
     """
     
-    # 审计关键词
+    # 审计关键词 - 负面新闻
     NEGATIVE_KEYWORDS = [
         "立案调查", "违规担保", "财务造假", "面值退市", 
         "实控人变更", "信披违规", "被证监会", "行政处罚",
-        "重大违法", "强制退市", "资金占用", "关联交易"
+        "重大违法", "强制退市", "资金占用", "关联交易",
+        "大股东减持", "违规减持", "清仓式减持", "解禁"
     ]
     
     # "小作文"识别关键词
     RUMOR_KEYWORDS = [
         "传闻", "消息称", "据悉", "网传", "社交媒体",
         "高送转", "送转", "蹭热点", "蹭概念"
+    ]
+    
+    # 量价背离/高位滞涨关键词
+    VOLUME_PRICE_KEYWORDS = [
+        "放量滞涨", "高位放量", "量价背离", "缩量上涨",
+        "天量见顶", "放量下跌", "高位十字星", "顶部放量"
     ]
     
     def __init__(self, config: dict):
@@ -691,15 +698,16 @@ class DeepSeekAgent(AIAgentBase):
     
     def audit_stock(self, stock_info: dict, news_summary: str) -> AuditResult:
         """
-        DeepSeek 核心精审 - 严格风控审计。
+        DeepSeek 核心精审 - 严格风控审计（2026 量化策略架构师版）。
         
         审计指令包含：
         1. 关键词扫描：排查"立案调查、违规担保、财务造假..."
         2. "小作文"识别：对比官方公告与社交媒体传闻
         3. 利好陷阱：识别是否为"掩护大股东减持"的虚假利好
+        4. 量价背离检测：识别"高位放量滞涨"等异常形态
         
         Args:
-            stock_info: 股票信息（包含代码、名称等）
+            stock_info: 股票信息（包含代码、名称、Z-Score 分值、RSI 等）
             news_summary: 初筛后的新闻摘要
             
         Returns:
@@ -708,41 +716,74 @@ class DeepSeekAgent(AIAgentBase):
         symbol = stock_info.get('symbol', '')
         name = stock_info.get('name', '')
         
-        system_prompt = """你是一位专业的股票风控审计员，负责识别潜在风险。请严格审计以下股票信息：
+        # 获取量化数据（如果提供）
+        z_score = stock_info.get('z_score', None)
+        rsi_14 = stock_info.get('rsi_14', None)
+        hist_sharpe = stock_info.get('hist_sharpe_20d', None)
+        market_mode = stock_info.get('market_mode', 'NORMAL')
+        
+        # 构建防守模式提示
+        defensive_instruction = ""
+        if market_mode == "DEFENSIVE":
+            defensive_instruction = """
+【特别提示 - 防守模式】
+当前大盘处于防守模式（中证 500 在 20 日均线下方），审计标准需翻倍严苛！
+- 任何技术面破位直接 REJECT
+- RSI > 80 必须谨慎，除非动量极强
+- 量价背离必须 REJECT
+"""
+        
+        system_prompt = f"""你是一位拥有 20 年实战经验的量化交易风控专家。你的任务是对"多因子量化系统"初筛出的股票进行严格的逻辑审计。
 
-【审计指令】
-1. 关键词扫描：严格排查以下负面关键词
-   - 立案调查、违规担保、财务造假、面值退市
-   - 实控人变更、信披违规、被证监会处罚
-   - 重大违法强制退市、资金占用、关联交易
+【系统背景】
+- 本金规模：50,000 元人民币（小额实战）
+- 核心架构：基于多因子模型（Multi-Factor Model），通过 Z-Score 标准化评分进行排序
+- 选股逻辑：结合动量（Momentum）、波动率收缩（VCP）、量价协同及技术指标（RSI/MACD）
+- 风险偏好：极致保守，奉行"宁缺毋滥"原则，优先保护本金
 
-2. "小作文"识别：
-   - 对比官方公告与社交媒体传闻
-   - 官方公告权重最高
-   - 对模棱两可的利好（如"高送转"数字游戏）保持高度警惕
+【Input Data 说明】
+你会收到一份包含以下信息的列表：
+1. 量化分值 (Z-Score)：表示该股在全市场中的相对强度（分数越高越好）
+2. 技术指标：RSI(14)、MACD 状态
+3. 因子表现：动量排名、量价是否背离
+4. 市场新闻：近期该股相关的舆情总结
 
-3. 利好陷阱识别：
-   - 识别是否为"掩护大股东减持"的虚假利好
-   - 警惕"蹭热点"式公告
+【Audit Criteria - 严格执行】
+你必须根据以下逻辑给出 PASS 或 REJECT 指令：
+
+1. **量价健康度**：若 Z-Score 高但存在明显的"高位放量滞涨"或"量价背离"，必须 REJECT
+2. **风险对冲**：若大盘处于"防守模式"（中证 500 在 20 日均线下方），审计标准需翻倍严苛
+3. **技术面约束**：RSI > 80（超买区）时，除非动量极强，否则建议谨慎
+4. **新闻审计**：排除任何涉及财务造假、立案调查、大股东违规减持的个股
 
 【判定原则】
 - 宁缺毋滥：有任何重大风险直接 REJECT
-- PASS 标准：无明显负面 + 无"小作文"嫌疑 + 非虚假利好
+- PASS 标准：
+  * 无明显负面新闻
+  * 无"小作文"嫌疑
+  * 非虚假利好
+  * 量价关系健康
+  * 技术面无明显破位
 
+{defensive_instruction}
 【输出格式】
 请严格按以下 JSON 格式输出：
-{
-    "status": "PASS" 或 "REJECT",
-    "reason": "简短说明原因（50 字以内）",
-    "risk_level": "无/低/中/高",
-    "keywords_found": ["发现的关键词列表，若无则为空"]
-}
+{{
+    "symbol": "股票代码",
+    "decision": "PASS" 或 "REJECT",
+    "reason": "简短的审计理由（含技术面和基本面核心逻辑，50 字以内）",
+    "risk_level": "LOW/MEDIUM/HIGH"
+}}
 
 只输出 JSON，不要其他内容。"""
 
         user_prompt = f"""【股票信息】
 代码：{symbol}
 名称：{name}
+Z-Score: {z_score if z_score is not None else 'N/A'}
+RSI(14): {rsi_14 if rsi_14 is not None else 'N/A'}
+历史夏普 (20 日): {hist_sharpe if hist_sharpe is not None else 'N/A'}
+市场模式：{market_mode}
 
 【初筛新闻摘要】
 {news_summary}
@@ -924,7 +965,12 @@ class DailyTradeAdvisor:
     
     def load_and_predict(self, trade_date: str, test_mode: bool = False) -> pl.DataFrame:
         """
-        加载数据并执行模型预测。
+        加载数据并执行模型预测（混合模式）。
+        
+        【混合模式架构 - 2026-03-14 新增】:
+        1. 优先尝试加载 /models 中的 LightGBM 模型进行预测
+        2. 若模型不存在，回退到 factors.yaml 静态权重模式
+        3. 支持动态阈值调整，根据 Z-Score 分布自适应
         
         Args:
             trade_date: 交易日
@@ -947,6 +993,101 @@ class DailyTradeAdvisor:
             logger.info("TEST MODE: Forcing 2 fixed stocks with P=0.85 for AI audit testing")
             return self._create_test_mode_candidates(trade_date)
         
+        # ========== 混合模式：优先加载 LightGBM 模型 ==========
+        model_available = self._try_load_lightgbm_model()
+        
+        if model_available:
+            logger.info("[MIXED MODE] Using LightGBM model for prediction")
+            return self._predict_with_lightgbm(trade_date)
+        else:
+            logger.info("[MIXED MODE] LightGBM model not found, falling back to static weights")
+            return self._predict_with_static_weights(trade_date)
+    
+    def _try_load_lightgbm_model(self) -> bool:
+        """
+        尝试加载 LightGBM 模型。
+        
+        Returns:
+            True 如果模型加载成功，False 否则
+        """
+        try:
+            import lightgbm as lgb
+            
+            model_path = Path(self.model_path)
+            if model_path.exists():
+                self._lightgbm_model = lgb.Booster(model_file=str(model_path))
+                logger.info(f"LightGBM model loaded from {self.model_path}")
+                return True
+            else:
+                logger.warning(f"LightGBM model not found at {self.model_path}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to load LightGBM model: {e}")
+            return False
+    
+    def _predict_with_lightgbm(self, trade_date: str) -> pl.DataFrame:
+        """
+        使用 LightGBM 模型进行预测。
+        
+        Args:
+            trade_date: 交易日
+            
+        Returns:
+            包含预测结果的 DataFrame
+        """
+        logger.info("[LightGBM] Running prediction with trained model")
+        return self._load_and_predict_with_model(trade_date)
+    
+    def _predict_with_static_weights(self, trade_date: str) -> pl.DataFrame:
+        """
+        使用静态因子权重进行预测（回退模式）。
+        
+        Args:
+            trade_date: 交易日
+            
+        Returns:
+            包含预测结果的 DataFrame
+        """
+        logger.info("[STATIC WEIGHTS] Running prediction with YAML factor weights")
+        return self._load_and_predict_static(trade_date)
+    
+    def _load_and_predict_with_model(self, trade_date: str) -> pl.DataFrame:
+        """
+        加载数据并使用 LightGBM 模型执行预测。
+        
+        Args:
+            trade_date: 交易日
+            
+        Returns:
+            预测结果 DataFrame
+        """
+        logger.info("[LightGBM] Loading data for model prediction")
+        return self._load_and_predict_common(trade_date, use_model=True)
+    
+    def _load_and_predict_static(self, trade_date: str) -> pl.DataFrame:
+        """
+        加载数据并使用静态因子权重执行预测。
+        
+        Args:
+            trade_date: 交易日
+            
+        Returns:
+            预测结果 DataFrame
+        """
+        logger.info("[STATIC] Loading data for static weight prediction")
+        return self._load_and_predict_common(trade_date, use_model=False)
+    
+    def _load_and_predict_common(self, trade_date: str, use_model: bool = True) -> pl.DataFrame:
+        """
+        通用的数据加载和预测逻辑。
+        
+        Args:
+            trade_date: 交易日
+            use_model: 是否使用模型预测
+            
+        Returns:
+            预测结果 DataFrame
+        """
         # 读取因子配置
         factor_engine = FactorEngine("config/factors.yaml")
         
@@ -1430,6 +1571,10 @@ class DailyTradeAdvisor:
         - 碎股取整：100 股整数倍向下取整
         - 预扣除佣金和印花税
         
+        【新增】RSI 超买过滤：
+        - 如果 rsi_14 > 75，直接剔除该股票（不买入）
+        - 防止在防御模式下追逐高位股票
+        
         Args:
             passed_candidates: 通过的候选股票
             
@@ -1439,6 +1584,24 @@ class DailyTradeAdvisor:
         logger.info("=" * 50)
         logger.info("Capital Allocation")
         logger.info("=" * 50)
+        
+        # ========== 【新增】RSI 超买过滤 ==========
+        # 过滤掉 RSI > 75 的股票，防止追逐高位
+        filtered_candidates = []
+        for candidate in passed_candidates:
+            # 检查是否有 RSI 属性（从 backtest_engine 传递过来）
+            rsi_value = getattr(candidate, 'rsi_14', 50.0)
+            
+            if rsi_value > 75.0:
+                logger.warning(f"🚫 RSI OVERBOUGHT: {candidate.symbol} ({candidate.name}) - RSI={rsi_value:.0f} > 75, excluded")
+            else:
+                filtered_candidates.append(candidate)
+        
+        if len(filtered_candidates) < len(passed_candidates):
+            logger.info(f"RSI filter removed {len(passed_candidates) - len(filtered_candidates)} stock(s)")
+        
+        # 使用过滤后的候选列表
+        passed_candidates = filtered_candidates
         
         # 确定实际可买入数量（最多 3 只）
         actual_count = min(len(passed_candidates), self.max_positions)

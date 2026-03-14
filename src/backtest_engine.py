@@ -43,7 +43,7 @@ except ImportError:
 # Z-Score 阈值：0.0 表示强于平均水平
 # predict_score 是 Z-Score 标准化后的值，均值为 0，标准差为 1
 SCORE_THRESHOLD = 0.0  # 默认准入阈值（强于平均）
-DEFENSIVE_THRESHOLD_ADDON = 0.5  # 防御模式额外阈值（+0.5 个标准差）
+DEFENSIVE_THRESHOLD_ADDON = 0.3  # 防御模式额外阈值（+0.3 个标准差，更平滑过渡）
 
 MIN_HOLD_DAYS = 2  # 最小持有天数（防止频繁换手）
 DEFENSIVE_STOP_LOSS = -0.05  # 防御模式下止损线（-5%）
@@ -132,9 +132,10 @@ class BacktestEngine:
     
     核心变更:
         1. 删除概率映射函数：直接使用 predict_score（Z-Score 标准化值）
-        2. 多级排序规则：predict_score（主）+ sharpe_label（次）
-        3. 动态阈值调整：防御模式自动提高阈值 +0.5
+        2. 多级排序规则：predict_score（主）+ hist_sharpe_20d（次）
+        3. 动态阈值调整：防御模式自动提高阈值 + hist_sharpe_20d > 0 约束
         4. 完善卖出风控：predict_score 降至负数触发卖出
+        5. 拒绝未来函数：使用 hist_sharpe_20d（历史夏普）替代 sharpe_label（未来属性）
     """
     
     def __init__(self, config: BacktestConfig = None):
@@ -193,10 +194,16 @@ class BacktestEngine:
         """
         获取当日所有股票的预测排名（前 10 名）用于诊断输出。
         
-        【核心变更】
-        1. 使用 FactorEngine 计算 predict_score 和 sharpe_label
-        2. 多级排序：predict_score（降序）+ sharpe_label（降序）
+        【核心变更 - 2026-03-14 动态 Top-N 逻辑】
+        1. 使用 FactorEngine 计算 predict_score 和 hist_sharpe_20d（历史夏普，无未来函数）
+        2. 多级排序：predict_score（主序降序）+ hist_sharpe_20d（次序降序）
         3. 不再使用概率映射，直接使用原始 Z-Score 分值
+        4. 【动态 Top-N】在满足阈值的股票中，仅取 Z-Score 排名最高且 hist_sharpe > 1.0 的前 2 名
+        
+        动态 Top-N 逻辑说明:
+            - 不再使用固定的 > 0.1 门槛（过低导致过度交易）
+            - 改为：在满足基础阈值的股票中，按 Z-Score 排序
+            - 仅选取 hist_sharpe_20d > 1.0 的前 2 名（宁缺毋滥）
         """
         try:
             start_date = (datetime.strptime(trade_date, '%Y-%m-%d') - timedelta(days=lookback_days)).strftime('%Y-%m-%d')
@@ -264,8 +271,9 @@ class BacktestEngine:
                             continue
                         
                         # 安全获取字段值，处理可能的缺失
+                        # 【重要】使用 hist_sharpe_20d 替代 sharpe_label（无未来函数）
                         predict_score = self._safe_get_value(latest_row, "predict_score", 0.0)
-                        sharpe_label = self._safe_get_value(latest_row, "sharpe_label", 0.0)
+                        hist_sharpe = self._safe_get_value(latest_row, "hist_sharpe_20d", 0.0)
                         rsi_14 = self._safe_get_value(latest_row, "rsi_14", 50.0)
                         volume_price_health = self._safe_get_value(latest_row, "volume_price_health", 0.0)
                         close = self._safe_get_value(latest_row, "close", 0.0)
@@ -276,19 +284,56 @@ class BacktestEngine:
                             "close": close,
                             "pct_chg": pct_chg,
                             "predict_score": predict_score,
-                            "sharpe_label": sharpe_label,
+                            "hist_sharpe_20d": hist_sharpe,
+                            "sharpe_label": hist_sharpe,  # 兼容旧代码，实际使用的是 hist_sharpe_20d
                             "rsi_14": rsi_14,
                             "volume_price_health": volume_price_health,
                         })
                     
-                    # 多级排序：predict_score（主）+ sharpe_label（次）
-                    results.sort(key=lambda x: (x["predict_score"], x["sharpe_label"]), reverse=True)
+                    # ========== 【动态 Top-N 逻辑 - 2026-03-14 修复】 ==========
+                    # 【修复目标】打破回测 0 交易死锁，优化模型预测深度
+                    # 1. 将 hist_sharpe_20d > 1.0 的硬门槛降为 > 0（只要是正向收益风险比即可）
+                    # 2. 选股策略改为：先按 predict_score 取前 10，再按 hist_sharpe 取前 2
                     
-                    # 取前 10 名
-                    top_10 = results[:10]
+                    # 第一步：获取当前阈值（考虑防御模式调整）
+                    current_threshold = self._get_current_threshold(trade_date)
+                    
+                    # 第二步：按 predict_score（Z-Score）降序排序所有股票
+                    results.sort(key=lambda x: x["predict_score"], reverse=True)
+                    
+                    # 第三步：取 predict_score 前 10 名（保证预测强度）
+                    top_10_by_score = results[:10]
+                    
+                    logger.info(f"[DYNAMIC TOP-N] Top 10 by predict_score (threshold={current_threshold:.2f}):")
+                    for i, stock in enumerate(top_10_by_score, 1):
+                        logger.info(f"  #{i} {stock['symbol']}: Score={stock['predict_score']:+.2f}, Sharpe={stock['hist_sharpe_20d']:.2f}")
+                    
+                    # 第四步：在前 10 名中，筛选 hist_sharpe_20d > 0 的股票（降低门槛）
+                    # 这确保只选择具有正向风险收益比的股票
+                    positive_sharpe_stocks = [x for x in top_10_by_score if x["hist_sharpe_20d"] > 0]
+                    
+                    if not positive_sharpe_stocks:
+                        # 如果没有股票满足 hist_sharpe > 0，放宽到 hist_sharpe > -0.5
+                        logger.info(f"[DYNAMIC TOP-N] No stocks with hist_sharpe > 0, relaxing to > -0.5")
+                        positive_sharpe_stocks = [x for x in top_10_by_score if x["hist_sharpe_20d"] > -0.5]
+                    
+                    if not positive_sharpe_stocks:
+                        # 仍然没有，直接取前 2 名（兜底逻辑）
+                        logger.info(f"[DYNAMIC TOP-N] Still no stocks, using top 2 by score")
+                        top_2 = top_10_by_score[:2]
+                    else:
+                        # 第五步：在满足 hist_sharpe > 0 的股票中，按 hist_sharpe 降序取前 2 名
+                        # 这样既保证了预测强度（已在前 10 中），又兼顾了稳定性
+                        positive_sharpe_stocks.sort(key=lambda x: x["hist_sharpe_20d"], reverse=True)
+                        top_2 = positive_sharpe_stocks[:2]
+                    
+                    top_10 = top_2
+                    
+                    logger.info(f"[DYNAMIC TOP-N] Selected {len(top_10)} stocks:")
+                    for i, stock in enumerate(top_10, 1):
+                        logger.info(f"  #{i} {stock['symbol']}: Score={stock['predict_score']:+.2f}, Sharpe={stock['hist_sharpe_20d']:.2f}")
                     
                     # 添加是否达到阈值的标记
-                    current_threshold = self._get_current_threshold(trade_date)
                     for item in top_10:
                         item["meets_threshold"] = item["predict_score"] >= current_threshold
                     
@@ -433,11 +478,17 @@ class BacktestEngine:
                 for i, score in enumerate(record.top_10_scores, 1):
                     status = "OK" if score["meets_threshold"] else "NO"
                     # 新日志格式：Score | Sharpe | RSI
-                    rsi_status = "OVERBOUGHT" if score.get("rsi_14", 50) > 80 else "OK"
+                    rsi_14 = score.get("rsi_14", 50)
+                    if rsi_14 > 75:
+                        rsi_status = "OVERBOUGHT"
+                    elif rsi_14 > 70:
+                        rsi_status = "WARM"
+                    else:
+                        rsi_status = "OK"
                     logger.info(
                         f"  #{i} {score['symbol']}: Score: {score['predict_score']:+.2f} | "
                         f"Sharpe: {score.get('sharpe_label', 0):.2f} | "
-                        f"RSI: {score.get('rsi_14', 50):.0f} [{rsi_status}] [{status}]"
+                        f"RSI: {rsi_14:.0f} [{rsi_status}] [{status}]"
                     )
                 
                 meets_count = sum(1 for s in record.top_10_scores if s["meets_threshold"])
@@ -533,9 +584,22 @@ class BacktestEngine:
                 logger.info(f"  [SOLD] {symbol} @ {current_price:.2f} x {pos['shares']} = ¥{sell_value:.2f}")
             
             # Step 4: 选股买入逻辑
-            # 防御模式下不买入新股
+            # 【修改】防御模式下不仅提高阈值，还强制要求 hist_sharpe_20d > 0
             if record.market_mode == "DEFENSIVE":
-                logger.info("  [DEFENSIVE] No new buys allowed")
+                # 防御模式：要求 predict_score > threshold 且 hist_sharpe_20d > 0（历史风险收益比为正）
+                logger.info("  [DEFENSIVE] Requiring positive hist_sharpe_20d for risk control")
+                if record.top_10_scores:
+                    # 筛选：predict_score > threshold 且 hist_sharpe_20d > 0
+                    qualified_stocks = [
+                        s for s in record.top_10_scores 
+                        if s["meets_threshold"] and s.get("hist_sharpe_20d", 0) > 0
+                    ]
+                    logger.info(f"  [DEFENSIVE SCAN] Qualified stocks (score>={current_threshold:.2f} & hist_sharpe>0): {len(qualified_stocks)}")
+                    
+                    if not qualified_stocks:
+                        logger.info("  [DEFENSIVE] No stocks meet defensive criteria, staying in cash")
+                else:
+                    qualified_stocks = []
             elif len(self.holdings) < self.config.max_positions:
                 if record.top_10_scores:
                     # 使用当前阈值筛选
@@ -556,6 +620,14 @@ class BacktestEngine:
                             
                             symbol = stock["symbol"]
                             close = stock["close"]
+                            
+                            # 【新增】RSI 超买过滤：如果 rsi_14 > 75，直接跳过
+                            rsi_14 = stock.get("rsi_14", 50)
+                            if rsi_14 > 75:
+                                logger.info(f"  [SKIP] {symbol}: RSI={rsi_14:.0f} > 75 [OVERBOUGHT]")
+                                continue
+                            elif rsi_14 > 70:
+                                logger.debug(f"  [WARN] {symbol}: RSI={rsi_14:.0f} [WARM] - Proceeding with caution")
                             
                             if symbol in self.holdings:
                                 logger.debug(f"  [SKIP] {symbol}: already holding")

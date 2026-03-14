@@ -218,7 +218,8 @@ class DatabaseManager:
             # Convert to Polars DataFrame
             df = pl.from_pandas(pdf)
             
-            logger.info(f"Query returned {len(df)} rows")
+            # 静默模式：移除行数日志，避免回测时产生大量输出
+            # logger.info(f"Query returned {len(df)} rows")
             return df
             
         except Exception as e:

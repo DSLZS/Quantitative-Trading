@@ -127,7 +127,7 @@ label:
             assert col in result.columns
 
     def test_missing_label_config(self, tmp_path):
-        """Test error when label config is missing."""
+        """Test that compute_label works without label config (uses sharpe_label as default)."""
         config_content = """
 factors:
   - name: momentum_5
@@ -139,5 +139,10 @@ factors:
         
         engine = FactorEngine(str(config_file))
         
-        with pytest.raises(ValueError, match="No label configuration"):
-            engine.compute_label(pl.DataFrame({"close": [1, 2, 3]}))
+        # compute_label should work without label config (uses sharpe_label as default)
+        result = engine.compute_label(pl.DataFrame({"close": [1.0, 2.0, 3.0, 4.0, 5.0]}))
+        
+        # Check that sharpe_label was added
+        assert "sharpe_label" in result.columns
+        assert "future_max_return" in result.columns
+        assert "future_volatility" in result.columns

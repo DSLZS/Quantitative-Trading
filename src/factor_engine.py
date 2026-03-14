@@ -7,11 +7,11 @@ volume-price analysis, and advanced data preprocessing to improve stock selectio
 核心功能:
     - 从 YAML 配置文件加载因子定义
     - 使用 Polars 向量化操作计算因子
-    - 【新增】技术指标因子库：RSI(14)、MACD
-    - 【新增】RSI 超买过滤逻辑 (RSI > 80 时权重降为 0.5)
-    - 【新增】量价协同因子：换手率稳定性检查
-    - 【新增】夏普风格标签：未来 3 日最高价涨幅与波动比率
-    - 【新增】数据预处理：Z-Score 标准化和 Winsorize 去极值
+    - 技术指标因子库：RSI(14)、MACD
+    - RSI 超买过滤逻辑 (RSI > 80 时权重降为 0.5)
+    - 量价协同因子：换手率稳定性检查
+    - 夏普风格标签：未来 3 日最高价涨幅与波动比率
+    - 数据预处理：Z-Score 标准化和 Winsorize 去极值
     - LazyFrame 懒加载模式，优化大规模数据计算
     - 并行计算支持，针对多股票场景优化
 
@@ -73,12 +73,12 @@ class FactorEngine:
     功能特性:
         - 从 YAML 配置文件加载因子定义
         - 使用 eval() 执行向量化因子表达式
-        - 【新增】技术指标因子：RSI(14)、MACD
-        - 【新增】RSI 超买过滤：RSI > 80 时权重降为 0.5
-        - 【新增】量价协同检查：识别无量诱多
-        - 【新增】夏普风格标签：未来 3 日最高价/波动率
-        - 【新增】Z-Score 标准化：消除量纲影响
-        - 【新增】Winsorize 去极值：防止异常值污染
+        - 技术指标因子：RSI(14)、MACD
+        - RSI 超买过滤：RSI > 80 时权重降为 0.5
+        - 量价协同检查：识别无量诱多
+        - 夏普风格标签：未来 3 日最高价/波动率
+        - Z-Score 标准化：消除量纲影响
+        - Winsorize 去极值：防止异常值污染
         - LazyFrame 懒加载模式，优化内存使用
         - 并行计算，针对 800 只股票优化
         - 支持存储 Parquet 格式结果
@@ -156,6 +156,9 @@ class FactorEngine:
     
     # 量价协同过滤阈值
     VOLUME_SHRINK_THRESHOLD = 0.8    # 成交量较 5 日均值萎缩 20% 视为异常
+    
+    # 数值稳定性常量
+    EPSILON = 1e-6  # 防止除以 0 的微小值
     
     def __init__(
         self, 
@@ -395,8 +398,6 @@ class FactorEngine:
             - 此方法按 symbol 分组进行去极值，避免跨股票影响
             - 对于分组内数据不足的情况，会使用全局分位数
         """
-        logger.info(f"Applying Winsorize ({lower_percentile}%-{upper_percentile}%)")
-        
         if columns is None:
             columns = self.get_factor_names()
         
@@ -404,7 +405,6 @@ class FactorEngine:
         available_columns = [col for col in columns if col in df.columns]
         
         if not available_columns:
-            logger.warning("No factor columns found for Winsorize")
             return df
         
         result = df.clone()
@@ -418,7 +418,6 @@ class FactorEngine:
                 global_upper = result[col].quantile(upper_percentile / 100.0)
                 
                 # 使用 over() 窗口函数计算分组分位数并应用
-                # 注意：Polars 不支持在 over() 中直接使用 quantile，所以我们用全局分位数简化处理
                 result = result.with_columns([
                     pl.col(col).clip(
                         lower_bound=global_lower,
@@ -470,8 +469,6 @@ class FactorEngine:
             - Z-Score 标准化后，数据均值为 0，标准差为 1
             - 对于标准差为 0 的列，Z-Score 会返回 null
         """
-        logger.info(f"Applying {method} normalization")
-        
         if columns is None:
             columns = self.get_factor_names()
         
@@ -479,7 +476,6 @@ class FactorEngine:
         available_columns = [col for col in columns if col in df.columns]
         
         if not available_columns:
-            logger.warning("No factor columns found for normalization")
             return df
         
         result = df.clone()
@@ -487,11 +483,11 @@ class FactorEngine:
         if method == "zscore":
             # Z-Score 标准化：(x - mean) / std
             if "symbol" in result.columns:
-                # 按 symbol 分组进行标准化
+                # 按 symbol 分组进行标准化 - 向量化操作
                 for col in available_columns:
                     result = result.with_columns([
                         ((pl.col(col) - pl.col(col).over("symbol").mean()) / 
-                         (pl.col(col).over("symbol").std() + 1e-10)).alias(col)
+                         (pl.col(col).over("symbol").std() + self.EPSILON)).alias(col)
                     ])
             else:
                 # 全局标准化
@@ -499,7 +495,7 @@ class FactorEngine:
                     mean_val = result[col].mean()
                     std_val = result[col].std()
                     result = result.with_columns([
-                        ((pl.col(col) - mean_val) / (std_val + 1e-10)).alias(col)
+                        ((pl.col(col) - mean_val) / (std_val + self.EPSILON)).alias(col)
                     ])
         
         elif method == "minmax":
@@ -509,14 +505,14 @@ class FactorEngine:
                     min_val = pl.col(col).over("symbol").min()
                     max_val = pl.col(col).over("symbol").max()
                     result = result.with_columns([
-                        ((pl.col(col) - min_val) / (max_val - min_val + 1e-10)).alias(col)
+                        ((pl.col(col) - min_val) / (max_val - min_val + self.EPSILON)).alias(col)
                     ])
             else:
                 for col in available_columns:
                     min_val = result[col].min()
                     max_val = result[col].max()
                     result = result.with_columns([
-                        ((pl.col(col) - min_val) / (max_val - min_val + 1e-10)).alias(col)
+                        ((pl.col(col) - min_val) / (max_val - min_val + self.EPSILON)).alias(col)
                     ])
         
         elif method == "rank":
@@ -525,12 +521,12 @@ class FactorEngine:
                 for col in available_columns:
                     result = result.with_columns([
                         (pl.col(col).rank("dense").over("symbol") / 
-                         pl.col(col).count().over("symbol")).alias(col)
+                         pl.col(col).count().over("symbol").cast(pl.Float64) + self.EPSILON).alias(col)
                     ])
             else:
                 for col in available_columns:
                     result = result.with_columns([
-                        pl.col(col).rank("dense") / len(result)
+                        (pl.col(col).rank("dense").cast(pl.Float64) / (len(result) + self.EPSILON)).alias(col)
                     ])
         
         return result
@@ -549,6 +545,12 @@ class FactorEngine:
             1. 首先进行 Winsorize 去极值，防止极端值影响标准化
             2. 然后进行 Z-Score 标准化，消除量纲影响
         
+        排除的列 (不进行标准化):
+            - rsi_*: RSI 指标已有固定 0-100 范围
+            - sharpe_label: 标签列不需要标准化
+            - future_*: 标签相关列不需要标准化
+            - predict_score, filtered_score: 评分列不需要标准化
+        
         Args:
             df (pl.DataFrame): 输入 DataFrame
             columns (list[str], optional): 需要处理的列
@@ -564,9 +566,17 @@ class FactorEngine:
             >>> df_processed = engine.winsorize(df)
             >>> df_processed = engine.normalize(df_processed)
         """
-        logger.info("Starting data preprocessing pipeline")
+        # 排除不需要标准化的列
+        exclude_columns = {"rsi_14", "rsi_7", "rsi_21", "sharpe_label", "future_max_return", 
+                          "future_volatility", "future_return_5", "predict_score", "filtered_score",
+                          "macd", "macd_signal", "macd_hist"}
         
-        # 步骤 1: Winsorize 去极值
+        if columns is None:
+            columns = [col for col in self.get_factor_names() if col not in exclude_columns]
+        else:
+            columns = [col for col in columns if col not in exclude_columns]
+        
+        # 步骤 1: Winsorize 去极值 (只对需要标准化的列)
         df_processed = self.winsorize(
             df, 
             columns=columns,
@@ -581,7 +591,6 @@ class FactorEngine:
             method=normalize_method
         )
         
-        logger.info("Preprocessing pipeline completed")
         return df_processed
     
     # =========================================================================
@@ -606,8 +615,6 @@ class FactorEngine:
             - 此方法应该在计算因子之前调用
             - 不会修改原始数据，返回新的 DataFrame
         """
-        logger.debug("Normalizing column names for factor computation")
-        
         result = df.clone()
         
         # 1. 将 pct_chg 复制为 pct_change（如果 pct_chg 存在但 pct_change 不存在）
@@ -615,23 +622,20 @@ class FactorEngine:
             result = result.with_columns([
                 pl.col("pct_chg").alias("pct_change")
             ])
-            logger.debug("Created pct_change from pct_chg")
         
         # 2. 如果 pct_change 存在但 pct_chg 不存在，反向复制
         if "pct_change" in result.columns and "pct_chg" not in result.columns:
             result = result.with_columns([
                 pl.col("pct_change").alias("pct_chg")
             ])
-            logger.debug("Created pct_chg from pct_change")
         
         # 3. 如果缺少 turnover_rate，使用 volume 变化率作为替代
         # 注意：这是一个近似值，真实的换手率需要 total_shares 数据
         if "turnover_rate" not in result.columns and "volume" in result.columns:
             # 使用成交量变化率作为替代（标准化到 0-1 范围）
             result = result.with_columns([
-                (pl.col("volume") / (pl.col("volume").rolling_mean(window_size=20) + 1e-10)).alias("turnover_rate")
+                (pl.col("volume") / (pl.col("volume").rolling_mean(window_size=20) + self.EPSILON)).alias("turnover_rate")
             ])
-            logger.debug("Created turnover_rate approximation from volume changes")
         
         return result
     
@@ -643,7 +647,7 @@ class FactorEngine:
         self, 
         df: pl.DataFrame, 
         period: int = 14,
-        column: str = "pct_change"
+        column: str = "close"
     ) -> pl.DataFrame:
         """
         计算 RSI (相对强弱指标)。
@@ -662,7 +666,7 @@ class FactorEngine:
         Args:
             df (pl.DataFrame): 包含价格数据的 DataFrame
             period (int): RSI 周期，默认 14 日
-            column (str): 用于计算的价格变化列，默认 "pct_change"
+            column (str): 用于计算的价格列，默认 "close"
         
         Returns:
             pl.DataFrame: 添加了 rsi_{period} 列的 DataFrame
@@ -671,57 +675,34 @@ class FactorEngine:
             >>> df_with_rsi = engine.compute_rsi(df, period=14)
             >>> # RSI > 80 表示严重超买，需要考虑过滤
         """
-        logger.info(f"Computing RSI({period})")
-        
         result = df.clone()
         
-        # 确保价格变化列存在
-        if column not in result.columns:
-            if "pct_chg" in result.columns:
-                result = result.with_columns([
-                    pl.col("pct_chg").alias("pct_change")
-                ])
-                column = "pct_change"
-                logger.debug("Created pct_change from pct_chg for RSI calculation")
-            else:
-                # 如果都没有，使用价格变化计算
-                result = result.with_columns([
-                    (pl.col("close") / pl.col("close").shift(1) - 1).alias("pct_change")
-                ])
-                column = "pct_change"
-                logger.debug("Created pct_change from close prices for RSI calculation")
-        
-        # 确保价格变化列为 Float64
+        # 确保价格列为 Float64
         result = result.with_columns([
             pl.col(column).cast(pl.Float64, strict=False)
         ])
         
-        # 计算上涨幅度和下跌幅度 - 使用 Polars 原生操作
-        result = result.with_columns([
-            pl.when(pl.col(column) > 0)
-            .then(pl.col(column))
-            .otherwise(0.0)
-            .alias("gain"),
-            pl.when(pl.col(column) < 0)
-            .then(-pl.col(column))
-            .otherwise(0.0)
-            .alias("loss"),
-        ])
+        # 使用 diff() 计算价格变化 - 标准 RSI 计算方法
+        diff = pl.col(column).diff()
         
-        # 计算平均上涨和下跌幅度 - 使用 rolling_sum / period 代替 rolling_mean
-        avg_gain = pl.col("gain").rolling_sum(window_size=period) / period
-        avg_loss = pl.col("loss").rolling_sum(window_size=period) / period
+        # 计算上涨幅度和下跌幅度 - 使用 Polars 原生操作
+        gain = pl.when(diff > 0).then(diff).otherwise(0.0)
+        loss = pl.when(diff < 0).then(-diff).otherwise(0.0)
+        
+        # 计算平均上涨和下跌幅度 - 使用 rolling_mean
+        avg_gain = gain.rolling_mean(window_size=period)
+        avg_loss = loss.rolling_mean(window_size=period)
         
         # 计算 RSI
-        rs = avg_gain / (avg_loss + 1e-10)
-        rsi = 100 - 100 / (1 + rs)
+        rs = avg_gain / (avg_loss + self.EPSILON)
+        rsi = 100.0 - 100.0 / (1.0 + rs)
+        
+        # 确保 RSI 在 0-100 范围内
+        rsi = rsi.clip(0.0, 100.0)
         
         result = result.with_columns([
             rsi.alias(f"rsi_{period}")
         ])
-        
-        # 安全删除临时列
-        result = self._safe_drop_columns(result, ["gain", "loss"])
         
         return result
     
@@ -768,8 +749,6 @@ class FactorEngine:
             >>> df_with_macd = engine.compute_macd(df)
             >>> # 金叉信号：df.filter(pl.col("macd") > pl.col("macd_signal"))
         """
-        logger.info(f"Computing MACD({fast_period}, {slow_period}, {signal_period})")
-        
         result = df.clone()
         
         # 确保价格列为 Float64
@@ -777,18 +756,18 @@ class FactorEngine:
             pl.col(column).cast(pl.Float64, strict=False)
         ])
         
-        # 计算 EMA - 使用 Polars 的 rolling_mean 近似
-        ema_fast = pl.col(column).rolling_mean(window_size=fast_period)
-        ema_slow = pl.col(column).rolling_mean(window_size=slow_period)
+        # 计算 EMA - 使用 Polars 的 ewm_mean (指数加权移动平均)
+        ema_fast = pl.col(column).ewm_mean(span=fast_period, adjust=False)
+        ema_slow = pl.col(column).ewm_mean(span=slow_period, adjust=False)
         
         # 计算 DIF
         dif = ema_fast - ema_slow
         
         # 计算 DEA (DIF 的 EMA)
-        dea = dif.rolling_mean(window_size=signal_period)
+        dea = dif.ewm_mean(span=signal_period, adjust=False)
         
         # 计算 MACD 柱
-        macd_hist = 2 * (dif - dea)
+        macd_hist = 2.0 * (dif - dea)
         
         result = result.with_columns([
             dif.alias("macd"),
@@ -838,8 +817,6 @@ class FactorEngine:
             ...     (pl.col("volume_price_health") > 0.5)
             ... )
         """
-        logger.info("Computing volume-price coordination factors")
-        
         result = df.clone()
         
         # 确保数值列为 Float64
@@ -867,7 +844,7 @@ class FactorEngine:
         volume_ma = pl.col("volume").rolling_mean(window_size=volume_window)
         
         # 计算成交量相对水平
-        volume_ratio = pl.col("volume") / (volume_ma + 1e-10)
+        volume_ratio = pl.col("volume") / (volume_ma + self.EPSILON)
         
         # 计算价格变化
         price_change = pl.col("close") / pl.col("close").shift(price_window) - 1
@@ -957,8 +934,6 @@ class FactorEngine:
             >>> # 筛选高评分股票
             >>> top_stocks = df_scored.filter(pl.col("predict_score") > 0.5)
         """
-        logger.info("Computing predict score")
-        
         if weights is None:
             weights = self.FACTOR_WEIGHTS
         
@@ -1013,13 +988,6 @@ class FactorEngine:
         # 清理中间列
         result = self._safe_drop_columns(result, ["raw_score", "score_after_rsi"])
         
-        # 安全获取 min/max 值，处理可能的 None
-        min_score = result['predict_score'].min()
-        max_score = result['predict_score'].max()
-        min_str = f"{min_score:.4f}" if min_score is not None else "N/A"
-        max_str = f"{max_score:.4f}" if max_score is not None else "N/A"
-        logger.info(f"Predict score computed. Range: [{min_str}, {max_str}]")
-        
         return result
     
     def apply_rsi_filter(
@@ -1039,8 +1007,6 @@ class FactorEngine:
         Returns:
             pl.DataFrame: 应用过滤后的 DataFrame，添加 filtered_score 列
         """
-        logger.info(f"Applying RSI filter (threshold={rsi_threshold})")
-        
         result = df.clone()
         
         rsi_column = "rsi_14" if "rsi_14" in result.columns else None
@@ -1061,17 +1027,183 @@ class FactorEngine:
         return result
     
     # =========================================================================
-    # 标签计算模块 - 夏普风格标签
+    # 标签计算模块 - 区分历史因子与未来标签
     # =========================================================================
     
-    def compute_sharpe_label(
+    def compute_hist_sharpe(self, df: pl.DataFrame, window: int = 20) -> pl.DataFrame:
+        """
+        计算历史夏普比率因子（无未来函数）。
+        
+        【重要】此因子仅使用历史数据，用于回测和决策时的风险调整。
+        
+        计算逻辑:
+            hist_sharpe_20d = 过去 20 日累计收益率 / 过去 20 日收益率标准差
+        
+        与未来标签的区别:
+            - hist_sharpe_20d: 基于过去数据，用于决策
+            - future_return_target: 基于未来数据，仅用于模型训练
+        
+        【修复 - 2026-03-14】:
+            1. 增加空值和极小值处理，防止 rolling_std 返回 null
+            2. 确保数据窗口正确对齐（按 symbol 分组）
+            3. 增加调试日志输出中间值（Return/Volatility）
+            4. 处理 volatility 接近 0 的情况，避免除以极小值
+        
+        Args:
+            df (pl.DataFrame): 包含价格数据的 DataFrame
+            window (int): 计算窗口，默认 20 日
+        
+        Returns:
+            pl.DataFrame: 添加了 hist_sharpe_20d 列的 DataFrame
+        
+        使用示例:
+            >>> df_with_sharpe = engine.compute_hist_sharpe(df, window=20)
+            >>> # 在防御模式下要求 hist_sharpe_20d > 0
+        """
+        result = df.clone()
+        
+        logger.debug(f"[HIST_SHARPE] Starting computation with window={window}, input rows={len(result)}")
+        
+        # 确保价格列为 Float64
+        result = result.with_columns([
+            pl.col("close").cast(pl.Float64, strict=False),
+        ])
+        
+        # 确保 pct_chg 存在
+        if "pct_chg" not in result.columns:
+            if "pct_change" in result.columns:
+                result = result.with_columns([
+                    pl.col("pct_change").alias("pct_chg")
+                ])
+            else:
+                result = result.with_columns([
+                    (pl.col("close") / pl.col("close").shift(1) - 1).alias("pct_chg")
+                ])
+        
+        result = result.with_columns([
+            pl.col("pct_chg").cast(pl.Float64, strict=False)
+        ])
+        
+        # 【修复 1】按 symbol 分组计算，确保数据窗口正确对齐
+        # 检查是否有 symbol 列
+        has_symbol = "symbol" in result.columns
+        
+        if has_symbol:
+            logger.debug(f"[HIST_SHARPE] Computing by symbol grouping, unique symbols={result['symbol'].n_unique()}")
+            
+            # 【修复 2】先填充 pct_chg 的空值，防止 rolling_std 计算失败
+            # 使用前向填充和后向填充处理缺失值
+            result = result.with_columns([
+                pl.col("pct_chg").fill_null(strategy="forward").fill_null(strategy="backward").fill_null(0.0).alias("pct_chg_filled")
+            ])
+            
+            # 【修复 3】计算过去 N 日累计收益率 - 按 symbol 分组
+            cumulative_return = (pl.col("close") / pl.col("close").shift(window).over("symbol") - 1.0).alias("cumulative_return")
+            
+            # 【修复 4】计算过去 N 日收益率标准差 - 关键修复
+            # rolling_std 需要至少 window 个非空值，使用 min_periods 参数确保有足够数据
+            volatility = pl.col("pct_chg_filled").rolling_std(window_size=window, ddof=1, min_periods=window).over("symbol").alias("volatility_raw")
+            
+            result = result.with_columns([
+                cumulative_return,
+                volatility,
+            ])
+            
+            # 【修复 5】处理 volatility 空值和极小值
+            # 1. 将 null 值替换为 0
+            # 2. 将极小值 (< EPSILON) 替换为 EPSILON，防止除以接近 0 的数
+            result = result.with_columns([
+                pl.when(pl.col("volatility_raw").is_null())
+                .then(0.0)
+                .otherwise(pl.col("volatility_raw"))
+                .alias("volatility_filled"),
+                pl.when(pl.col("cumulative_return").is_null())
+                .then(0.0)
+                .otherwise(pl.col("cumulative_return"))
+                .alias("cumulative_return_filled"),
+            ])
+            
+            # 【修复 6】计算历史夏普比率 - 使用填充后的值
+            hist_sharpe = pl.col("cumulative_return_filled") / (pl.col("volatility_filled") + self.EPSILON)
+            
+            # 【修复 7】处理 inf 和 NaN 值
+            hist_sharpe = hist_sharpe.fill_nan(0.0).fill_null(0.0)
+            
+            # 【修复 8】截断极端值，防止异常值污染
+            hist_sharpe = hist_sharpe.clip(-10.0, 10.0)
+            
+            result = result.with_columns([
+                hist_sharpe.alias("hist_sharpe_20d"),
+            ])
+            
+            # 调试日志：输出中间值统计
+            non_zero_vol = result.filter(pl.col("volatility_filled") > 0)
+            logger.debug(
+                f"[HIST_SHARPE] Volatility stats: "
+                f"null_count={result['volatility_raw'].null_count()}, "
+                f"zero_count={(result['volatility_filled'] == 0).sum()}, "
+                f"mean={non_zero_vol['volatility_filled'].mean() if not non_zero_vol.is_empty() else 0:.4f}"
+            )
+            
+            # 调试日志：输出 hist_sharpe 统计
+            sharpe_non_null = result.filter(pl.col("hist_sharpe_20d").is_not_null())
+            if not sharpe_non_null.is_empty():
+                logger.debug(
+                    f"[HIST_SHARPE] Result stats: "
+                    f"mean={sharpe_non_null['hist_sharpe_20d'].mean():.4f}, "
+                    f"std={sharpe_non_null['hist_sharpe_20d'].std():.4f}, "
+                    f"zero_count={(sharpe_non_null['hist_sharpe_20d'] == 0).sum()}, "
+                    f"non_zero_count={(sharpe_non_null['hist_sharpe_20d'] != 0).sum()}"
+                )
+            else:
+                logger.warning("[HIST_SHARPE] All values are null after computation!")
+            
+        else:
+            # 无 symbol 列，使用全局计算（向后兼容）
+            logger.warning("[HIST_SHARPE] No 'symbol' column found, using global computation")
+            
+            # 填充空值
+            result = result.with_columns([
+                pl.col("pct_chg").fill_null(strategy="forward").fill_null(strategy="backward").fill_null(0.0).alias("pct_chg_filled")
+            ])
+            
+            # 计算累计收益率
+            cumulative_return = pl.col("close") / pl.col("close").shift(window) - 1.0
+            
+            # 计算波动率
+            volatility = pl.col("pct_chg_filled").rolling_std(window_size=window, ddof=1, min_periods=window)
+            
+            result = result.with_columns([
+                cumulative_return.fill_null(0.0).alias("cumulative_return_filled"),
+                volatility.fill_null(0.0).alias("volatility_filled"),
+            ])
+            
+            # 计算夏普比率
+            hist_sharpe = pl.col("cumulative_return_filled") / (pl.col("volatility_filled") + self.EPSILON)
+            hist_sharpe = hist_sharpe.fill_nan(0.0).fill_null(0.0).clip(-10.0, 10.0)
+            
+            result = result.with_columns([
+                hist_sharpe.alias("hist_sharpe_20d")
+            ])
+        
+        # 清理临时列
+        result = self._safe_drop_columns(result, ["pct_chg_filled", "cumulative_return", "cumulative_return_filled", 
+                                                   "volatility_raw", "volatility_filled"])
+        
+        logger.debug(f"[HIST_SHARPE] Computation complete, output rows={len(result)}")
+        
+        return result
+    
+    def compute_sharpe_target(
         self, 
         df: pl.DataFrame,
         future_window: int = 3,
         min_periods: int = 1
     ) -> pl.DataFrame:
         """
-        计算夏普风格的预测标签。
+        计算夏普风格的预测标签（仅用于模型训练）。
+        
+        【重要】此标签包含未来数据，仅用于模型训练，不可用于回测或实盘决策！
         
         传统标签的问题:
             - 简单的 future_return = close.shift(-n) / close - 1
@@ -1079,14 +1211,14 @@ class FactorEngine:
             - 无法区分"稳定上涨"和"大起大落"
         
         夏普风格标签:
-            - sharpe_label = future_max_return / future_volatility
+            - sharpe_target = future_max_return / future_volatility
             - 类似夏普比率，考虑风险调整后收益
             - 鼓励模型预测"稳定上涨"的股票
         
         标签定义:
             - future_max_return: 未来 N 日最高价相对于当前价的涨幅
             - future_volatility: 未来 N 日收益率的标准差
-            - sharpe_label: 风险调整后的标签值
+            - sharpe_target: 风险调整后的标签值（带 _target 后缀表示含未来数据）
         
         Args:
             df (pl.DataFrame): 包含价格数据的 DataFrame
@@ -1094,105 +1226,103 @@ class FactorEngine:
             min_periods (int): 最小有效数据期数
         
         Returns:
-            pl.DataFrame: 添加了 sharpe_label 及相关列的 DataFrame
-                - future_max_return: 未来 3 日最高价涨幅
-                - future_volatility: 未来 3 日波动率
-                - sharpe_label: 夏普风格标签
+            pl.DataFrame: 添加了 sharpe_target 及相关列的 DataFrame
+                - future_max_return_target: 未来 3 日最高价涨幅
+                - future_volatility_target: 未来 3 日波动率
+                - sharpe_target: 夏普风格标签（仅用于训练）
         
         使用示例:
-            >>> df_with_label = engine.compute_sharpe_label(df)
-            >>> # 使用 sharpe_label 作为机器学习目标
-            >>> model.fit(X=df_with_label[features], y=df_with_label["sharpe_label"])
+            >>> df_with_label = engine.compute_sharpe_target(df)
+            >>> # 使用 sharpe_target 作为机器学习目标
+            >>> model.fit(X=df_with_factors, y=df_with_label["sharpe_target"])
         """
-        logger.info(f"Computing Sharpe-style label (window={future_window})")
-        
         result = df.clone()
         
         # 确保价格列为 Float64
         result = result.with_columns([
             pl.col("close").cast(pl.Float64, strict=False),
-            pl.col("high").cast(pl.Float64, strict=False),
-            pl.col("low").cast(pl.Float64, strict=False),
         ])
         
+        # 检查是否有 high 列，如果没有则使用 close 作为替代
+        if "high" in result.columns:
+            result = result.with_columns([
+                pl.col("high").cast(pl.Float64, strict=False),
+            ])
+            price_col = "high"
+        else:
+            # 如果没有 high 列，使用 close 作为替代
+            price_col = "close"
+        
         # 计算未来 N 日最高价
-        # 使用 shift(-n) 获取未来数据
+        # 使用 shift(-n) 获取未来数据 - 预测未来 3 天
         future_highs = []
         for i in range(1, future_window + 1):
-            future_highs.append(pl.col("high").shift(-i))
+            future_highs.append(pl.col(price_col).shift(-i))
         
         future_max = pl.max_horizontal(future_highs)
         
-        # 计算未来最高价涨幅
-        future_max_return = (future_max / pl.col("close") - 1).alias("future_max_return")
+        # 计算未来最高价涨幅（添加 _target 后缀）
+        future_max_return = (future_max / pl.col("close") - 1.0).alias("future_max_return_target")
         
         # 计算未来波动率
         # 使用未来 N 日的收益率标准差
         future_returns = []
         for i in range(1, future_window + 1):
-            ret = (pl.col("close").shift(-i) / pl.col("close").shift(-(i-1)) - 1)
+            ret = (pl.col("close").shift(-i) / pl.col("close").shift(-(i-1)) - 1.0)
             future_returns.append(ret)
         
         # 计算波动率 (标准差)
-        # 使用简单的标准差公式
         if future_returns:
             mean_return = sum(future_returns) / len(future_returns)
             variance = sum((ret - mean_return) ** 2 for ret in future_returns) / len(future_returns)
             # 使用 pow(0.5) 代替 sqrt
-            future_volatility = (variance + 1e-10).pow(0.5).alias("future_volatility")
+            future_volatility = (variance + self.EPSILON).pow(0.5).alias("future_volatility_target")
         else:
-            future_volatility = pl.lit(1e-10).alias("future_volatility")
+            future_volatility = pl.lit(self.EPSILON).alias("future_volatility_target")
         
-        # 计算夏普风格标签
-        sharpe_label = (future_max_return / (future_volatility + 1e-10)).alias("sharpe_label")
+        # 计算夏普风格标签（添加 _target 后缀）
+        sharpe_target = (future_max_return / (future_volatility + self.EPSILON)).alias("sharpe_target")
         
         result = result.with_columns([
             future_max_return,
             future_volatility,
-            sharpe_label,
+            sharpe_target,
         ])
-        
-        logger.info(f"Sharpe label computed. Range: [{result['sharpe_label'].min():.4f}, {result['sharpe_label'].max():.4f}]")
         
         return result
     
     def compute_label(self, df: pl.DataFrame) -> pl.DataFrame:
         """
-        在 DataFrame 上计算预测标签。
+        在 DataFrame 上计算预测标签（仅用于模型训练）。
         
         支持两种标签模式:
-            1. 传统标签：future_return_N (简单收益率)
-            2. 夏普风格标签：sharpe_label (风险调整后收益)
+            1. 传统标签：future_return_5_target (简单收益率，带 _target 后缀)
+            2. 夏普风格标签：sharpe_target (风险调整后收益，带 _target 后缀)
+        
+        【重要】标签包含未来数据，仅用于模型训练，不可用于回测或实盘决策！
         
         Args:
             df (pl.DataFrame): 包含 OHLCV 数据的 Polars DataFrame
             
         Returns:
-            pl.DataFrame: 添加了标签列的 DataFrame
-            
-        Raises:
-            ValueError: 如果标签配置不存在
+            pl.DataFrame: 添加了标签列的 DataFrame（列名带 _target 后缀）
             
         使用示例:
             >>> df = pl.DataFrame({"close": [10.0, 10.5, 11.0, 10.8, 11.2]})
             >>> engine = FactorEngine("config/factors.yaml")
             >>> result = engine.compute_label(df)
-            >>> print(result["sharpe_label"])  # 夏普风格标签
+            >>> print(result["sharpe_target"])  # 夏普风格标签（仅用于训练）
         """
-        logger.info("Computing prediction labels")
-        
         # 创建工作副本
         result = df.clone()
         
-        # 计算夏普风格标签 (默认)
-        result = self.compute_sharpe_label(result)
+        # 计算夏普风格标签（使用新命名，带 _target 后缀）
+        result = self.compute_sharpe_target(result)
         
         # 同时计算传统标签 (如果配置存在)
         if self.label_config:
             label_name = self.label_config["name"]
             expression = self.label_config["expression"]
-            
-            logger.info(f"Computing traditional label: {label_name}")
             
             try:
                 context = {col: result[col] for col in result.columns}
@@ -1200,6 +1330,10 @@ class FactorEngine:
                 context["float"] = float
                 eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min}}
                 label_values = eval(expression, eval_globals, context)
+                
+                # 如果标签名不带 _target 后缀，自动添加
+                if not label_name.endswith("_target"):
+                    label_name = label_name + "_target"
                 
                 result = result.with_columns([
                     pl.Series(label_name, label_values)
@@ -1227,6 +1361,7 @@ class FactorEngine:
             6. 计算综合预测分值
             7. 应用 RSI 过滤
             8. 计算预测标签
+            9. 剔除因 shift 产生的 null 值
         
         Args:
             df (pl.DataFrame): 包含 OHLCV 数据的 Polars DataFrame
@@ -1243,8 +1378,6 @@ class FactorEngine:
             >>> # 查看夏普标签
             >>> print(df_result["sharpe_label"])
         """
-        logger.info(f"Computing factors on {len(df)} rows")
-        
         # 步骤 0: 列名标准化（关键修复）
         result = self.normalize_column_names(df)
         
@@ -1258,6 +1391,9 @@ class FactorEngine:
         # 步骤 3: 计算量价协同因子
         result = self.compute_volume_price_coordination(result)
         
+        # 步骤 3.5: 计算历史夏普比率因子 (关键修复 - 之前未在主流程中调用)
+        result = self.compute_hist_sharpe(result, window=20)
+        
         # 步骤 4: 数据预处理 (Winsorize + Z-Score)
         result = self.preprocess(result)
         
@@ -1270,7 +1406,9 @@ class FactorEngine:
         # 步骤 7: 计算预测标签
         result = self.compute_label(result)
         
-        logger.info(f"Factor computation complete. Final columns: {len(result.columns)}")
+        # 注意：不会自动过滤 null 值，调用者可以自行决定何时过滤
+        # 如果需要过滤因 shift 产生的 null 值，可以使用以下代码:
+        # result = result.filter(pl.col("predict_score").is_not_null() & pl.col("sharpe_label").is_not_null())
         
         return result
     
@@ -1286,8 +1424,6 @@ class FactorEngine:
         Returns:
             pl.DataFrame: 添加了基础因子的 DataFrame
         """
-        logger.info(f"Computing {len(self.factors)} base factors")
-        
         # 创建工作副本，避免修改原始数据
         result = df.clone()
         
@@ -1315,8 +1451,6 @@ class FactorEngine:
                 result = result.with_columns([
                     pl.Series(factor_name, factor_values)
                 ])
-                
-                logger.debug(f"Computed factor: {factor_name}")
                 
             except Exception as e:
                 logger.error(f"Failed to compute factor {factor_name}: {e}")
@@ -1346,8 +1480,6 @@ class FactorEngine:
             pl.LazyFrame: 添加了因子列的 LazyFrame
                 需要调用 .collect() 来获取结果
         """
-        logger.info(f"Computing factors (LazyFrame mode)")
-        
         # 创建工作副本
         result = ldf.clone()
         
@@ -1370,7 +1502,6 @@ class FactorEngine:
                     result = result.with_columns(
                         factor_expr.alias(factor_name)
                     )
-                    logger.debug(f"Added lazy factor: {factor_name}")
                 else:
                     logger.warning(f"Could not build lazy expression for factor: {factor_name}")
                     
@@ -1427,15 +1558,12 @@ class FactorEngine:
         Returns:
             pl.DataFrame: 添加了因子列的 DataFrame
         """
-        logger.info(f"Computing factors in parallel (num_threads={num_threads or 'auto'})")
-        
         if "symbol" not in df.columns:
             logger.warning("No 'symbol' column found, falling back to serial computation")
             return self.compute_factors(df)
         
         symbols = df["symbol"].unique().to_list()
         num_symbols = len(symbols)
-        logger.info(f"Processing {num_symbols} stocks")
         
         groups = df.partition_by("symbol", maintain_order=True)
         results = []
@@ -1452,7 +1580,6 @@ class FactorEngine:
         
         if results:
             final_result = pl.concat(results, how="vertical_relaxed")
-            logger.info(f"Parallel computation complete: {len(final_result)} rows")
             return final_result
         else:
             logger.warning("No results from parallel computation")
