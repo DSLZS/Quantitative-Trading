@@ -482,10 +482,10 @@ class ModelTrainer:
     def __init__(
         self,
         n_estimators: int = 1500,  # 【重构】增加至 1500 轮，让模型充分学习
-        learning_rate: float = 0.005,  # 【重构】降低至 0.005，更缓慢学习提升泛化
+        learning_rate: float = 0.001,  # 【修复 - 2026-03-14】降至 0.001，更缓慢学习提升泛化
         max_depth: int = 5,  # 【重构】略微增加深度至 5
         num_leaves: int = 24,  # 【重构】增加至 24，配合深度
-        min_child_samples: int = 10,  # 【重构】降低至 10，让模型更充分拟合小样本
+        min_child_samples: int = 20,  # 【修复 - 2026-03-14】设为 20，防止过拟合
         subsample: float = 0.85,
         colsample_bytree: float = 0.85,
         random_state: int = 42,
@@ -536,15 +536,15 @@ class ModelTrainer:
             - self.factor_ic_: 因子 IC 值
             - self.negative_ic_factors: 负 IC 因子列表（用于推理时取反）
         """
-        # LightGBM 模型参数配置 - 【重构】强化拟合深度
+        # LightGBM 模型参数配置 - 【修复 - 2026-03-14】强化拟合深度，verbosity=1 输出每轮 Loss
         self.params = {
             "objective": "regression",  # 【重构】使用 MSE 损失，更关注整体拟合
             "metric": "mse",  # 【重构】MSE 评估指标
             "boosting_type": "gbdt",  # 梯度提升树
             "num_leaves": num_leaves,  # 叶子节点数
             "max_depth": max_depth,  # 最大深度
-            "learning_rate": learning_rate,  # 学习率 (降至 0.005)
-            "min_child_samples": min_child_samples,  # 【重构】降低至 10
+            "learning_rate": learning_rate,  # 学习率 (降至 0.001)
+            "min_child_samples": min_child_samples,  # 【修复】设为 20
             "subsample": subsample,  # 行采样比例
             "colsample_bytree": colsample_bytree,  # 列采样比例
             "feature_fraction": 0.85,  # 【重构】列采样
@@ -552,12 +552,12 @@ class ModelTrainer:
             "bagging_freq": 5,  # 每 5 轮进行一次 bagging
             "random_state": random_state,  # 随机种子
             "n_jobs": -1,  # 使用所有 CPU 核心
-            "verbose": -1,  # 关闭训练日志输出
+            "verbose": 1,  # 【修复】设为 1，输出每一轮 Loss
             # 【重构】移除正则化
             "lambda_l1": lambda_l1,  # L1 正则化 (0.0)
             "lambda_l2": lambda_l2,  # L2 正则化 (0.0)
-            # 【重构】min_data_in_leaf 参数
-            "min_data_in_leaf": min_child_samples,  # 每个叶子节点的最小数据量
+            # 【修复】min_data_in_leaf 参数
+            "min_data_in_leaf": 20,  # 【修复】硬编码为 20
         }
         self.n_estimators = n_estimators  # boosting 轮数
         self.model: lgb.Booster | None = None  # 训练后的模型
@@ -813,12 +813,18 @@ class ModelTrainer:
         
         模型保存为 LightGBM 的文本格式，可以被加载用于预测。
         
+        【修复 - 2026-03-14】
+        1. 使用绝对路径硬化：Path(__file__).resolve().parent.parent / "data" / "models"
+        2. 保存校验：save_model 后立即检查文件是否存在
+        3. 权限检查：确保对 data/ 目录有写入权限
+        
         Args:
             path (str): 输出文件路径
                 示例："data/models/stock_model.txt"
             
         Raises:
             ValueError: 如果没有训练好的模型
+            RuntimeError: 如果模型保存失败
             
         使用示例:
             >>> trainer = ModelTrainer()
@@ -832,20 +838,30 @@ class ModelTrainer:
         if self.model is None:
             raise ValueError("No model to save")
         
-        # 【修复】使用绝对路径
-        abs_path = os.path.abspath(path)
+        # 【修复 - 2026-03-14】使用绝对路径硬化
+        base_dir = Path(__file__).resolve().parent.parent
+        model_dir = base_dir / "data" / "models"
         
         # 确保目录存在
-        Path(abs_path).parent.mkdir(parents=True, exist_ok=True)
-        self.model.save_model(abs_path)
+        model_dir.mkdir(parents=True, exist_ok=True)
         
-        # 【新增】文件存在性校验
-        if os.path.exists(abs_path):
-            file_size = os.path.getsize(abs_path)
-            logger.info(f"Model saved to {abs_path} ({file_size:,} bytes) ✓")
-        else:
-            logger.error(f"Model save failed: {abs_path} does not exist ✗")
-            raise IOError(f"Failed to save model to {abs_path}")
+        # 检查写入权限
+        if not os.access(model_dir, os.W_OK):
+            raise PermissionError(f"No write permission for directory: {model_dir}")
+        
+        # 使用绝对路径
+        abs_path = model_dir / Path(path).name
+        abs_path = abs_path.resolve()
+        
+        logger.info(f"Saving model to: {abs_path}")
+        self.model.save_model(str(abs_path))
+        
+        # 【修复 - 2026-03-14】保存校验：立即检查文件是否存在
+        if not os.path.exists(abs_path):
+            raise RuntimeError(f"Model Save Failed! File does not exist: {abs_path}")
+        
+        file_size = os.path.getsize(abs_path)
+        logger.info(f"Model saved to {abs_path} ({file_size:,} bytes) ✓")
     
     def load_model(self, path: str) -> lgb.Booster:
         """
@@ -1302,6 +1318,14 @@ if __name__ == "__main__":
     if os.path.exists(parquet_path):
         print(f"Using Parquet file: {parquet_path}")
         results = run_training(parquet_path=parquet_path)
+        
+        # 【修复 - 2026-03-14】保存模型
+        print(f"\nSaving model to: {model_output}")
+        trainer = ModelTrainer()
+        trainer.model = results["model"]
+        trainer.feature_importance_ = dict(results["top_features"])
+        trainer.factor_ic_ = results["factor_ic"]
+        trainer.save_model(model_output)
     else:
         print("Parquet file not found, training from database...")
         results = run_training_from_db(model_output_path=model_output)
