@@ -145,8 +145,14 @@ factors:
 
 # Label Configuration (标签配置)
 # 【重构 - 2026-03-14】使用 5 日趋势标签，从"日频噪音预测"转向"趋势窗口预测"
+# 【Label V2 - Alpha 标签】学习跑赢中证 500，而非绝对收益
 label:
-  name: label_5d
-  description: "5-day forward return (quantile-based)"
-  expression: "close.shift(-5) / close - 1"
+  name: label_alpha_5d
+  description: "5-day excess return vs CSI500 (Alpha label)"
+  expression: "close.shift(-5) / close.shift(-1) - 1"  # 未来 5 日收益率（用于模型训练）
   window: 5
+  
+# Alpha 标签说明:
+# - label_alpha = 个股收益 - 指数收益
+# - 目标：让模型学习如何跑赢中证 500
+# - 在 model_trainer.py 中需要传入指数收益率数据

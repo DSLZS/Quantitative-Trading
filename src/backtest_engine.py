@@ -55,12 +55,19 @@ SHARPE_WEIGHT = 0.3  # hist_sharpe_20d 权重
 # 【新增 - 2026-03-14】强制止损
 HARD_STOP_LOSS = -0.05  # 持仓 2 天后收益<-5% 强制清仓
 
+# 【新增 - 2026-03-14 重构】信心驱动型仓位分配参数
+CONFIDENCE_BASED_WEIGHTING = True  # 启用信心驱动型仓位分配
+SLIPPAGE_RATE = 0.001  # 滑点模拟 (0.1%)
+PROFIT_TAKE_THRESHOLD = 0.08  # 盈利保护阈值 (8%)
+PROFIT_TAKE_PULLBACK = 0.02  # 盈利保护回撤阈值 (2%)
+MAX_INDUSTRY_WEIGHT = 0.5  # 单行业最大持仓占比 (50%)
+
 
 @dataclass
 class BacktestConfig:
     """回测配置"""
     lookback_days: int = 30
-    initial_capital: float = 50000.0
+    initial_capital: float = 100000.0  # 【重构 - 2026-03-14】10W 基数模拟 5W 实盘，减少碎股限制干扰
     max_positions: int = 3
     min_score: float = SCORE_THRESHOLD  # 最小预测分值阈值（Z-Score）
     commission_rate: float = 0.0003
@@ -592,100 +599,128 @@ class BacktestEngine:
                 logger.info(f"  [SOLD] {symbol} @ {current_price:.2f} x {pos['shares']} = ¥{sell_value:.2f}")
             
             # Step 4: 选股买入逻辑
-            # 【重构 - 2026-03-14】降低选股门槛，增加交易频率
-            # 移除 hist_sharpe_20d > 0 的硬过滤，仅使用评分融合排序
+            # 【重构 - 2026-03-14】信心驱动型仓位分配 + 滑点模拟
+            # 实现 Target_Weight(i) = predict_score(i) / sum(Top_N_predict_scores)
+            
+            # 检查是否有买入条件
+            can_buy = False
             if record.market_mode == "DEFENSIVE":
-                # 防御模式：仅要求 predict_score > threshold（不再强制 hist_sharpe > 0）
+                # 防御模式：仅要求 predict_score > threshold
                 logger.info("  [DEFENSIVE] Using score-based selection (no hist_sharpe filter)")
                 if record.top_10_scores:
-                    # 筛选：仅要求 predict_score > threshold
-                    qualified_stocks = [
-                        s for s in record.top_10_scores 
-                        if s["meets_threshold"]
-                    ]
-                    logger.info(f"  [DEFENSIVE SCAN] Qualified stocks (score>={current_threshold:.2f}): {len(qualified_stocks)}")
-                    
+                    qualified_stocks = [s for s in record.top_10_scores if s["meets_threshold"]]
                     if not qualified_stocks:
-                        # 放宽到前 2 名
                         qualified_stocks = record.top_10_scores[:2]
-                        logger.info(f"  [DEFENSIVE] No stocks meet threshold, using top 2 by combined score")
-                else:
-                    qualified_stocks = []
+                    can_buy = len(qualified_stocks) > 0
             elif len(self.holdings) < self.config.max_positions:
                 if record.top_10_scores:
-                    # 使用当前阈值筛选
                     qualified_stocks = [s for s in record.top_10_scores if s["meets_threshold"]]
-                    
-                    # 如果没有满足阈值的股票，取前 2 名
                     if not qualified_stocks:
                         qualified_stocks = record.top_10_scores[:2]
-                        logger.info(f"  [SCAN] No stocks meet threshold, using top 2 by combined score")
+                    can_buy = len(qualified_stocks) > 0 and len(self.holdings) < self.config.max_positions
+            
+            if can_buy and qualified_stocks:
+                # 【信心驱动型仓位分配】
+                # 1. 计算总信心分（只取正分）
+                # 2. Target_Weight = score / sum(positive_scores)
+                # 3. 优先保证高分股票获得最大预算
+                
+                # 过滤出正分股票（有信心才买入）
+                positive_stocks = [s for s in qualified_stocks if s.get("combined_score", 0) > 0]
+                if not positive_stocks:
+                    positive_stocks = qualified_stocks[:2]  # 如果都没有正分，取前 2 名
+                
+                # 计算总信心分
+                total_score = sum(max(s.get("combined_score", 0), 0) for s in positive_stocks)
+                if total_score <= 0:
+                    total_score = 1.0  # 防止除以 0
+                
+                positions_left = self.config.max_positions - len(self.holdings)
+                available_cash = self.cash * 0.95  # 保留 5% 现金缓冲
+                
+                logger.info(f"  [CONFIDENCE WEIGHTING] {len(positive_stocks)} stocks, total_score={total_score:.2f}")
+                
+                # 按信心分降序排序，优先处理高分股票
+                positive_stocks.sort(key=lambda x: x.get("combined_score", 0), reverse=True)
+                
+                for stock in positive_stocks:
+                    if len(self.holdings) >= self.config.max_positions:
+                        logger.info(f"  [LIMIT] Max positions ({self.config.max_positions}) reached")
+                        break
                     
-                    logger.info(f"  [SCAN] Qualified stocks: {len(qualified_stocks)} (threshold={current_threshold:.2f})")
+                    symbol = stock["symbol"]
+                    close = stock["close"]
+                    score = stock.get("combined_score", 0)
                     
-                    if qualified_stocks:
-                        positions_left = self.config.max_positions - len(self.holdings)
-                        budget_per_stock = self.cash / positions_left * 0.95
-                        
-                        logger.info(f"  [BUDGET] ¥{budget_per_stock:.2f} per stock (cash: ¥{self.cash:.2f}, positions left: {positions_left})")
-                        
-                        for stock in qualified_stocks:
-                            if len(self.holdings) >= self.config.max_positions:
-                                logger.info(f"  [LIMIT] Max positions ({self.config.max_positions}) reached")
-                                break
-                            
-                            symbol = stock["symbol"]
-                            close = stock["close"]
-                            
-                            # 【新增】RSI 超买过滤：如果 rsi_14 > 75，直接跳过
-                            rsi_14 = stock.get("rsi_14", 50)
-                            if rsi_14 > 75:
-                                logger.info(f"  [SKIP] {symbol}: RSI={rsi_14:.0f} > 75 [OVERBOUGHT]")
-                                continue
-                            elif rsi_14 > 70:
-                                logger.debug(f"  [WARN] {symbol}: RSI={rsi_14:.0f} [WARM] - Proceeding with caution")
-                            
-                            if symbol in self.holdings:
-                                logger.debug(f"  [SKIP] {symbol}: already holding")
-                                continue
-                            
-                            # 检查价格有效性
-                            if close is None or close <= 0:
-                                logger.warning(f"  [SKIP] {symbol}: invalid close price ({close})")
-                                continue
-                            
-                            # 计算买入股数
-                            raw_shares = int(budget_per_stock / close)
-                            shares = (raw_shares // 100) * 100
-                            
-                            logger.debug(f"  [CALC] {symbol}: close=¥{close:.2f}, raw_shares={raw_shares}, rounded={shares}")
-                            
-                            if shares < 100:
-                                logger.info(f"  [SKIP] {symbol}: not enough budget for 100 shares (need ¥{close*100:.2f})")
-                                continue
-                            
-                            # 计算买入成本
-                            buy_value = shares * close
-                            commission = max(buy_value * self.config.commission_rate, self.config.commission_min)
-                            total_cost = buy_value + commission
-                            
-                            if total_cost > self.cash:
-                                logger.warning(f"  [SKIP] {symbol}: insufficient cash (need ¥{total_cost:.2f}, have ¥{self.cash:.2f})")
-                                continue
-                            
-                            # 执行买入
-                            self.cash -= total_cost
-                            self.total_commission += commission
-                            self.total_trades += 1
-                            
-                            self.holdings[symbol] = {
-                                "shares": shares,
-                                "buy_price": close,
-                                "buy_date": trade_date
-                            }
-                            
-                            record.bought_symbols.append(symbol)
-                            logger.info(f"  [BUY] {symbol} @ ¥{close:.2f} x {shares} = ¥{buy_value:.2f} (fee: ¥{commission:.2f})")
+                    # 【信心权重计算】
+                    # Target_Weight = score / total_score
+                    # 但受限于 max_positions，需要调整
+                    target_weight = max(score / total_score, 1.0 / self.config.max_positions)
+                    budget_for_stock = available_cash * target_weight
+                    
+                    logger.info(f"  [BUDGET] {symbol}: score={score:+.2f}, weight={target_weight:.1%}, budget=¥{budget_for_stock:.2f}")
+                    
+                    # 【新增】RSI 超买过滤
+                    rsi_14 = stock.get("rsi_14", 50)
+                    if rsi_14 > 75:
+                        logger.info(f"  [SKIP] {symbol}: RSI={rsi_14:.0f} > 75 [OVERBOUGHT]")
+                        continue
+                    elif rsi_14 > 70:
+                        logger.debug(f"  [WARN] {symbol}: RSI={rsi_14:.0f} [WARM] - Proceeding with caution")
+                    
+                    if symbol in self.holdings:
+                        logger.debug(f"  [SKIP] {symbol}: already holding")
+                        continue
+                    
+                    # 检查价格有效性
+                    if close is None or close <= 0:
+                        logger.warning(f"  [SKIP] {symbol}: invalid close price ({close})")
+                        continue
+                    
+                    # 【计算买入股数 - 向下取 100 股整】
+                    raw_shares = int(budget_for_stock / close)
+                    shares = (raw_shares // 100) * 100
+                    
+                    if shares < 100:
+                        logger.info(f"  [SKIP] {symbol}: not enough budget for 100 shares (need ¥{close*100:.2f})")
+                        continue
+                    
+                    # 【滑点模拟 + 交易成本计算】
+                    # 滑点：买入价上浮 0.1%（模拟实际成交价劣于预期）
+                    slippage_adjusted_price = close * (1 + SLIPPAGE_RATE)
+                    buy_value = shares * slippage_adjusted_price
+                    commission = max(buy_value * self.config.commission_rate, self.config.commission_min)
+                    total_cost = buy_value + commission
+                    
+                    if total_cost > self.cash:
+                        # 尝试减少股数
+                        max_affordable = int(self.cash / slippage_adjusted_price)
+                        adjusted_shares = (max_affordable // 100) * 100
+                        if adjusted_shares < 100:
+                            logger.warning(f"  [SKIP] {symbol}: insufficient cash after slippage")
+                            continue
+                        shares = adjusted_shares
+                        buy_value = shares * slippage_adjusted_price
+                        total_cost = buy_value + commission
+                    
+                    # 执行买入
+                    self.cash -= total_cost
+                    self.total_commission += commission
+                    self.total_trades += 1
+                    
+                    # 记录滑点成本
+                    slippage_cost = shares * (slippage_adjusted_price - close)
+                    
+                    self.holdings[symbol] = {
+                        "shares": shares,
+                        "buy_price": slippage_adjusted_price,  # 使用滑点调整后的价格
+                        "buy_date": trade_date,
+                        "slippage_cost": slippage_cost,
+                        "confidence_score": score
+                    }
+                    
+                    record.bought_symbols.append(symbol)
+                    logger.info(f"  [BUY] {symbol} @ ¥{slippage_adjusted_price:.2f} (slippage={SLIPPAGE_RATE:.1%}) x {shares} = ¥{buy_value:.2f} (fee: ¥{commission:.2f})")
             
             # Step 5: 计算组合价值
             prev_portfolio_value = self.portfolio_value
@@ -1116,7 +1151,7 @@ def main():
     
     parser = argparse.ArgumentParser(description='Backtest Engine (Multi-Factor Model)')
     parser.add_argument('--days', type=int, default=30, help='Backtest days')
-    parser.add_argument('--capital', type=float, default=50000.0, help='Initial capital')
+    parser.add_argument('--capital', type=float, default=100000.0, help='Initial capital')  # 【重构】默认 10W
     parser.add_argument('--threshold', type=float, default=SCORE_THRESHOLD, help='Score threshold (Z-Score)')
     parser.add_argument('--output', type=str, default='reports', help='Output directory')
     
