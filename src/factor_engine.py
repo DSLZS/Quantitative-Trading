@@ -61,6 +61,7 @@ from pathlib import Path
 from typing import Any, Optional, Tuple
 from loguru import logger
 import numpy as np
+import math
 
 # 配置 Polars 并行计算参数
 pl.Config.set_streaming_chunk_size(10000)  # 流式处理块大小
@@ -249,6 +250,8 @@ class FactorEngine:
         context["pl"] = pl
         # 注入 float 函数，支持 lambda x: float(x) 用法
         context["float"] = float
+        # 注入 math.log 函数，支持熵值计算
+        context["log"] = math.log
         
         # 验证每个因子
         for factor in self.factors:
@@ -256,8 +259,8 @@ class FactorEngine:
             expression = factor.get("expression", "")
             
             try:
-                # 测试表达式执行，注入 float 到 globals 以支持 lambda x: float(x) 用法
-                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min}}
+                # 测试表达式执行，注入 float 和 log 到 globals 以支持 lambda x: float(x) 和 log 用法
+                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min, "log": math.log}}
                 eval(expression, eval_globals, context)
                 logger.debug(f"Factor '{factor_name}' expression is valid")
                 
@@ -287,7 +290,7 @@ class FactorEngine:
             expression = self.label_config.get("expression", "")
             
             try:
-                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min}}
+                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min, "log": math.log}}
                 eval(expression, eval_globals, context)
                 logger.debug(f"Label '{label_name}' expression is valid")
                 
@@ -1619,24 +1622,43 @@ class FactorEngine:
         
         # 【Iteration 1: 截面 Rank 分类】计算截面排序标签
         if use_quantile:
-            # 【截面排序逻辑】
-            # 1. 按 trade_date 分组，对 future_return_5d 进行截面排序
-            # 2. 前 20% -> 类别 2 (Outperform)
-            # 3. 后 20% -> 类别 0 (Underperform)
-            # 4. 中间 60% -> 类别 1 (Neutral)
+            # 检查是否有 trade_date 列用于分组
+            has_trade_date = "trade_date" in result.columns
             
-            # 计算截面排名（按 trade_date 分组）
-            label_rank = (
-                pl.col("future_return_5d")
-                .rank("dense")
-                .over("trade_date")
-                .cast(pl.Float64)
-            )
-            
-            # 归一化排名到 0-1 范围
-            label_rank_norm = (label_rank - label_rank.min().over("trade_date")) / (
-                label_rank.max().over("trade_date") - label_rank.min().over("trade_date") + self.EPSILON
-            )
+            if has_trade_date:
+                # 【截面排序逻辑】
+                # 1. 按 trade_date 分组，对 future_return_5d 进行截面排序
+                # 2. 前 20% -> 类别 2 (Outperform)
+                # 3. 后 20% -> 类别 0 (Underperform)
+                # 4. 中间 60% -> 类别 1 (Neutral)
+                
+                # 计算截面排名（按 trade_date 分组）
+                label_rank = (
+                    pl.col("future_return_5d")
+                    .rank("dense")
+                    .over("trade_date")
+                    .cast(pl.Float64)
+                )
+                
+                # 归一化排名到 0-1 范围
+                label_rank_norm = (label_rank - label_rank.min().over("trade_date")) / (
+                    label_rank.max().over("trade_date") - label_rank.min().over("trade_date") + self.EPSILON
+                )
+            else:
+                # 没有 trade_date 列，使用全局排序（降级处理，用于测试）
+                logger.warning("No 'trade_date' column found, using global ranking for label")
+                
+                # 计算全局排名
+                label_rank = (
+                    pl.col("future_return_5d")
+                    .rank("dense")
+                    .cast(pl.Float64)
+                )
+                
+                # 归一化排名到 0-1 范围
+                label_rank_norm = (label_rank - label_rank.min()) / (
+                    label_rank.max() - label_rank.min() + self.EPSILON
+                )
             
             # 【截面 Rank 分类】三分类标签
             # 前 20% (rank > 0.8) -> 2
@@ -1653,19 +1675,20 @@ class FactorEngine:
                 label_rank_norm.alias("label_rank_norm"),  # 保留归一化排名用于诊断
             ])
             
-            # 输出分类统计
-            logger.info("[截面 Rank 分类] 标签分布统计:")
-            try:
-                label_stats = result.group_by("label_5d").agg(
-                    pl.col("symbol").count().alias("count")
-                ).sort("label_5d")
-                for row in label_stats.iter_rows():
-                    label_val = int(row[0]) if row[0] is not None else -1
-                    count = row[1] if row[1] is not None else 0
-                    label_name = {0: "Underperform", 1: "Neutral", 2: "Outperform"}.get(label_val, "Unknown")
-                    logger.info(f"  类别 {label_val} ({label_name}): {count} 样本")
-            except Exception as e:
-                logger.warning(f"无法输出标签统计：{e}")
+            # 输出分类统计（仅当有 trade_date 列时）
+            if has_trade_date:
+                logger.info("[截面 Rank 分类] 标签分布统计:")
+                try:
+                    label_stats = result.group_by("label_5d").agg(
+                        pl.col("symbol").count().alias("count")
+                    ).sort("label_5d")
+                    for row in label_stats.iter_rows():
+                        label_val = int(row[0]) if row[0] is not None else -1
+                        count = row[1] if row[1] is not None else 0
+                        label_name = {0: "Underperform", 1: "Neutral", 2: "Outperform"}.get(label_val, "Unknown")
+                        logger.info(f"  类别 {label_val} ({label_name}): {count} 样本")
+                except Exception as e:
+                    logger.warning(f"无法输出标签统计：{e}")
         else:
             # 直接使用未来收益率作为标签
             result = result.with_columns([
@@ -1814,7 +1837,8 @@ class FactorEngine:
                 context = {col: result[col] for col in result.columns}
                 context["pl"] = pl
                 context["float"] = float
-                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min}}
+                context["log"] = math.log
+                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min, "log": math.log}}
                 label_values = eval(expression, eval_globals, context)
                 
                 # 如果标签名不带 _target 后缀，自动添加
@@ -1936,8 +1960,9 @@ class FactorEngine:
                 context = {col: result[col] for col in result.columns}
                 context["pl"] = pl
                 context["float"] = float
+                context["log"] = math.log
                 
-                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min}}
+                eval_globals = {"__builtins__": {"float": float, "abs": abs, "max": max, "min": min, "log": math.log}}
                 factor_values = eval(expression, eval_globals, context)
                 
                 result = result.with_columns([

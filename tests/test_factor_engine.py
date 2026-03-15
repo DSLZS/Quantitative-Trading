@@ -107,8 +107,8 @@ label:
         
         result = engine.compute_label(sample_ohlcv_data)
         
-        # Check that label column was added
-        assert "future_return_5" in result.columns
+        # Check that label column was added (new naming: future_return_5d)
+        assert "future_return_5d" in result.columns
         
         # Check row count is preserved
         assert len(result) == len(sample_ohlcv_data)
@@ -120,14 +120,14 @@ label:
         result = engine.compute_factors(sample_ohlcv_data)
         result = engine.compute_label(result)
         
-        # Check all expected columns exist
+        # Check all expected columns exist (new naming: future_return_5d)
         expected_cols = ["open", "high", "low", "close", "volume", 
-                         "momentum_5", "volatility_5", "future_return_5"]
+                         "momentum_5", "volatility_5", "future_return_5d"]
         for col in expected_cols:
             assert col in result.columns
 
     def test_missing_label_config(self, tmp_path):
-        """Test that compute_label works without label config (uses sharpe_label as default)."""
+        """Test that compute_label works without label config (uses label_5d as default)."""
         config_content = """
 factors:
   - name: momentum_5
@@ -139,10 +139,9 @@ factors:
         
         engine = FactorEngine(str(config_file))
         
-        # compute_label should work without label config (uses sharpe_label as default)
+        # compute_label should work without label config (uses label_5d as default)
         result = engine.compute_label(pl.DataFrame({"close": [1.0, 2.0, 3.0, 4.0, 5.0]}))
         
-        # Check that sharpe_label was added
-        assert "sharpe_label" in result.columns
-        assert "future_max_return" in result.columns
-        assert "future_volatility" in result.columns
+        # Check that label_5d was added (new default label)
+        assert "label_5d" in result.columns
+        assert "future_return_5d" in result.columns
