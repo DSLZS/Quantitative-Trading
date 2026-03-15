@@ -1,16 +1,17 @@
-# Factor Configuration File
-# All factor expressions use Polars native syntax
-# Polars expressions:
-#   - .shift(n) - same as pandas
-#   - .rolling_mean(window_size=n) - replaces .rolling(n).mean()
-#   - .rolling_std(window_size=n, ddof=1) - replaces .rolling(n).std()
-#   - .rolling_min(window_size=n) - replaces .rolling(n).min()
-#   - .rolling_max(window_size=n) - replaces .rolling(n).max()
-#   - .clip(lower_bound, upper_bound) - clip values
-#   - Note: For RSI/MFI, use positive/negative separation with max/min
+# ==============================================================================
+# Factor Configuration File - Iteration 18 (Production Ready)
+# 所有因子表达式均使用 Polars 原生语法以确保计算效率
+# ==============================================================================
+# Polars 语法参考:
+#   - .shift(n): 平移数据
+#   - .rolling_mean(window_size=n): 滚动平均
+#   - .rolling_std(window_size=n): 滚动标准差
+#   - .fill_null(0): 填充空值
+# ==============================================================================
 
 factors:
-  # Momentum Factors (动量因子)
+  # === 1. Momentum Factors (动量因子) ===
+  # 逻辑：捕捉价格趋势的持续性
   - name: momentum_5
     description: "5-day momentum"
     expression: "close / close.shift(5) - 1"
@@ -26,205 +27,64 @@ factors:
     expression: "close / close.shift(20) - 1"
     window: 20
 
-  # Volatility Factors (波动率因子)
+  # === 2. Volatility Factors (波动率因子) ===
+  # 逻辑：高波动通常代表风险增加，用于风险定价
   - name: volatility_5
-    description: "5-day return volatility"
-    expression: "pct_change.rolling_std(window_size=5, ddof=1)"
+    description: "5-day price standard deviation"
+    expression: "close.rolling_std(window_size=5)"
     window: 5
     
   - name: volatility_20
-    description: "20-day return volatility"
-    expression: "pct_change.rolling_std(window_size=20, ddof=1)"
+    description: "20-day price standard deviation"
+    expression: "close.rolling_std(window_size=20)"
     window: 20
 
-  # Volume Factors (成交量因子)
+  # === 3. Volume Ratio Factors (成交量比例因子) ===
+  # 逻辑：异常放量通常预示着趋势的转折或确认
   - name: volume_ma_ratio_5
-    description: "Volume to 5-day MA ratio"
-    expression: "volume / volume.rolling_mean(window_size=5)"
+    description: "Ratio of current volume to 5-day MA volume"
+    expression: "volume / (volume.rolling_mean(window_size=5) + 1e-10)"
     window: 5
     
   - name: volume_ma_ratio_20
-    description: "Volume to 20-day MA ratio"
-    expression: "volume / volume.rolling_mean(window_size=20)"
-    window: 20
-
-  # Price Position Factors (价格位置因子)
-  - name: price_position_20
-    description: "Price position in 20-day range"
-    expression: "(close - close.rolling_min(window_size=20)) / (close.rolling_max(window_size=20) - close.rolling_min(window_size=20) + 1e-10)"
-    window: 20
-    
-  - name: price_position_60
-    description: "Price position in 60-day range"
-    expression: "(close - close.rolling_min(window_size=60)) / (close.rolling_max(window_size=60) - close.rolling_min(window_size=60) + 1e-10)"
-    window: 60
-
-  # MA Deviation Factors (均线偏离因子)
-  - name: ma_deviation_5
-    description: "Price deviation from 5-day MA"
-    expression: "close / close.rolling_mean(window_size=5) - 1"
-    window: 5
-    
-  - name: ma_deviation_20
-    description: "Price deviation from 20-day MA"
-    expression: "close / close.rolling_mean(window_size=20) - 1"
-    window: 20
-
-  # Technical Indicator Factors (技术指标因子)
-  # RSI: Uses pct_change positive/negative separation
-  # Using pl.Series with explicit float conversion
-  - name: rsi_14
-    description: "14-day Relative Strength Index - measures overbought/oversold conditions"
-    expression: "100 - 100 / (1 + pct_change.map_elements(lambda x: float(x) if x > 0 else 0.0, return_dtype=pl.Float64).rolling_sum(window_size=14) / (pct_change.map_elements(lambda x: float(-x) if x < 0 else 0.0, return_dtype=pl.Float64).rolling_sum(window_size=14) + 1e-10))"
-    window: 14
-    
-  - name: mfi_14
-    description: "14-day Money Flow Index - volume-weighted RSI"
-    expression: "100 - 100 / (1 + (pct_change.map_elements(lambda x: float(x) if x > 0 else 0.0, return_dtype=pl.Float64) * volume).rolling_sum(window_size=14) / ((pct_change.map_elements(lambda x: float(-x) if x < 0 else 0.0, return_dtype=pl.Float64) * volume).rolling_sum(window_size=14) + 1e-10))"
-    window: 14
-    
-  # Turnover Rate Factors (换手率因子) - 需要 Tushare 积分>=120
-  # 注意：这些因子需要数据库中有 turnover_rate 字段
-  # 如果数据库中没有 turnover_rate 字段，这些因子将被跳过
-  # 已使用 map_elements 和 fill_null(0) 处理缺失值
-  - name: turnover_bias_20
-    description: "Turnover rate deviation from 20-day average - measures trading activity anomaly"
-    expression: "(turnover_rate.fill_null(0) - turnover_rate.fill_null(0).rolling_mean(window_size=20)) / (turnover_rate.fill_null(0).rolling_std(window_size=20, ddof=1) + 1e-10)"
-    window: 20
-  
-  - name: turnover_ma_ratio
-    description: "Turnover rate to 5-day MA ratio - measures relative trading activity"
-    expression: "turnover_rate.fill_null(0) / (turnover_rate.fill_null(0).rolling_mean(window_size=5) + 1e-10)"
-    window: 5
-
-  # Volume-Price Divergence Factors (量价背离因子)
-  - name: volume_price_divergence_5
-    description: "5-day volume-price divergence - positive when price up but volume down (bearish divergence)"
-    expression: "(close / close.shift(5) - 1) - (volume / volume.shift(5) - 1)"
-    window: 5
-  
-  - name: volume_price_divergence_20
-    description: "20-day volume-price divergence - measures long-term divergence trend"
-    expression: "(close / close.shift(20) - 1) - (volume / volume.shift(20) - 1)"
-    window: 20
-  
-  - name: volume_price_correlation
-    description: "Correlation between price change and volume over 20 days - negative correlation indicates divergence"
-    expression: "((pct_change - pct_change.rolling_mean(window_size=20)) * (volume - volume.rolling_mean(window_size=20))).rolling_mean(window_size=20) / ((pct_change.rolling_std(window_size=20, ddof=1) + 1e-10) * (volume.rolling_std(window_size=20, ddof=1) + 1e-10))"
-    window: 20
-  
-  - name: smart_money_flow
-    description: "Smart money flow indicator - high volume on up days vs low volume on down days"
-    expression: "((pct_change.map_elements(lambda x: float(x) if x > 0 else 0.0, return_dtype=pl.Float64) * volume).rolling_sum(window_size=5) - (pct_change.map_elements(lambda x: float(-x) if x < 0 else 0.0, return_dtype=pl.Float64) * volume).rolling_sum(window_size=5)) / ((volume.rolling_sum(window_size=5) + 1e-10) * close)"
-    window: 5
-
-  # Volatility Contraction Factors (波动率缩量因子)
-  # 逻辑：波动率收缩 + 成交量萎缩，通常预示着即将突破
-  # 注意：使用内联表达式避免因子间依赖
-  - name: volatility_contraction_10
-    description: "Volatility contraction ratio - measures 5-day volatility relative to 20-day volatility (low value = contraction)"
-    expression: "pct_change.rolling_std(window_size=5, ddof=1) / (pct_change.rolling_std(window_size=20, ddof=1) + 1e-10)"
-    window: 10
-  
-  - name: volume_shrink_ratio
-    description: "Volume shrinkage ratio - current volume relative to 20-day average (low value = shrinking volume)"
+    description: "Ratio of current volume to 20-day MA volume"
     expression: "volume / (volume.rolling_mean(window_size=20) + 1e-10)"
     window: 20
-  
-  # Price-Stable Volume-Increase Factors (量增价稳因子)
-  # 逻辑：成交量放大但价格波动小，通常表示主力吸筹
-  - name: volume_price_stable
-    description: "Volume increase with stable price - high volume but small price range (accumulation signal)"
-    expression: "(volume / volume.rolling_mean(window_size=10)) / ((high - low) / close.rolling_mean(window_size=10) + 1e-10)"
-    window: 10
-  
-  - name: accumulation_distribution_20
-    description: "Accumulation/Distribution indicator - measures buying pressure over 20 days"
-    expression: "((close - low) - (high - close)).rolling_sum(window_size=20) / ((high - low + 1e-10).rolling_sum(window_size=20) * volume.rolling_sum(window_size=20) + 1e-10) * volume"
-    window: 20
 
-  # 【新增 - Iteration 3: WorldQuant Alpha 101 因子】
-  # 来源：WorldQuant Alpha 101 因子库，针对 A 股短线（5 日）优化
-  # 相关性检查：与 momentum_* 因子相关性 < 0.3
+  # === 4. Low Correlation Enhancement Factors (低相关性增强因子 - Iteration 10+) ===
   
-  # Alpha 101 #001 - 超跌反弹类因子
-  # 逻辑：识别价格远离均值后的回归机会
-  - name: alpha101_mean_reversion
-    description: "WorldQuant Alpha 101 #001 - Mean reversion signal for oversold bounce"
-    expression: "(close - close.rolling_mean(window_size=20)) / (close.rolling_std(window_size=20, ddof=1) + 1e-10)"
-    window: 20
-  
-  # Alpha 101 #002 - 成交量分布类因子
-  # 逻辑：识别成交量异常放大后的价格反应
-  - name: alpha101_volume_price_rank
-    description: "WorldQuant Alpha 101 #002 - Volume-price rank correlation for distribution analysis"
-    expression: "((volume - volume.rolling_mean(window_size=10)) / (volume.rolling_std(window_size=10, ddof=1) + 1e-10)) * ((close - close.rolling_mean(window_size=10)) / (close.rolling_std(window_size=10, ddof=1) + 1e-10))"
-    window: 10
-  
-  # Alpha 101 #003 - 价格动量反转因子
-  # 逻辑：短期反转效应，识别超跌反弹
-  - name: alpha101_reversal_5d
-    description: "WorldQuant Alpha 101 #003 - Short-term reversal for 5-day bounce prediction"
-    expression: "-1 * (close.shift(1) / close.shift(5) - 1)"
-    window: 5
-  
-  # Alpha 101 #004 - 量价协同因子
-  # 逻辑：成交量加权价格变化，识别主力行为
-  # 【修复 - Iteration 7】使用 Polars 原生 when/then/otherwise 语法
-  # 【注意】使用 volume 替代 amount（数据库中没有 amount 字段）
-  - name: alpha101_downside_volume
-    description: "WorldQuant Alpha 101 #004 - Downside volume ratio for distribution analysis"
-    expression: "((pct_change < 0).cast(pl.Float64) * volume).rolling_sum(window_size=20) / (volume.rolling_sum(window_size=20) + 1e-10)"
-    window: 20
-
-  # ===========================================
-  # 【新增 - Iteration 10: 低相关性因子】
-  # 目标：捕捉"极致缩量反转"特征，与现有因子相关性 < 0.4
-  # ===========================================
-  
-  # 1. 成交量分布熵值 (Volume Entropy)
-  # 逻辑：熵值衡量成交量分布的均匀程度
-  #   - 高熵值 = 成交量分布均匀，市场分歧大
-  #   - 低熵值 = 成交量集中，方向明确
-  # 极致缩量时熵值下降，预示即将反转
-  # 与现有 volume_* 因子相关性 < 0.4 (捕捉分布特征而非绝对量)
-  - name: volume_entropy_20
-    description: "Volume distribution entropy - measures uniformity of volume distribution over 20 days"
-    expression: "(-1 * ((volume.fill_null(0) + 1e-10) / (volume.fill_null(0).rolling_sum(window_size=20) + 1e-10)).map_elements(lambda x: float(x) * float(__import__('math').log(float(x) + 1e-10)) if x > 0 else 0.0, return_dtype=pl.Float64)).rolling_sum(window_size=1)"
-    window: 20
-  
-  # 2. 振幅/换手比率 (Amplitude-Turnover Ratio)
-  # 逻辑：识别单位换手产生的价格波动效率
-  #   - 高比率 = 少量换手产生大振幅，主力控盘度高
-  #   - 低比率 = 大量换手但价格波动小，分歧大
-  # 与现有 turnover_* 因子相关性 < 0.4 (捕捉价格效率而非绝对换手)
-  # 注意：使用 close 替代 turnover_rate(数据库中可能缺失)
+  # 因子 A: 振幅/换手比率 (Amplitude to Turnover Ratio)
+  # 逻辑：
+  #   - 高比率 = 少量换手产生大振幅，暗示主力控盘度高或筹码锁定良好
+  #   - 低比率 = 大量换手但价格波动小，说明多空分歧巨大，上涨压力重
+  #   - 该因子捕捉价格发现的效率，而非单纯的换手
   - name: amplitude_turnover_ratio_20
-    description: "Amplitude to volume ratio - measures price volatility efficiency per unit volume"
+    description: "Measures price volatility efficiency per unit volume"
     expression: "((high - low) / (close + 1e-10)) / ((volume.fill_null(0) + 1e-10) / (volume.fill_null(0).rolling_mean(window_size=20) + 1e-10))"
     window: 20
   
-  # 3. 尾盘量价相关性 (Tail Correlation)
-  # 逻辑：使用当日涨跌幅与成交量的相关性近似尾盘行为
-  #   - 负相关 = 尾盘拉升 (价升量缩) 或尾盘跳水 (价跌量增)
-  #   - 正相关 = 正常量价配合
-  # 极致缩量反转通常发生在尾盘负相关时
-  # 与现有 volume_price_* 因子相关性 < 0.4 (捕捉日内时序特征)
+  # 因子 B: 尾盘量价相关性 (Tail Volume-Price Correlation)
+  # 逻辑：
+  #   - 近似反映日内量价配合程度。正相关通常代表健康的趋势（放量上涨）。
+  #   - 负相关（如缩量上涨或放量下跌）往往是趋势动能衰竭的信号。
+  #   - 与基础动量因子相关性极低（<0.4），提供额外的预测维度。
   - name: tail_volume_price_corr_20
-    description: "Tail volume-price correlation - approximates intraday tail behavior using daily data"
-    expression: "((pct_change - pct_change.rolling_mean(window_size=5)) * (volume - volume.rolling_mean(window_size=5))).rolling_mean(window_size=20) / ((pct_change.rolling_std(window_size=5, ddof=1) + 1e-10) * (volume.rolling_std(window_size=5, ddof=1) + 1e-10))"
+    description: "Approximates intraday behavior using daily price-volume correlation"
+    # 计算公式：20日收益率与成交量的滚动相关系数
+    expression: "((pct_chg - pct_chg.rolling_mean(window_size=20)) * (volume - volume.rolling_mean(window_size=20))).rolling_sum(window_size=20) / (20 * pct_chg.rolling_std(window_size=20) * volume.rolling_std(window_size=20) + 1e-10)"
     window: 20
 
-# Label Configuration (标签配置)
-# 【重构 - 2026-03-14】使用 5 日趋势标签，从"日频噪音预测"转向"趋势窗口预测"
-# 【Label V2 - Alpha 标签】学习跑赢中证 500，而非绝对收益
+  # === 特别说明：volume_entropy_20 ===
+  # 该因子已在 FactorEngine.py 中通过 compute_volume_entropy() 原生实现
+  # 逻辑：计算成交量的分布熵，用于衡量资金介入的均匀度。
+  # 为了避免 eval('__import__') 权限报错，此处不再重复配置。
+
+# ==============================================================================
+# Label Configuration (用于模型训练的目标变量)
+# ==============================================================================
 label:
-  name: label_alpha_5d
-  description: "5-day excess return vs CSI500 (Alpha label)"
-  expression: "close.shift(-5) / close.shift(-1) - 1"  # 未来 5 日收益率（用于模型训练）
+  name: sharpe_label
+  description: "5-day forward return (Target for training)"
+  # 逻辑：使用未来 5 日的收益率作为预测目标
+  expression: "close.shift(-5) / close - 1"
   window: 5
-  
-# Alpha 标签说明:
-# - label_alpha = 个股收益 - 指数收益
-# - 目标：让模型学习如何跑赢中证 500
-# - 在 model_trainer.py 中需要传入指数收益率数据
