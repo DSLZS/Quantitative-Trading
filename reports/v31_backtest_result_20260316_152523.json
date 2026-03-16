@@ -1,0 +1,2830 @@
+{
+  "version": "V3.1",
+  "timestamp": "2026-03-16T15:25:23.592820",
+  "backtest_period": "2024-01-01 to 2024-06-30",
+  "metrics": {
+    "total_return": -0.05567380500000063,
+    "annual_return": -0.11607239954295623,
+    "max_drawdown": 0.08337283328898883,
+    "sharpe_ratio": -0.9923186042937,
+    "win_rate": 0.44285714285714284,
+    "total_trades": 350,
+    "avg_hold_days": 2.9085714285714284,
+    "profit_factor": 0.9135768652937905
+  },
+  "factor_health": {
+    "total": 16,
+    "healthy": 16,
+    "critical": 0,
+    "missing": 0,
+    "pruned_count": 0,
+    "pruned_features": []
+  },
+  "exit_reasons": {
+    "target/rebalance": 191,
+    "adaptive_stop_loss": 106,
+    "take_profit": 53
+  },
+  "trades": [
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-02",
+      "exit_date": "2024-01-03",
+      "pnl_pct": -0.015353121801433053,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-02",
+      "exit_date": "2024-01-03",
+      "pnl_pct": 0.019736842105263323,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-02",
+      "exit_date": "2024-01-03",
+      "pnl_pct": -0.0020283975659228775,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-02",
+      "exit_date": "2024-01-03",
+      "pnl_pct": 0.01437371663244359,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-03",
+      "exit_date": "2024-01-04",
+      "pnl_pct": -0.018133518133518055,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-03",
+      "exit_date": "2024-01-04",
+      "pnl_pct": 0.002150537634408556,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-03",
+      "exit_date": "2024-01-04",
+      "pnl_pct": 0.010121457489878506,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-04",
+      "exit_date": "2024-01-05",
+      "pnl_pct": -0.012939654158334413,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-04",
+      "exit_date": "2024-01-05",
+      "pnl_pct": 0.00429184549356214,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-04",
+      "exit_date": "2024-01-05",
+      "pnl_pct": 0.0020040080160320215,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-01-05",
+      "exit_date": "2024-01-08",
+      "pnl_pct": -0.008247422680412342,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-05",
+      "exit_date": "2024-01-08",
+      "pnl_pct": -0.051364557263734976,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-05",
+      "exit_date": "2024-01-08",
+      "pnl_pct": -0.0021367521367520914,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-05",
+      "exit_date": "2024-01-08",
+      "pnl_pct": -0.003999999999999915,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-01-08",
+      "exit_date": "2024-01-09",
+      "pnl_pct": 0.0029106029106029225,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-08",
+      "exit_date": "2024-01-09",
+      "pnl_pct": 0.0056818181818180605,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-08",
+      "exit_date": "2024-01-09",
+      "pnl_pct": -0.0015075376884420896,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-08",
+      "exit_date": "2024-01-09",
+      "pnl_pct": 0.014989293361884428,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-08",
+      "exit_date": "2024-01-09",
+      "pnl_pct": -0.0010869565217391075,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-08",
+      "exit_date": "2024-01-09",
+      "pnl_pct": -0.0020080321285141913,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-09",
+      "exit_date": "2024-01-10",
+      "pnl_pct": -0.016733769501761427,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-09",
+      "exit_date": "2024-01-10",
+      "pnl_pct": 0.008438818565400852,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-09",
+      "exit_date": "2024-01-10",
+      "pnl_pct": 0.0,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-09",
+      "exit_date": "2024-01-10",
+      "pnl_pct": -0.008048289738430591,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-10",
+      "exit_date": "2024-01-11",
+      "pnl_pct": 0.020729366602687017,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-10",
+      "exit_date": "2024-01-11",
+      "pnl_pct": 0.004184100418409953,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-10",
+      "exit_date": "2024-01-11",
+      "pnl_pct": 0.022850924918389647,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-10",
+      "exit_date": "2024-01-11",
+      "pnl_pct": -0.01825557809330626,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-11",
+      "exit_date": "2024-01-12",
+      "pnl_pct": -0.0026325686348250437,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-11",
+      "exit_date": "2024-01-12",
+      "pnl_pct": 0.01458333333333339,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-11",
+      "exit_date": "2024-01-12",
+      "pnl_pct": -0.0010638297872340198,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-11",
+      "exit_date": "2024-01-12",
+      "pnl_pct": 0.012396694214876136,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-12",
+      "exit_date": "2024-01-15",
+      "pnl_pct": 0.009302325581395357,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-12",
+      "exit_date": "2024-01-15",
+      "pnl_pct": -0.002262443438914113,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-12",
+      "exit_date": "2024-01-15",
+      "pnl_pct": 0.010266940451745343,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-12",
+      "exit_date": "2024-01-15",
+      "pnl_pct": 0.004081632653061137,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-15",
+      "exit_date": "2024-01-16",
+      "pnl_pct": -0.0034562211981566085,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-15",
+      "exit_date": "2024-01-16",
+      "pnl_pct": 0.006424792139077919,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-15",
+      "exit_date": "2024-01-16",
+      "pnl_pct": 0.004065040650406598,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-15",
+      "exit_date": "2024-01-16",
+      "pnl_pct": 0.004065040650406598,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-16",
+      "exit_date": "2024-01-17",
+      "pnl_pct": -0.03955438728251341,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-16",
+      "exit_date": "2024-01-17",
+      "pnl_pct": -0.010121457489878687,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-16",
+      "exit_date": "2024-01-17",
+      "pnl_pct": -0.010121457489878685,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-17",
+      "exit_date": "2024-01-18",
+      "pnl_pct": 0.0023980815347721313,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-17",
+      "exit_date": "2024-01-18",
+      "pnl_pct": 0.0104261696859116,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-17",
+      "exit_date": "2024-01-18",
+      "pnl_pct": -0.006134969325153243,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-17",
+      "exit_date": "2024-01-18",
+      "pnl_pct": -0.013605442176870862,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-17",
+      "exit_date": "2024-01-18",
+      "pnl_pct": -0.0020449897750510816,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-01-18",
+      "exit_date": "2024-01-19",
+      "pnl_pct": 0.006938421509106684,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-18",
+      "exit_date": "2024-01-19",
+      "pnl_pct": -0.01435406698564584,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-18",
+      "exit_date": "2024-01-19",
+      "pnl_pct": -0.009415710047723513,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-18",
+      "exit_date": "2024-01-19",
+      "pnl_pct": 0.0020576131687242358,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-18",
+      "exit_date": "2024-01-19",
+      "pnl_pct": -0.00459770114942519,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-18",
+      "exit_date": "2024-01-19",
+      "pnl_pct": -0.0040983606557376175,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-19",
+      "exit_date": "2024-01-22",
+      "pnl_pct": -0.06640624999999992,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-19",
+      "exit_date": "2024-01-22",
+      "pnl_pct": -0.028747433264886997,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-19",
+      "exit_date": "2024-01-22",
+      "pnl_pct": 0.0,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-22",
+      "exit_date": "2024-01-23",
+      "pnl_pct": 0.009126466753585435,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-22",
+      "exit_date": "2024-01-23",
+      "pnl_pct": 0.022733612273361164,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-22",
+      "exit_date": "2024-01-23",
+      "pnl_pct": 0.012684989429175392,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-22",
+      "exit_date": "2024-01-23",
+      "pnl_pct": 0.018450184501844845,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-22",
+      "exit_date": "2024-01-23",
+      "pnl_pct": -0.004115226337448654,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-23",
+      "exit_date": "2024-01-24",
+      "pnl_pct": 0.020671834625323016,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-23",
+      "exit_date": "2024-01-24",
+      "pnl_pct": -0.024273830628664953,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-23",
+      "exit_date": "2024-01-24",
+      "pnl_pct": 0.03549060542797493,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-23",
+      "exit_date": "2024-01-24",
+      "pnl_pct": 0.008454106280193273,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-23",
+      "exit_date": "2024-01-24",
+      "pnl_pct": 0.018595041322314022,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-24",
+      "exit_date": "2024-01-25",
+      "pnl_pct": 0.03670886075949357,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-24",
+      "exit_date": "2024-01-25",
+      "pnl_pct": 0.026275331935709433,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-24",
+      "exit_date": "2024-01-25",
+      "pnl_pct": 0.020161290322580575,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-24",
+      "exit_date": "2024-01-25",
+      "pnl_pct": 0.04071856287425148,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-24",
+      "exit_date": "2024-01-25",
+      "pnl_pct": 0.012170385395537628,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-25",
+      "exit_date": "2024-01-26",
+      "pnl_pct": -0.02075702075702075,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-25",
+      "exit_date": "2024-01-26",
+      "pnl_pct": -0.057197330791229774,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-25",
+      "exit_date": "2024-01-26",
+      "pnl_pct": 0.011857707509881521,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-25",
+      "exit_date": "2024-01-26",
+      "pnl_pct": 0.005753739930955203,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-25",
+      "exit_date": "2024-01-26",
+      "pnl_pct": 0.014028056112224328,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-26",
+      "exit_date": "2024-01-29",
+      "pnl_pct": -0.0386533665835411,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-26",
+      "exit_date": "2024-01-29",
+      "pnl_pct": -0.03278925321392475,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-26",
+      "exit_date": "2024-01-29",
+      "pnl_pct": -0.0019531249999999586,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-26",
+      "exit_date": "2024-01-29",
+      "pnl_pct": -0.012585812356979338,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-26",
+      "exit_date": "2024-01-29",
+      "pnl_pct": 0.013833992094861716,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-29",
+      "exit_date": "2024-01-30",
+      "pnl_pct": -0.036316472114137514,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-29",
+      "exit_date": "2024-01-30",
+      "pnl_pct": -0.05525686977299874,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-29",
+      "exit_date": "2024-01-30",
+      "pnl_pct": -0.0019569471624267466,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-29",
+      "exit_date": "2024-01-30",
+      "pnl_pct": -0.03939745075318674,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-29",
+      "exit_date": "2024-01-30",
+      "pnl_pct": -0.00974658869395708,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-01-29",
+      "exit_date": "2024-01-31",
+      "pnl_pct": -0.023577763357127326,
+      "hold_days": 2,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-30",
+      "exit_date": "2024-01-31",
+      "pnl_pct": -0.044414535666218044,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-30",
+      "exit_date": "2024-01-31",
+      "pnl_pct": -0.02323743281694592,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-30",
+      "exit_date": "2024-01-31",
+      "pnl_pct": 0.0,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-30",
+      "exit_date": "2024-01-31",
+      "pnl_pct": 0.001968503937007832,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-01-31",
+      "exit_date": "2024-02-01",
+      "pnl_pct": -0.028134692069118367,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-01-31",
+      "exit_date": "2024-02-01",
+      "pnl_pct": -0.012676056338028149,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-01-31",
+      "exit_date": "2024-02-01",
+      "pnl_pct": 0.005988023952095767,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-01-31",
+      "exit_date": "2024-02-01",
+      "pnl_pct": -0.0019607843137254485,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-01-31",
+      "exit_date": "2024-02-01",
+      "pnl_pct": -0.02244389027431418,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-01-31",
+      "exit_date": "2024-02-01",
+      "pnl_pct": -0.003929273084479287,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-01",
+      "exit_date": "2024-02-02",
+      "pnl_pct": 0.005242762708001002,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-01",
+      "exit_date": "2024-02-02",
+      "pnl_pct": -0.05420827389443651,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-01",
+      "exit_date": "2024-02-02",
+      "pnl_pct": -0.05614543114543106,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-01",
+      "exit_date": "2024-02-02",
+      "pnl_pct": 0.001964636542239644,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-01",
+      "exit_date": "2024-02-02",
+      "pnl_pct": -0.051020408163265245,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-01",
+      "exit_date": "2024-02-02",
+      "pnl_pct": 0.00986193293885598,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-02",
+      "exit_date": "2024-02-05",
+      "pnl_pct": -0.07390648567119158,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-02",
+      "exit_date": "2024-02-05",
+      "pnl_pct": -0.05198568263166873,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-02",
+      "exit_date": "2024-02-05",
+      "pnl_pct": -0.011764705882352865,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-02",
+      "exit_date": "2024-02-05",
+      "pnl_pct": -0.05107526881720441,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-02",
+      "exit_date": "2024-02-05",
+      "pnl_pct": 0.02343750000000002,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-05",
+      "exit_date": "2024-02-06",
+      "pnl_pct": 0.04743507190384189,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-05",
+      "exit_date": "2024-02-06",
+      "pnl_pct": 0.05537459283387634,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-05",
+      "exit_date": "2024-02-06",
+      "pnl_pct": 0.112010068320748,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-05",
+      "exit_date": "2024-02-06",
+      "pnl_pct": 0.025793650793650775,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-05",
+      "exit_date": "2024-02-06",
+      "pnl_pct": 0.1033994334277621,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-05",
+      "exit_date": "2024-02-06",
+      "pnl_pct": 0.0076335877862595495,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-06",
+      "exit_date": "2024-02-07",
+      "pnl_pct": 0.07377049180327871,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-06",
+      "exit_date": "2024-02-07",
+      "pnl_pct": 0.07870370370370368,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-06",
+      "exit_date": "2024-02-07",
+      "pnl_pct": 0.021988682295877113,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-06",
+      "exit_date": "2024-02-07",
+      "pnl_pct": -0.0367504835589941,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-06",
+      "exit_date": "2024-02-07",
+      "pnl_pct": 0.10269576379974323,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-06",
+      "exit_date": "2024-02-07",
+      "pnl_pct": -0.020833333333333395,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-07",
+      "exit_date": "2024-02-08",
+      "pnl_pct": 0.0078244274809161,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-07",
+      "exit_date": "2024-02-08",
+      "pnl_pct": 0.037195994277539314,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-07",
+      "exit_date": "2024-02-08",
+      "pnl_pct": 0.04809365606707798,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-07",
+      "exit_date": "2024-02-08",
+      "pnl_pct": -0.02008032128514067,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-07",
+      "exit_date": "2024-02-08",
+      "pnl_pct": 0.0721769499417929,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-07",
+      "exit_date": "2024-02-08",
+      "pnl_pct": -0.013539651837524232,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-08",
+      "exit_date": "2024-02-19",
+      "pnl_pct": -0.07422836583980309,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-08",
+      "exit_date": "2024-02-19",
+      "pnl_pct": 0.013793103448275813,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-08",
+      "exit_date": "2024-02-19",
+      "pnl_pct": 0.009509433962264082,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-08",
+      "exit_date": "2024-02-19",
+      "pnl_pct": 0.02663934426229506,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-08",
+      "exit_date": "2024-02-19",
+      "pnl_pct": -0.04017372421281226,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-08",
+      "exit_date": "2024-02-19",
+      "pnl_pct": 0.04705882352941181,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-19",
+      "exit_date": "2024-02-20",
+      "pnl_pct": -0.00265903047658013,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-19",
+      "exit_date": "2024-02-20",
+      "pnl_pct": -0.00680272108843535,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-19",
+      "exit_date": "2024-02-20",
+      "pnl_pct": -0.008672248803827727,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-19",
+      "exit_date": "2024-02-20",
+      "pnl_pct": 0.025948103792415148,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-19",
+      "exit_date": "2024-02-20",
+      "pnl_pct": -0.018099547511312236,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-19",
+      "exit_date": "2024-02-20",
+      "pnl_pct": 0.018726591760299727,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-20",
+      "exit_date": "2024-02-21",
+      "pnl_pct": -0.01148482362592279,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-20",
+      "exit_date": "2024-02-21",
+      "pnl_pct": 0.0205479452054795,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-20",
+      "exit_date": "2024-02-21",
+      "pnl_pct": 0.018401206636500737,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-20",
+      "exit_date": "2024-02-21",
+      "pnl_pct": -0.009727626459143934,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-20",
+      "exit_date": "2024-02-21",
+      "pnl_pct": 0.0011520737327188695,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-20",
+      "exit_date": "2024-02-21",
+      "pnl_pct": 0.011029411764705808,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-21",
+      "exit_date": "2024-02-22",
+      "pnl_pct": 0.010788381742738508,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-21",
+      "exit_date": "2024-02-22",
+      "pnl_pct": 0.026845637583892645,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-21",
+      "exit_date": "2024-02-22",
+      "pnl_pct": 0.05746445497630347,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-21",
+      "exit_date": "2024-02-22",
+      "pnl_pct": 0.007858546168958749,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-21",
+      "exit_date": "2024-02-22",
+      "pnl_pct": 0.009205983889528204,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-21",
+      "exit_date": "2024-02-22",
+      "pnl_pct": -0.0018181818181817796,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-22",
+      "exit_date": "2024-02-23",
+      "pnl_pct": -0.01867816091954016,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-22",
+      "exit_date": "2024-02-23",
+      "pnl_pct": 0.03137254901960776,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-22",
+      "exit_date": "2024-02-23",
+      "pnl_pct": 0.07366946778711472,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-22",
+      "exit_date": "2024-02-23",
+      "pnl_pct": 0.0019493177387913817,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-22",
+      "exit_date": "2024-02-23",
+      "pnl_pct": -0.0034207525655643514,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-22",
+      "exit_date": "2024-02-23",
+      "pnl_pct": 0.016393442622950796,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-23",
+      "exit_date": "2024-02-26",
+      "pnl_pct": 0.016314578540054407,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-23",
+      "exit_date": "2024-02-26",
+      "pnl_pct": 0.0038022813688213244,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-23",
+      "exit_date": "2024-02-26",
+      "pnl_pct": -0.02165405687451078,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-23",
+      "exit_date": "2024-02-26",
+      "pnl_pct": -0.04085603112840466,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-23",
+      "exit_date": "2024-02-26",
+      "pnl_pct": -0.0022883295194507523,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-23",
+      "exit_date": "2024-02-26",
+      "pnl_pct": -0.03584229390681007,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-26",
+      "exit_date": "2024-02-27",
+      "pnl_pct": -0.0039102696027990295,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-26",
+      "exit_date": "2024-02-27",
+      "pnl_pct": 0.032828282828282804,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-26",
+      "exit_date": "2024-02-27",
+      "pnl_pct": 0.05973333333333338,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-26",
+      "exit_date": "2024-02-27",
+      "pnl_pct": 0.022312373225152195,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-26",
+      "exit_date": "2024-02-27",
+      "pnl_pct": 0.014908256880733828,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-26",
+      "exit_date": "2024-02-27",
+      "pnl_pct": 0.0,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-27",
+      "exit_date": "2024-02-28",
+      "pnl_pct": -0.006198347107437958,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-27",
+      "exit_date": "2024-02-28",
+      "pnl_pct": -0.06601466992665037,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-27",
+      "exit_date": "2024-02-28",
+      "pnl_pct": -0.09360845495722192,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-27",
+      "exit_date": "2024-02-28",
+      "pnl_pct": -0.009920634920634885,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-27",
+      "exit_date": "2024-02-28",
+      "pnl_pct": -0.013559322033898216,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-27",
+      "exit_date": "2024-02-28",
+      "pnl_pct": -0.005576208178438708,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-28",
+      "exit_date": "2024-02-29",
+      "pnl_pct": 0.034719334719334756,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-28",
+      "exit_date": "2024-02-29",
+      "pnl_pct": 0.051047120418848124,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-28",
+      "exit_date": "2024-02-29",
+      "pnl_pct": 0.1110494169905608,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-28",
+      "exit_date": "2024-02-29",
+      "pnl_pct": 0.004008016032064043,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-28",
+      "exit_date": "2024-02-29",
+      "pnl_pct": 0.010309278350515448,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-28",
+      "exit_date": "2024-02-29",
+      "pnl_pct": 0.0018691588785047994,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-02-29",
+      "exit_date": "2024-03-01",
+      "pnl_pct": -0.017882258388587514,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-02-29",
+      "exit_date": "2024-03-01",
+      "pnl_pct": 0.004981320049813316,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-02-29",
+      "exit_date": "2024-03-01",
+      "pnl_pct": 0.0017491254372813665,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-02-29",
+      "exit_date": "2024-03-01",
+      "pnl_pct": -0.005988023952095681,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-02-29",
+      "exit_date": "2024-03-01",
+      "pnl_pct": 0.029478458049886597,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-02-29",
+      "exit_date": "2024-03-01",
+      "pnl_pct": 0.009328358208955192,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-03-01",
+      "exit_date": "2024-03-04",
+      "pnl_pct": 0.012479541734860872,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-03-01",
+      "exit_date": "2024-03-04",
+      "pnl_pct": -0.0037174721189592486,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-03-01",
+      "exit_date": "2024-03-04",
+      "pnl_pct": 0.05674731853330004,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-03-01",
+      "exit_date": "2024-03-04",
+      "pnl_pct": -0.008032128514056233,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-03-01",
+      "exit_date": "2024-03-04",
+      "pnl_pct": -0.009911894273127738,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-03-01",
+      "exit_date": "2024-03-04",
+      "pnl_pct": -0.011090573012939094,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-03-04",
+      "exit_date": "2024-03-05",
+      "pnl_pct": 0.012729844413012639,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-03-04",
+      "exit_date": "2024-03-05",
+      "pnl_pct": -0.018656716417910387,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-03-04",
+      "exit_date": "2024-03-05",
+      "pnl_pct": -0.03977339785200053,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-03-04",
+      "exit_date": "2024-03-05",
+      "pnl_pct": 0.010121457489878508,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-03-04",
+      "exit_date": "2024-03-05",
+      "pnl_pct": -0.0022246941045605756,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-03-04",
+      "exit_date": "2024-03-05",
+      "pnl_pct": 0.02616822429906553,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-03-05",
+      "exit_date": "2024-03-06",
+      "pnl_pct": 0.0079808459696729,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-03-05",
+      "exit_date": "2024-03-06",
+      "pnl_pct": -0.003802281368821212,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-03-05",
+      "exit_date": "2024-03-06",
+      "pnl_pct": -0.017944936086528928,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-03-05",
+      "exit_date": "2024-03-06",
+      "pnl_pct": -0.006012024048096242,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-03-05",
+      "exit_date": "2024-03-06",
+      "pnl_pct": -0.007803790412486095,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-03-05",
+      "exit_date": "2024-03-06",
+      "pnl_pct": -0.01457194899817852,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-03-06",
+      "exit_date": "2024-03-07",
+      "pnl_pct": 0.02870150435471092,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-03-06",
+      "exit_date": "2024-03-07",
+      "pnl_pct": -0.00763454317897371,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-03-06",
+      "exit_date": "2024-03-07",
+      "pnl_pct": 0.0,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-03-06",
+      "exit_date": "2024-03-07",
+      "pnl_pct": 0.029213483146067393,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-03-06",
+      "exit_date": "2024-03-07",
+      "pnl_pct": 0.009242144177449136,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-03-07",
+      "exit_date": "2024-03-08",
+      "pnl_pct": 0.014046565326149778,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-03-07",
+      "exit_date": "2024-03-08",
+      "pnl_pct": 0.014686248331108069,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-03-07",
+      "exit_date": "2024-03-08",
+      "pnl_pct": 0.009458948164964056,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-03-07",
+      "exit_date": "2024-03-08",
+      "pnl_pct": 0.006550218340611408,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-03-07",
+      "exit_date": "2024-03-08",
+      "pnl_pct": -0.003663003663003585,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-03-08",
+      "exit_date": "2024-03-11",
+      "pnl_pct": 0.0017077798861479376,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-03-08",
+      "exit_date": "2024-03-11",
+      "pnl_pct": 0.018490754622688527,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-03-08",
+      "exit_date": "2024-03-11",
+      "pnl_pct": -0.008064516129032265,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-03-08",
+      "exit_date": "2024-03-11",
+      "pnl_pct": 0.00976138828633404,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-03-08",
+      "exit_date": "2024-03-11",
+      "pnl_pct": -0.0018382352941177713,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002032.SZ",
+      "entry_date": "2024-03-11",
+      "exit_date": "2024-03-12",
+      "pnl_pct": -0.008334911915135398,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "002153.SZ",
+      "entry_date": "2024-03-11",
+      "exit_date": "2024-03-12",
+      "pnl_pct": 0.011494252873563201,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "688037.SH",
+      "entry_date": "2024-03-11",
+      "exit_date": "2024-03-12",
+      "pnl_pct": 0.016560353287536907,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600018.SH",
+      "entry_date": "2024-03-11",
+      "exit_date": "2024-03-12",
+      "pnl_pct": -0.016260162601626032,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600392.SH",
+      "entry_date": "2024-03-11",
+      "exit_date": "2024-03-12",
+      "pnl_pct": -0.013963480128893747,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "601328.SH",
+      "entry_date": "2024-03-11",
+      "exit_date": "2024-03-12",
+      "pnl_pct": -0.022099447513812175,
+      "hold_days": 1,
+      "exit_reason": "target/rebalance"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-03-12",
+      "exit_date": "2024-03-13",
+      "pnl_pct": 0.09999999999999998,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-03-13",
+      "exit_date": "2024-03-14",
+      "pnl_pct": -0.05277701022381864,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600546.SH",
+      "entry_date": "2024-03-12",
+      "exit_date": "2024-03-15",
+      "pnl_pct": -0.03785103785103781,
+      "hold_days": 3,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-03-12",
+      "exit_date": "2024-03-15",
+      "pnl_pct": 0.05272727272727279,
+      "hold_days": 3,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "300760.SZ",
+      "entry_date": "2024-03-12",
+      "exit_date": "2024-03-15",
+      "pnl_pct": -0.03729818107500507,
+      "hold_days": 3,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-03-12",
+      "exit_date": "2024-03-18",
+      "pnl_pct": 0.08855721393034834,
+      "hold_days": 4,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "603501.SH",
+      "entry_date": "2024-03-14",
+      "exit_date": "2024-03-18",
+      "pnl_pct": 0.06846361185983821,
+      "hold_days": 2,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-03-15",
+      "exit_date": "2024-03-19",
+      "pnl_pct": 0.12190558434081748,
+      "hold_days": 2,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-03-18",
+      "exit_date": "2024-03-20",
+      "pnl_pct": 0.07906764168190136,
+      "hold_days": 2,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-03-19",
+      "exit_date": "2024-03-21",
+      "pnl_pct": 0.1030147530468249,
+      "hold_days": 2,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600521.SH",
+      "entry_date": "2024-03-12",
+      "exit_date": "2024-03-22",
+      "pnl_pct": -0.04552238805970158,
+      "hold_days": 8,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600528.SH",
+      "entry_date": "2024-03-12",
+      "exit_date": "2024-03-22",
+      "pnl_pct": -0.04475703324808191,
+      "hold_days": 8,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600535.SH",
+      "entry_date": "2024-03-12",
+      "exit_date": "2024-03-25",
+      "pnl_pct": -0.054020100502512526,
+      "hold_days": 9,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-03-14",
+      "exit_date": "2024-03-25",
+      "pnl_pct": -0.06592765460910147,
+      "hold_days": 7,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-03-20",
+      "exit_date": "2024-03-25",
+      "pnl_pct": -0.040297694681430365,
+      "hold_days": 3,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688041.SH",
+      "entry_date": "2024-03-13",
+      "exit_date": "2024-03-26",
+      "pnl_pct": -0.042984999369721374,
+      "hold_days": 9,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-03-25",
+      "exit_date": "2024-03-26",
+      "pnl_pct": -0.039720068091545366,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600522.SH",
+      "entry_date": "2024-03-12",
+      "exit_date": "2024-03-27",
+      "pnl_pct": -0.053763440860215055,
+      "hold_days": 11,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-03-25",
+      "exit_date": "2024-03-27",
+      "pnl_pct": -0.08369768894440983,
+      "hold_days": 2,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-03-26",
+      "exit_date": "2024-03-27",
+      "pnl_pct": -0.043989232486376394,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-03-21",
+      "exit_date": "2024-03-28",
+      "pnl_pct": 0.06117701791114202,
+      "hold_days": 5,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-03-27",
+      "exit_date": "2024-03-29",
+      "pnl_pct": 0.056578050443081125,
+      "hold_days": 2,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600547.SH",
+      "entry_date": "2024-03-28",
+      "exit_date": "2024-03-29",
+      "pnl_pct": 0.08079625292740047,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600546.SH",
+      "entry_date": "2024-03-15",
+      "exit_date": "2024-04-01",
+      "pnl_pct": -0.10469543147208124,
+      "hold_days": 11,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600547.SH",
+      "entry_date": "2024-03-29",
+      "exit_date": "2024-04-03",
+      "pnl_pct": 0.05453232213795587,
+      "hold_days": 3,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "603501.SH",
+      "entry_date": "2024-03-18",
+      "exit_date": "2024-04-08",
+      "pnl_pct": -0.05600403632694246,
+      "hold_days": 13,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600521.SH",
+      "entry_date": "2024-03-22",
+      "exit_date": "2024-04-08",
+      "pnl_pct": -0.05238467552775606,
+      "hold_days": 9,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300760.SZ",
+      "entry_date": "2024-03-26",
+      "exit_date": "2024-04-08",
+      "pnl_pct": -0.036195961216009154,
+      "hold_days": 7,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-03-28",
+      "exit_date": "2024-04-08",
+      "pnl_pct": -0.06537702761946503,
+      "hold_days": 5,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-03-29",
+      "exit_date": "2024-04-08",
+      "pnl_pct": -0.03806451612903225,
+      "hold_days": 4,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300896.SZ",
+      "entry_date": "2024-04-03",
+      "exit_date": "2024-04-08",
+      "pnl_pct": -0.09519304410505922,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600547.SH",
+      "entry_date": "2024-04-03",
+      "exit_date": "2024-04-08",
+      "pnl_pct": 0.0698630136986301,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688041.SH",
+      "entry_date": "2024-03-26",
+      "exit_date": "2024-04-10",
+      "pnl_pct": -0.03609062170705999,
+      "hold_days": 9,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600522.SH",
+      "entry_date": "2024-03-27",
+      "exit_date": "2024-04-10",
+      "pnl_pct": -0.062121212121212015,
+      "hold_days": 8,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-03-27",
+      "exit_date": "2024-04-10",
+      "pnl_pct": -0.037497424627429485,
+      "hold_days": 8,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600521.SH",
+      "entry_date": "2024-04-09",
+      "exit_date": "2024-04-10",
+      "pnl_pct": 0.07378335949764517,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600535.SH",
+      "entry_date": "2024-03-25",
+      "exit_date": "2024-04-12",
+      "pnl_pct": -0.04714475431606911,
+      "hold_days": 12,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600521.SH",
+      "entry_date": "2024-04-10",
+      "exit_date": "2024-04-12",
+      "pnl_pct": 0.05263157894736847,
+      "hold_days": 2,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688041.SH",
+      "entry_date": "2024-04-10",
+      "exit_date": "2024-04-12",
+      "pnl_pct": 0.06067231484012021,
+      "hold_days": 2,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600528.SH",
+      "entry_date": "2024-03-22",
+      "exit_date": "2024-04-15",
+      "pnl_pct": 0.057563587684069696,
+      "hold_days": 14,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-04-08",
+      "exit_date": "2024-04-16",
+      "pnl_pct": -0.0548226326590444,
+      "hold_days": 6,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-04-08",
+      "exit_date": "2024-04-16",
+      "pnl_pct": -0.06371562709590874,
+      "hold_days": 6,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600547.SH",
+      "entry_date": "2024-04-08",
+      "exit_date": "2024-04-16",
+      "pnl_pct": -0.03745198463508317,
+      "hold_days": 6,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300760.SZ",
+      "entry_date": "2024-04-09",
+      "exit_date": "2024-04-16",
+      "pnl_pct": -0.04299708367606361,
+      "hold_days": 5,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600535.SH",
+      "entry_date": "2024-04-12",
+      "exit_date": "2024-04-16",
+      "pnl_pct": -0.036236933797909376,
+      "hold_days": 2,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "002920.SZ",
+      "entry_date": "2024-04-12",
+      "exit_date": "2024-04-16",
+      "pnl_pct": -0.04904527255928542,
+      "hold_days": 2,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300896.SZ",
+      "entry_date": "2024-04-08",
+      "exit_date": "2024-04-19",
+      "pnl_pct": -0.03903604859589725,
+      "hold_days": 9,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "603501.SH",
+      "entry_date": "2024-04-17",
+      "exit_date": "2024-04-19",
+      "pnl_pct": -0.05899133978604184,
+      "hold_days": 2,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600521.SH",
+      "entry_date": "2024-04-12",
+      "exit_date": "2024-04-22",
+      "pnl_pct": 0.059722222222222184,
+      "hold_days": 6,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688041.SH",
+      "entry_date": "2024-04-12",
+      "exit_date": "2024-04-22",
+      "pnl_pct": -0.059778407626900294,
+      "hold_days": 6,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600546.SH",
+      "entry_date": "2024-04-01",
+      "exit_date": "2024-04-23",
+      "pnl_pct": -0.06661941885187807,
+      "hold_days": 14,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600547.SH",
+      "entry_date": "2024-04-16",
+      "exit_date": "2024-04-23",
+      "pnl_pct": -0.05354173594945126,
+      "hold_days": 5,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300760.SZ",
+      "entry_date": "2024-04-16",
+      "exit_date": "2024-04-23",
+      "pnl_pct": 0.06524456946397882,
+      "hold_days": 5,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-04-10",
+      "exit_date": "2024-04-24",
+      "pnl_pct": 0.0806992508027114,
+      "hold_days": 10,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600528.SH",
+      "entry_date": "2024-04-15",
+      "exit_date": "2024-04-25",
+      "pnl_pct": -0.03924050632911399,
+      "hold_days": 8,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-04-19",
+      "exit_date": "2024-04-25",
+      "pnl_pct": 0.0574653668547974,
+      "hold_days": 4,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688041.SH",
+      "entry_date": "2024-04-22",
+      "exit_date": "2024-04-26",
+      "pnl_pct": 0.0796108522882982,
+      "hold_days": 4,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-04-25",
+      "exit_date": "2024-04-26",
+      "pnl_pct": 0.18604776537818746,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600522.SH",
+      "entry_date": "2024-04-10",
+      "exit_date": "2024-04-29",
+      "pnl_pct": 0.05492730210016153,
+      "hold_days": 13,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-04-16",
+      "exit_date": "2024-04-29",
+      "pnl_pct": 0.08058739255014327,
+      "hold_days": 9,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "300760.SZ",
+      "entry_date": "2024-04-23",
+      "exit_date": "2024-04-29",
+      "pnl_pct": 0.0645859311963616,
+      "hold_days": 4,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600521.SH",
+      "entry_date": "2024-04-22",
+      "exit_date": "2024-04-30",
+      "pnl_pct": 0.06815203145478381,
+      "hold_days": 6,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600535.SH",
+      "entry_date": "2024-04-16",
+      "exit_date": "2024-05-06",
+      "pnl_pct": 0.07519884309472157,
+      "hold_days": 11,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-04-26",
+      "exit_date": "2024-05-06",
+      "pnl_pct": -0.03727272727272722,
+      "hold_days": 3,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600521.SH",
+      "entry_date": "2024-04-30",
+      "exit_date": "2024-05-07",
+      "pnl_pct": 0.06380368098159504,
+      "hold_days": 2,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-04-24",
+      "exit_date": "2024-05-08",
+      "pnl_pct": -0.03644526607685204,
+      "hold_days": 7,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-05-06",
+      "exit_date": "2024-05-08",
+      "pnl_pct": -0.04589235127478753,
+      "hold_days": 2,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600547.SH",
+      "entry_date": "2024-04-23",
+      "exit_date": "2024-05-10",
+      "pnl_pct": 0.05832747716092763,
+      "hold_days": 10,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688041.SH",
+      "entry_date": "2024-04-26",
+      "exit_date": "2024-05-10",
+      "pnl_pct": -0.07945170706942511,
+      "hold_days": 7,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600522.SH",
+      "entry_date": "2024-04-29",
+      "exit_date": "2024-05-10",
+      "pnl_pct": 0.06125574272588047,
+      "hold_days": 6,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600528.SH",
+      "entry_date": "2024-04-25",
+      "exit_date": "2024-05-13",
+      "pnl_pct": 0.056653491436100094,
+      "hold_days": 9,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-05-08",
+      "exit_date": "2024-05-13",
+      "pnl_pct": -0.08402612826603334,
+      "hold_days": 3,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-05-08",
+      "exit_date": "2024-05-14",
+      "pnl_pct": -0.03994792380430303,
+      "hold_days": 4,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600535.SH",
+      "entry_date": "2024-05-06",
+      "exit_date": "2024-05-16",
+      "pnl_pct": -0.05447209145931397,
+      "hold_days": 8,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-04-29",
+      "exit_date": "2024-05-17",
+      "pnl_pct": 0.05004971826317527,
+      "hold_days": 11,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "603501.SH",
+      "entry_date": "2024-04-29",
+      "exit_date": "2024-05-20",
+      "pnl_pct": -0.044846577498033065,
+      "hold_days": 12,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-05-17",
+      "exit_date": "2024-05-20",
+      "pnl_pct": 0.05303030303030302,
+      "hold_days": 1,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-05-13",
+      "exit_date": "2024-05-22",
+      "pnl_pct": -0.06185845488924899,
+      "hold_days": 7,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600535.SH",
+      "entry_date": "2024-05-16",
+      "exit_date": "2024-05-22",
+      "pnl_pct": -0.042674253200568966,
+      "hold_days": 4,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600547.SH",
+      "entry_date": "2024-05-10",
+      "exit_date": "2024-05-23",
+      "pnl_pct": -0.05278884462151394,
+      "hold_days": 9,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600528.SH",
+      "entry_date": "2024-05-13",
+      "exit_date": "2024-05-23",
+      "pnl_pct": -0.0386533665835411,
+      "hold_days": 8,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688041.SH",
+      "entry_date": "2024-05-13",
+      "exit_date": "2024-05-24",
+      "pnl_pct": -0.06057222609909285,
+      "hold_days": 9,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "000596.SZ",
+      "entry_date": "2024-05-15",
+      "exit_date": "2024-05-24",
+      "pnl_pct": -0.053848905138496925,
+      "hold_days": 7,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-05-20",
+      "exit_date": "2024-05-24",
+      "pnl_pct": -0.04706235011990408,
+      "hold_days": 4,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300896.SZ",
+      "entry_date": "2024-05-20",
+      "exit_date": "2024-05-24",
+      "pnl_pct": -0.0557288322172278,
+      "hold_days": 4,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-05-22",
+      "exit_date": "2024-05-24",
+      "pnl_pct": -0.05298013245033122,
+      "hold_days": 2,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600522.SH",
+      "entry_date": "2024-05-10",
+      "exit_date": "2024-05-27",
+      "pnl_pct": 0.06926406926406932,
+      "hold_days": 11,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-05-14",
+      "exit_date": "2024-05-27",
+      "pnl_pct": -0.05674113196773975,
+      "hold_days": 9,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600521.SH",
+      "entry_date": "2024-05-07",
+      "exit_date": "2024-05-28",
+      "pnl_pct": -0.039792387543252664,
+      "hold_days": 15,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600535.SH",
+      "entry_date": "2024-05-22",
+      "exit_date": "2024-05-30",
+      "pnl_pct": -0.03714710252600297,
+      "hold_days": 6,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-05-24",
+      "exit_date": "2024-05-30",
+      "pnl_pct": -0.03900597672223965,
+      "hold_days": 4,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300760.SZ",
+      "entry_date": "2024-04-29",
+      "exit_date": "2024-05-31",
+      "pnl_pct": -0.036069865986839734,
+      "hold_days": 21,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600547.SH",
+      "entry_date": "2024-05-23",
+      "exit_date": "2024-06-03",
+      "pnl_pct": -0.0375043813529618,
+      "hold_days": 7,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600522.SH",
+      "entry_date": "2024-05-27",
+      "exit_date": "2024-06-03",
+      "pnl_pct": -0.037112010796221374,
+      "hold_days": 5,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "603501.SH",
+      "entry_date": "2024-05-24",
+      "exit_date": "2024-06-05",
+      "pnl_pct": 0.07372625215889463,
+      "hold_days": 8,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "300760.SZ",
+      "entry_date": "2024-05-31",
+      "exit_date": "2024-06-05",
+      "pnl_pct": 0.050500357398141515,
+      "hold_days": 3,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600528.SH",
+      "entry_date": "2024-05-23",
+      "exit_date": "2024-06-06",
+      "pnl_pct": -0.037613488975356685,
+      "hold_days": 10,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688027.SH",
+      "entry_date": "2024-05-24",
+      "exit_date": "2024-06-06",
+      "pnl_pct": -0.04439039221647907,
+      "hold_days": 9,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "000598.SZ",
+      "entry_date": "2024-05-21",
+      "exit_date": "2024-06-07",
+      "pnl_pct": 0.07234042553191486,
+      "hold_days": 13,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-05-30",
+      "exit_date": "2024-06-07",
+      "pnl_pct": -0.03764320785597388,
+      "hold_days": 6,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688041.SH",
+      "entry_date": "2024-05-31",
+      "exit_date": "2024-06-07",
+      "pnl_pct": -0.04455096574087144,
+      "hold_days": 5,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "000596.SZ",
+      "entry_date": "2024-05-27",
+      "exit_date": "2024-06-11",
+      "pnl_pct": -0.060225846925972416,
+      "hold_days": 10,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300750.SZ",
+      "entry_date": "2024-05-27",
+      "exit_date": "2024-06-11",
+      "pnl_pct": -0.05816300129366111,
+      "hold_days": 10,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300896.SZ",
+      "entry_date": "2024-05-29",
+      "exit_date": "2024-06-11",
+      "pnl_pct": -0.039489671931956315,
+      "hold_days": 8,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688692.SH",
+      "entry_date": "2024-06-12",
+      "exit_date": "2024-06-14",
+      "pnl_pct": -0.09941227960485186,
+      "hold_days": 2,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "002920.SZ",
+      "entry_date": "2024-06-12",
+      "exit_date": "2024-06-14",
+      "pnl_pct": -0.04175845225553108,
+      "hold_days": 2,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600522.SH",
+      "entry_date": "2024-06-03",
+      "exit_date": "2024-06-18",
+      "pnl_pct": 0.058864751226348974,
+      "hold_days": 10,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "300760.SZ",
+      "entry_date": "2024-06-05",
+      "exit_date": "2024-06-18",
+      "pnl_pct": -0.038614636137856026,
+      "hold_days": 8,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-05-27",
+      "exit_date": "2024-06-19",
+      "pnl_pct": -0.07396337772397088,
+      "hold_days": 16,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688041.SH",
+      "entry_date": "2024-06-11",
+      "exit_date": "2024-06-19",
+      "pnl_pct": 0.056439127375088036,
+      "hold_days": 6,
+      "exit_reason": "take_profit"
+    },
+    {
+      "symbol": "600535.SH",
+      "entry_date": "2024-05-30",
+      "exit_date": "2024-06-20",
+      "pnl_pct": -0.05324074074074084,
+      "hold_days": 14,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "603179.SH",
+      "entry_date": "2024-06-14",
+      "exit_date": "2024-06-21",
+      "pnl_pct": -0.04640371229698376,
+      "hold_days": 5,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600528.SH",
+      "entry_date": "2024-06-06",
+      "exit_date": "2024-06-24",
+      "pnl_pct": -0.044474393530997317,
+      "hold_days": 11,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300308.SZ",
+      "entry_date": "2024-06-18",
+      "exit_date": "2024-06-24",
+      "pnl_pct": -0.045887267995342707,
+      "hold_days": 4,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300757.SZ",
+      "entry_date": "2024-06-20",
+      "exit_date": "2024-06-24",
+      "pnl_pct": -0.04457130310681746,
+      "hold_days": 2,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-06-07",
+      "exit_date": "2024-06-25",
+      "pnl_pct": -0.04489795918367348,
+      "hold_days": 11,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300832.SZ",
+      "entry_date": "2024-06-14",
+      "exit_date": "2024-06-25",
+      "pnl_pct": -0.04087232813402655,
+      "hold_days": 7,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688041.SH",
+      "entry_date": "2024-06-19",
+      "exit_date": "2024-06-25",
+      "pnl_pct": -0.055422328803623716,
+      "hold_days": 4,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300308.SZ",
+      "entry_date": "2024-06-24",
+      "exit_date": "2024-06-25",
+      "pnl_pct": -0.03811643098126482,
+      "hold_days": 1,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600547.SH",
+      "entry_date": "2024-06-03",
+      "exit_date": "2024-06-27",
+      "pnl_pct": -0.040786598689002224,
+      "hold_days": 17,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600535.SH",
+      "entry_date": "2024-06-20",
+      "exit_date": "2024-06-27",
+      "pnl_pct": -0.03667481662591681,
+      "hold_days": 5,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "300750.SZ",
+      "entry_date": "2024-06-11",
+      "exit_date": "2024-06-28",
+      "pnl_pct": -0.048019339596725344,
+      "hold_days": 13,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "688111.SH",
+      "entry_date": "2024-06-19",
+      "exit_date": "2024-06-28",
+      "pnl_pct": -0.0742329533848103,
+      "hold_days": 7,
+      "exit_reason": "adaptive_stop_loss"
+    },
+    {
+      "symbol": "600536.SH",
+      "entry_date": "2024-06-25",
+      "exit_date": "2024-06-28",
+      "pnl_pct": 0.06552706552706565,
+      "hold_days": 3,
+      "exit_reason": "take_profit"
+    }
+  ]
+}
