@@ -190,7 +190,7 @@ class DatabaseManager:
             
         使用示例:
             >>> df = db.read_sql(
-            ...     "SELECT * FROM prices WHERE date >= :start",
+            ...     "SELECT * FROM stocks WHERE date >= :start",
             ...     params={"start": "2024-01-01"}
             ... )
         """
@@ -215,7 +215,32 @@ class DatabaseManager:
             # This handles mixed types and DECIMAL conversion automatically
             pdf = pd.DataFrame.from_records(rows, columns=columns)
             
-            # Convert to Polars DataFrame
+            # Fix date columns - MySQL DATE/DATETIME types may be converted incorrectly
+            for col in pdf.columns:
+                # Check if column name suggests it's a date column
+                if 'date' in col.lower() or 'time' in col.lower():
+                    # Try to convert to string first, then to proper date
+                    try:
+                        # Convert to string and check if it's a valid date format
+                        pdf[col] = pdf[col].astype(str).replace('0.0', '').replace('nan', '')
+                        # Try pandas to_datetime
+                        pdf[col] = pd.to_datetime(pdf[col], errors='coerce')
+                        # Convert to string format for Polars compatibility
+                        pdf[col] = pdf[col].dt.strftime('%Y-%m-%d').fillna('')
+                    except Exception:
+                        # If date conversion fails, keep as string
+                        pdf[col] = pdf[col].astype(str)
+                elif pdf[col].dtype == 'object':
+                    try:
+                        # Try to convert to numeric
+                        pdf[col] = pd.to_numeric(pdf[col], errors='coerce')
+                        # Fill NaN with 0
+                        pdf[col] = pdf[col].fillna(0.0)
+                    except Exception:
+                        # If conversion fails, convert to string then to category
+                        pdf[col] = pdf[col].astype(str)
+            
+            # Convert to Polars DataFrame - use simple conversion without extra params
             df = pl.from_pandas(pdf)
             
             # 静默模式：移除行数日志，避免回测时产生大量输出

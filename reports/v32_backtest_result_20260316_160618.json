@@ -1,0 +1,25 @@
+{
+  "strategy_version": "V3.2",
+  "backtest_period": "2024-01-01 to 2024-06-30",
+  "run_time": "2026-03-16 16:06:18",
+  "performance_metrics": {
+    "total_return": 0.0007236269999998622,
+    "annual_return": 0.001559231926907545,
+    "max_drawdown": 0.07633062350871539,
+    "sharpe_ratio": 0.08229377903108656,
+    "win_rate": 0.3620689655172414,
+    "total_trades": 348,
+    "avg_hold_days": 4.727011494252873,
+    "profit_factor": 1.0201693402223604
+  },
+  "factor_health": {},
+  "factor_ic_values": {},
+  "pca_info": {
+    "n_components": "2",
+    "total_explained_variance": 0.9651373768439799,
+    "explained_variance_ratio": [
+      0.8752215515246856,
+      0.08991582531929426
+    ]
+  }
+}
