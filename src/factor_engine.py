@@ -265,6 +265,160 @@ class FactorEngine:
         logger.debug(f"[Volume Entropy] Computed with window={window}, output rows={len(result)}")
         return result
     
+    def compute_vol_price_resilience(self, df: pl.DataFrame, lookback: int = 10) -> pl.DataFrame:
+        """
+        【V2.3 增强】计算价格 - 成交量 Resilience 因子（洗盘结束信号）
+        
+        【金融逻辑】
+        - 当价格回撤时，如果成交量显著萎缩，表明抛压减弱
+        - 成交量萎缩越明显，洗盘结束的可能性越大
+        
+        【V2.3 修复】
+        - 所有除法操作加入 1e-6 保护
+        - 使用 clip 确保值在有效范围内
+        
+        Args:
+            df: 输入 DataFrame
+            lookback: 滚动平均窗口（默认 10）
+            
+        Returns:
+            包含 vol_price_resilience 列的 DataFrame
+        """
+        result = df.clone().with_columns([
+            pl.col("close").cast(pl.Float64, strict=False),
+            pl.col("volume").cast(pl.Float64, strict=False),
+        ])
+        
+        # 计算价格回撤（5 日）- 加入除零保护
+        price_pullback = pl.col("close") / (pl.col("close").shift(5) + self.EPSILON) - 1.0
+        
+        # 计算成交量相对水平 - 加入除零保护
+        volume_ma_20 = pl.col("volume").rolling_mean(window_size=20)
+        volume_ratio = pl.col("volume") / (volume_ma_20 + self.EPSILON)
+        
+        # 计算 resilience 信号：价格回撤时的成交量萎缩程度
+        # 值越大，表明洗盘越充分
+        vol_shrink_intensity = pl.when(price_pullback < 0).then(
+            (1.0 - volume_ratio).clip(0.0, 1.0)  # 成交量萎缩时为正
+        ).otherwise(
+            0.0  # 价格上涨时不计入
+        )
+        
+        # 滚动平均，平滑信号
+        vol_price_resilience = vol_shrink_intensity.rolling_mean(window_size=lookback)
+        
+        result = result.with_columns([
+            vol_price_resilience.alias("vol_price_resilience"),
+            price_pullback.alias("price_pullback"),
+            volume_ratio.alias("volume_ratio_during_pullback"),
+        ])
+        
+        logger.debug(f"[Vol Price Resilience] Computed with lookback={lookback}, output rows={len(result)}")
+        return result
+    
+    def compute_relative_strength_sector(self, df: pl.DataFrame, period: int = 20) -> pl.DataFrame:
+        """
+        【V2.4 优化】计算相对强度因子 (Relative Strength vs Sector)
+        
+        【V2.4 优化】
+        - 增加对全市场 Top 10% 标的的偏好权重
+        - 相对强度计算时，对 Top 10% 标的给予额外 10% 权重提升
+        
+        【金融逻辑】
+        - 计算标的相对于所属行业（或全样本均值）的相对强度
+        - 用于在震荡市筛选领涨品种
+        - RS = 标的 N 日收益率 / 行业 N 日收益率
+        
+        Args:
+            df: 输入 DataFrame
+            period: 计算周期（默认 20 日）
+            
+        Returns:
+            包含 relative_strength_sector 列的 DataFrame
+        """
+        result = df.clone().with_columns([
+            pl.col("close").cast(pl.Float64, strict=False),
+        ])
+        
+        # 计算标的 N 日收益率 - 加入除零保护
+        stock_return = pl.col("close") / (pl.col("close").shift(period) + self.EPSILON) - 1.0
+        
+        # 按行业计算平均收益率
+        if "industry" in result.columns:
+            # 有行业信息时，计算行业平均
+            industry_return = stock_return.over("industry").mean()
+            relative_strength = stock_return / (industry_return + self.EPSILON)
+        else:
+            # 无行业信息时，使用全样本均值
+            mean_return = stock_return.mean()
+            relative_strength = stock_return / (mean_return + self.EPSILON)
+        
+        # V2.4: 对 Top 10% 标的给予额外权重
+        # 计算全市场收益率排名
+        if len(result) > 0:
+            # 使用 dense 排名，然后归一化到 0-1
+            return_rank = stock_return.rank(method="dense", descending=True)
+            return_percentile = return_rank / return_rank.max()
+            
+            # 对 Top 10% (percentile >= 0.9) 给予 10% 额外权重
+            top_10_bonus = pl.when(return_percentile >= 0.9).then(1.1).otherwise(1.0)
+            relative_strength = relative_strength * top_10_bonus
+        
+        # 限制相对强度在合理范围内 - V2.4 放宽上限至 2.5
+        relative_strength_clipped = relative_strength.clip(0.5, 2.5)
+        
+        result = result.with_columns([
+            relative_strength_clipped.alias("relative_strength_sector"),
+            stock_return.alias(f"return_{period}d"),
+        ])
+        
+        logger.debug(f"[Relative Strength] Computed with period={period}, output rows={len(result)}")
+        return result
+    
+    def compute_momentum_squeeze(self, df: pl.DataFrame, momentum_period: int = 5, vol_period: int = 20) -> pl.DataFrame:
+        """
+        【V2.4 新增】计算 Momentum Squeeze 因子
+        
+        【金融逻辑】
+        - 捕捉那些低波动上涨、即将进入主升浪的标的
+        - Momentum Squeeze = Momentum_5 / Volatility_20
+        - 值越大，表明单位波动下的动量收益越高，即" squeeze"状态
+        
+        Args:
+            df: 输入 DataFrame
+            momentum_period: 动量周期（默认 5 日）
+            vol_period: 波动率周期（默认 20 日）
+            
+        Returns:
+            包含 momentum_squeeze 列的 DataFrame
+        """
+        result = df.clone().with_columns([
+            pl.col("close").cast(pl.Float64, strict=False),
+        ])
+        
+        # 计算 N 日动量
+        momentum_n = pl.col("close") / (pl.col("close").shift(momentum_period) + self.EPSILON) - 1.0
+        
+        # 计算 N 日波动率
+        returns = pl.col("close").pct_change().fill_null(0)
+        volatility_n = returns.rolling_std(window_size=vol_period, ddof=1)
+        
+        # 计算 Momentum Squeeze
+        # 除以波动率，得到单位波动下的动量收益
+        momentum_squeeze = momentum_n / (volatility_n + self.EPSILON)
+        
+        # 限制在合理范围内
+        momentum_squeeze_clipped = momentum_squeeze.clip(-5.0, 5.0)
+        
+        result = result.with_columns([
+            momentum_squeeze_clipped.alias("momentum_squeeze"),
+            momentum_n.alias(f"momentum_{momentum_period}d"),
+            volatility_n.alias(f"volatility_{vol_period}d"),
+        ])
+        
+        logger.debug(f"[Momentum Squeeze] Computed, output rows={len(result)}")
+        return result
+    
     def compute_smart_money(self, df: pl.DataFrame, lookback: int = 10) -> pl.DataFrame:
         result = df.clone().with_columns([
             pl.col("close").cast(pl.Float64, strict=False),
@@ -457,14 +611,18 @@ class FactorEngine:
         result = self.compute_label(result)
         return result
     
-    def _fill_null_values(self, df: pl.DataFrame) -> pl.DataFrame:
+    def _fill_null_values(self, df: pl.DataFrame, null_threshold: float = 0.30) -> pl.DataFrame:
         """
-        【新增 - Iteration 19】智能填充空值，减少数据丢失
+        【新增 - Iteration 19】【增强 - Iteration 22】智能填充空值，减少数据丢失
         
         策略:
         1. 数值型因子：使用 forward_fill -> backward_fill -> 列均值 的级联填充
         2. 对于 symbol 分组数据：按 symbol 分别填充
-        3. 保留必要的 null 用于最终过滤（避免过度填充导致信号失真）
+        3. 【Iteration 22 新增】对缺失值超过 30% 的因子直接赋予 0 权重（用 0 填充）
+        
+        Args:
+            df: 输入 DataFrame
+            null_threshold: 缺失值阈值，超过此比例的因子将被赋予 0 权重 (默认 30%)
         """
         result = df.clone()
         
@@ -480,12 +638,36 @@ class FactorEngine:
         
         # 按 symbol 分组填充（如果存在 symbol 列）
         has_symbol = "symbol" in result.columns
+        total_rows = len(result)
+        
+        # 【Iteration 22】统计缺失值超过阈值的因子
+        high_null_factors = []
+        normal_factors = []
         
         for col in factor_columns:
             if col not in result.columns:
                 continue
             
-            # 检查是否还有 null 值
+            null_count = result[col].null_count()
+            null_ratio = null_count / total_rows if total_rows > 0 else 0
+            
+            if null_ratio > null_threshold:
+                high_null_factors.append((col, null_ratio))
+            else:
+                normal_factors.append(col)
+        
+        # 【Iteration 22】对缺失值超过阈值的因子赋予 0 权重
+        for col, null_ratio in high_null_factors:
+            result = result.with_columns([
+                pl.col(col).fill_null(0.0).alias(col)
+            ])
+            logger.info(f"[缺失值处理] 因子 '{col}' 缺失值比例 {null_ratio:.1%} > 阈值 {null_threshold:.0%}, 赋予 0 权重")
+        
+        # 对正常因子进行常规填充
+        for col in normal_factors:
+            if col not in result.columns:
+                continue
+            
             null_count = result[col].null_count()
             if null_count == 0:
                 continue
@@ -512,7 +694,7 @@ class FactorEngine:
                     .alias(col)
                 ])
         
-        logger.debug(f"[Fill Null] Filled null values for {len(factor_columns)} columns")
+        logger.debug(f"[Fill Null] 高缺失值因子：{len(high_null_factors)}, 正常填充因子：{len(normal_factors)}")
         return result
     
     def _compute_base_factors(self, df: pl.DataFrame) -> pl.DataFrame:
