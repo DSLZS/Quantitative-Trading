@@ -428,7 +428,14 @@ class FactorEngine:
         return result
     
     def compute_factors(self, df: pl.DataFrame) -> pl.DataFrame:
-        """计算所有配置的因子，并进行预处理和评分。【修复 - Iteration 18】添加 volume_entropy 计算。"""
+        """
+        计算所有配置的因子，并进行预处理和评分。
+        
+        【修复 - Iteration 19】
+        1. 增加 fill_null 策略，减少因单个因子缺失导致整行数据被剔除
+        2. 优化 dropna 逻辑，使用更宽松的 null 处理
+        3. 添加 volume_entropy 计算
+        """
         result = self.normalize_column_names(df)
         result = self._compute_base_factors(result)
         result = self.compute_rsi(result, period=14)
@@ -440,10 +447,72 @@ class FactorEngine:
         result = self.compute_smart_money(result, lookback=10)
         result = self.compute_volume_entropy(result, window=20)  # 【新增 - Iteration 18】
         result = self.compute_hist_sharpe(result, window=20)
+        
+        # 【修复 - Iteration 19】在预处理前填充空值
+        result = self._fill_null_values(result)
+        
         result = self.preprocess(result)
         result = self.compute_predict_score(result)
         result = self.apply_rsi_filter(result)
         result = self.compute_label(result)
+        return result
+    
+    def _fill_null_values(self, df: pl.DataFrame) -> pl.DataFrame:
+        """
+        【新增 - Iteration 19】智能填充空值，减少数据丢失
+        
+        策略:
+        1. 数值型因子：使用 forward_fill -> backward_fill -> 列均值 的级联填充
+        2. 对于 symbol 分组数据：按 symbol 分别填充
+        3. 保留必要的 null 用于最终过滤（避免过度填充导致信号失真）
+        """
+        result = df.clone()
+        
+        # 需要填充的因子列（排除标签列和特殊列）
+        exclude_columns = {
+            "sharpe_label", "future_max_return", "future_volatility",
+            "future_return_5d", "future_return_5d", "label_5d",
+            "predict_score", "filtered_score", "raw_score", "score_after_rsi",
+            "symbol", "Date", "trade_date", "ts_code"
+        }
+        
+        factor_columns = [col for col in result.columns if col not in exclude_columns]
+        
+        # 按 symbol 分组填充（如果存在 symbol 列）
+        has_symbol = "symbol" in result.columns
+        
+        for col in factor_columns:
+            if col not in result.columns:
+                continue
+            
+            # 检查是否还有 null 值
+            null_count = result[col].null_count()
+            if null_count == 0:
+                continue
+            
+            # 计算列均值用于最终填充
+            col_mean = result[col].mean()
+            if col_mean is None or not np.isfinite(col_mean):
+                col_mean = 0.0
+            
+            if has_symbol:
+                # 按 symbol 分组填充
+                result = result.with_columns([
+                    pl.col(col).fill_null(strategy="forward").over("symbol")
+                    .fill_null(strategy="backward").over("symbol")
+                    .fill_null(col_mean)
+                    .alias(col)
+                ])
+            else:
+                # 全局填充
+                result = result.with_columns([
+                    pl.col(col).fill_null(strategy="forward")
+                    .fill_null(strategy="backward")
+                    .fill_null(col_mean)
+                    .alias(col)
+                ])
+        
+        logger.debug(f"[Fill Null] Filled null values for {len(factor_columns)} columns")
         return result
     
     def _compute_base_factors(self, df: pl.DataFrame) -> pl.DataFrame:

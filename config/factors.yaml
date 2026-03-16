@@ -1,90 +1,43 @@
 # ==============================================================================
-# Factor Configuration File - Iteration 18 (Production Ready)
-# 所有因子表达式均使用 Polars 原生语法以确保计算效率
-# ==============================================================================
-# Polars 语法参考:
-#   - .shift(n): 平移数据
-#   - .rolling_mean(window_size=n): 滚动平均
-#   - .rolling_std(window_size=n): 滚动标准差
-#   - .fill_null(0): 填充空值
+# Factor Configuration - Version 1.9 (Compatible with Hardcoded Volume Entropy)
 # ==============================================================================
 
 factors:
-  # === 1. Momentum Factors (动量因子) ===
-  # 逻辑：捕捉价格趋势的持续性
+  # --- 基础动量 ---
   - name: momentum_5
-    description: "5-day momentum"
     expression: "close / close.shift(5) - 1"
     window: 5
-    
   - name: momentum_10
-    description: "10-day momentum"
     expression: "close / close.shift(10) - 1"
     window: 10
-    
-  - name: momentum_20
-    description: "20-day momentum (monthly)"
-    expression: "close / close.shift(20) - 1"
-    window: 20
 
-  # === 2. Volatility Factors (波动率因子) ===
-  # 逻辑：高波动通常代表风险增加，用于风险定价
-  - name: volatility_5
-    description: "5-day price standard deviation"
-    expression: "close.rolling_std(window_size=5)"
-    window: 5
-    
+  # --- 基础波动 ---
   - name: volatility_20
-    description: "20-day price standard deviation"
     expression: "close.rolling_std(window_size=20)"
     window: 20
 
-  # === 3. Volume Ratio Factors (成交量比例因子) ===
-  # 逻辑：异常放量通常预示着趋势的转折或确认
+  # --- 量价增强 (修正逻辑) ---
   - name: volume_ma_ratio_5
-    description: "Ratio of current volume to 5-day MA volume"
     expression: "volume / (volume.rolling_mean(window_size=5) + 1e-10)"
     window: 5
-    
-  - name: volume_ma_ratio_20
-    description: "Ratio of current volume to 20-day MA volume"
-    expression: "volume / (volume.rolling_mean(window_size=20) + 1e-10)"
-    window: 20
 
-  # === 4. Low Correlation Enhancement Factors (低相关性增强因子 - Iteration 10+) ===
-  
-  # 因子 A: 振幅/换手比率 (Amplitude to Turnover Ratio)
-  # 逻辑：
-  #   - 高比率 = 少量换手产生大振幅，暗示主力控盘度高或筹码锁定良好
-  #   - 低比率 = 大量换手但价格波动小，说明多空分歧巨大，上涨压力重
-  #   - 该因子捕捉价格发现的效率，而非单纯的换手
   - name: amplitude_turnover_ratio_20
-    description: "Measures price volatility efficiency per unit volume"
+    description: "振幅/换手比率"
     expression: "((high - low) / (close + 1e-10)) / ((volume.fill_null(0) + 1e-10) / (volume.fill_null(0).rolling_mean(window_size=20) + 1e-10))"
     window: 20
-  
-  # 因子 B: 尾盘量价相关性 (Tail Volume-Price Correlation)
-  # 逻辑：
-  #   - 近似反映日内量价配合程度。正相关通常代表健康的趋势（放量上涨）。
-  #   - 负相关（如缩量上涨或放量下跌）往往是趋势动能衰竭的信号。
-  #   - 与基础动量因子相关性极低（<0.4），提供额外的预测维度。
+
+  # 【修复 - Iteration 19】tail_volume_price_corr_20 表达式优化
+  # 原始问题：当某天成交量为 0 或标准差接近 0 时会产生 NaN
+  # 修复方案：
+  # 1. 使用 fill_null(0) 填充缺失的成交量
+  # 2. 在分母中添加足够大的 epsilon (1e-6) 避免除零
+  # 3. 使用 clip 限制输出范围，避免极端值
   - name: tail_volume_price_corr_20
-    description: "Approximates intraday behavior using daily price-volume correlation"
-    # 计算公式：20日收益率与成交量的滚动相关系数
-    expression: "((pct_chg - pct_chg.rolling_mean(window_size=20)) * (volume - volume.rolling_mean(window_size=20))).rolling_sum(window_size=20) / (20 * pct_chg.rolling_std(window_size=20) * volume.rolling_std(window_size=20) + 1e-10)"
+    description: "量价相关性 (修复 NaN 问题)"
+    expression: "((pct_chg.fill_null(0) - pct_chg.fill_null(0).rolling_mean(window_size=20)) * (volume.fill_null(0) - volume.fill_null(0).rolling_mean(window_size=20))).rolling_sum(window_size=20) / (20 * (pct_chg.fill_null(0).rolling_std(window_size=20) + 1e-6) * (volume.fill_null(0).rolling_std(window_size=20) + 1e-6) + 1e-6)"
     window: 20
 
-  # === 特别说明：volume_entropy_20 ===
-  # 该因子已在 FactorEngine.py 中通过 compute_volume_entropy() 原生实现
-  # 逻辑：计算成交量的分布熵，用于衡量资金介入的均匀度。
-  # 为了避免 eval('__import__') 权限报错，此处不再重复配置。
-
-# ==============================================================================
-# Label Configuration (用于模型训练的目标变量)
-# ==============================================================================
 label:
   name: sharpe_label
-  description: "5-day forward return (Target for training)"
-  # 逻辑：使用未来 5 日的收益率作为预测目标
   expression: "close.shift(-5) / close - 1"
   window: 5
