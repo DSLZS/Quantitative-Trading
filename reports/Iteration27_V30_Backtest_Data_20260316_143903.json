@@ -1,0 +1,106 @@
+{
+  "timestamp": "2026-03-16 14:39:03",
+  "backtest_period": {
+    "train_end": "2023-12-31",
+    "test_start": "2024-01-01",
+    "test_end": "2024-06-30"
+  },
+  "performance": {
+    "total_return": -0.04141888800000085,
+    "annual_return": -0.08708276420420202,
+    "max_drawdown": 0.08466121722491426,
+    "sharpe_ratio": -0.6330269001139335,
+    "win_rate": 0.4474708171206226,
+    "profit_factor": 0.770672934268268,
+    "total_trades": 257,
+    "avg_hold_days": 2.330739299610895
+  },
+  "model_diagnostics": {
+    "feature_columns": [
+      "ortho_feat_6",
+      "ortho_feat_6_x_ortho_feat_9",
+      "ortho_feat_1_x_ortho_feat_6",
+      "ortho_feat_1_x_ortho_feat_12",
+      "ortho_feat_9_x_ortho_feat_12",
+      "ortho_feat_6_x_ortho_feat_7",
+      "ortho_feat_6_x_ortho_feat_11",
+      "ortho_feat_6_x_ortho_feat_12",
+      "ortho_feat_11_x_ortho_feat_12",
+      "ortho_feat_1_x_ortho_feat_10",
+      "ortho_feat_3_x_ortho_feat_6",
+      "ortho_feat_9",
+      "ortho_feat_1_x_ortho_feat_9",
+      "ortho_feat_6_x_ortho_feat_13",
+      "ortho_feat_6_x_ortho_feat_10",
+      "ortho_feat_7",
+      "ortho_feat_10_x_ortho_feat_12",
+      "ortho_feat_1_x_ortho_feat_7",
+      "ortho_feat_0_x_ortho_feat_1",
+      "ortho_feat_9_x_ortho_feat_10"
+    ],
+    "gmm_states": {},
+    "barrier_stats": {},
+    "gmm_n_components": 4,
+    "gmm_fitted": true,
+    "state_weights": {
+      "0": {
+        "name": "CALM",
+        "n_features": 30,
+        "avg_weight": 0.1461080332268456,
+        "max_weight": 0.7074409605073011
+      },
+      "1": {
+        "name": "BULL",
+        "n_features": 30,
+        "avg_weight": 0.5883272723670746,
+        "max_weight": 3.2277126545362016
+      },
+      "2": {
+        "name": "BEAR",
+        "n_features": 30,
+        "avg_weight": 0.6509440279079381,
+        "max_weight": 1.9691353848118431
+      },
+      "3": {
+        "name": "VOLATILE",
+        "n_features": 30,
+        "avg_weight": 0.014830509641823714,
+        "max_weight": 0.05058363367926927
+      }
+    }
+  },
+  "trade_analysis": {
+    "winning_trades": 115,
+    "losing_trades": 137,
+    "avg_win": 0.021936321792527396,
+    "avg_loss": -0.030680771725428914,
+    "largest_win": 0.112010068320748,
+    "largest_loss": -0.10820668693009114,
+    "consecutive_wins": 0,
+    "consecutive_losses": 0
+  },
+  "monthly_returns": {
+    "2024-01": -0.031585490904460826,
+    "2024-02": 0.046279187282099905,
+    "2024-03": 0.006159600389606547,
+    "2024-04": 0.012329317953618484,
+    "2024-05": -0.050077005504486016,
+    "2024-06": -0.034250196744419655
+  },
+  "comparison_with_v26": {
+    "v26_metrics": {
+      "total_return": 0.0823,
+      "annual_return": 0.1646,
+      "max_drawdown": 0.1856,
+      "sharpe_ratio": 1.12,
+      "win_rate": 0.54,
+      "total_trades": 156
+    },
+    "improvement": {
+      "total_return_diff": -0.12371888800000085,
+      "sharpe_diff": -1.7530269001139336,
+      "max_dd_diff": -0.10093878277508572,
+      "win_rate_diff": -0.09252918287937745
+    }
+  }
+}
