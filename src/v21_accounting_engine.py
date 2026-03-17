@@ -55,13 +55,13 @@ INITIAL_CAPITAL = 100000.0
 TOP_K_STOCKS = 10  # 目标持仓数量
 
 # 动态权重配置
-SCORE_THRESHOLD = 0.60      # 得分激活阈值
+SCORE_THRESHOLD = 0.00      # 得分激活阈值（使用 0，因为信号已标准化）
 MAX_POSITION_RATIO = 0.20   # 单只个股最大权重 20%
 MIN_POSITION_RATIO = 0.05   # 最小权重 5%
 
 # 换手率缓冲区配置
 BUY_RANK_THRESHOLD = 10     # 买入排名阈值（Top 10）
-SELL_RANK_THRESHOLD = 30    # 卖出排名阈值（跌出 Top 30 才卖）
+SELL_RANK_THRESHOLD = 40    # 卖出排名阈值（跌出 Top 40 才卖）
 
 # 真实手续费配置（维持 V20）
 SLIPPAGE_BUY = 0.001      # 买入滑点 0.1%
