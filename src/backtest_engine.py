@@ -127,6 +127,7 @@ class BacktestEngine:
         self.holding_period = holding_period
         self.top_k_stocks = top_k_stocks
         self.db = db or DatabaseManager()
+        self.quantile_groups = 5  # Q 分组数量
         
         logger.info(f"BacktestEngine initialized: capital={initial_capital}, top_k={top_k_stocks}")
     
