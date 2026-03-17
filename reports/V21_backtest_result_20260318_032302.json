@@ -1,0 +1,20 @@
+{
+  "start_date": "2025-01-02",
+  "end_date": "2026-03-12",
+  "initial_capital": 100000.0,
+  "total_return": 0.14637588999000042,
+  "annual_return": 0.127909301856165,
+  "sharpe_ratio": 0.7674960657200114,
+  "max_drawdown": 0.11810496709052906,
+  "win_rate": 0.5244755244755245,
+  "total_trades": 573,
+  "total_buy_amount": 3254802.09,
+  "total_sell_amount": 3170425.73,
+  "total_commission": 2912.120316,
+  "total_stamp_duty": 1585.212865,
+  "total_slippage": 6425.22782,
+  "turnover_rate": 32.5480209,
+  "avg_holding_days": 14.861224489795918,
+  "avg_position_count": 9.437062937062937,
+  "report_path": "reports\\V21_Dynamic_Sizing_Report_20260318_032302.md"
+}
