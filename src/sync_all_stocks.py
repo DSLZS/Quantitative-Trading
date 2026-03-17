@@ -734,11 +734,15 @@ def create_stock_daily_table(db: DatabaseManager = None) -> None:
     """
     创建 stock_daily 表。
     
+    【V8 增强 - 因子纯化】
     表结构对齐新规范:
     - symbol (varchar(20)): 股票代码
     - trade_date (DATE): 交易日期
     - 价格字段 (decimal(18,4))
     - 成交量/额 (double)
+    - industry_code (varchar(20)): 申万一级行业分类【V8 新增】
+    - total_mv (double): 总市值（亿元）【V8 新增】
+    - is_st (tinyint): 是否 ST 股票【V8 新增】
     """
     if db is None:
         db = DatabaseManager.get_instance()
@@ -758,17 +762,59 @@ def create_stock_daily_table(db: DatabaseManager = None) -> None:
       `pre_close` decimal(18,4) DEFAULT NULL,
       `change` decimal(18,4) DEFAULT NULL,
       `pct_chg` decimal(18,4) DEFAULT NULL,
+      `industry_code` varchar(20) DEFAULT NULL COMMENT '申万一级行业代码【V8 新增】',
+      `total_mv` double DEFAULT NULL COMMENT '总市值 (亿元)【V8 新增】',
+      `is_st` tinyint DEFAULT 0 COMMENT '是否 ST 股票 (1=ST, 0=非 ST)【V8 新增】',
       PRIMARY KEY (`symbol`,`trade_date`),
-      KEY `idx_date` (`trade_date`)
+      KEY `idx_date` (`trade_date`),
+      KEY `idx_industry` (`industry_code`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     """
     
     try:
         db.execute(create_sql)
-        logger.info("stock_daily table ready (aligned with new schema)")
+        logger.info("stock_daily table ready (aligned with V8 schema)")
     except Exception as e:
         logger.error(f"Failed to create stock_daily table: {e}")
         raise
+
+
+def add_v8_columns_to_table(db: DatabaseManager = None) -> None:
+    """
+    【V8 增强】为现有表添加新字段（如果不存在）。
+    
+    用于增量升级现有数据库表结构。
+    """
+    if db is None:
+        db = DatabaseManager.get_instance()
+    
+    columns_to_add = [
+        ("industry_code", "varchar(20) DEFAULT NULL COMMENT '申万一级行业代码'"),
+        ("total_mv", "double DEFAULT NULL COMMENT '总市值 (亿元)'"),
+        ("is_st", "tinyint DEFAULT 0 COMMENT '是否 ST 股票'"),
+    ]
+    
+    for col_name, col_def in columns_to_add:
+        try:
+            # 检查列是否已存在
+            check_query = f"""
+                SELECT COUNT(*) as cnt 
+                FROM information_schema.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'stock_daily' 
+                AND COLUMN_NAME = '{col_name}'
+            """
+            result = db.read_sql(check_query)
+            
+            if result.is_empty() or result["cnt"][0] == 0:
+                # 列不存在，添加
+                alter_sql = f"ALTER TABLE `stock_daily` ADD COLUMN {col_name} {col_def}"
+                db.execute(alter_sql)
+                logger.info(f"Added column '{col_name}' to stock_daily table")
+            else:
+                logger.debug(f"Column '{col_name}' already exists")
+        except Exception as e:
+            logger.warning(f"Failed to add column '{col_name}': {e}")
 
 
 def main():
