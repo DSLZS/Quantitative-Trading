@@ -1,0 +1,20 @@
+{
+  "start_date": "2025-01-02",
+  "end_date": "2026-03-12",
+  "initial_capital": 100000.0,
+  "total_return": 0.03809463836999974,
+  "annual_return": 0.03349095820598991,
+  "sharpe_ratio": 0.28985876297899926,
+  "max_drawdown": 0.14538445795739618,
+  "win_rate": 0.5384615384615384,
+  "total_trades": 625,
+  "total_buy_amount": 3494493.84,
+  "total_sell_amount": 3411251.62,
+  "total_commission": 3156.934893,
+  "total_stamp_duty": 1705.62581,
+  "total_slippage": 6905.74546,
+  "turnover_rate": 34.9449384,
+  "avg_holding_days": 12.377510040160642,
+  "avg_position_count": 9.08041958041958,
+  "report_path": "reports\\V22_Profit_Quality_Report_20260318_032341.md"
+}
