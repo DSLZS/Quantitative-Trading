@@ -1,0 +1,15 @@
+{
+  "total_return": -0.05883565799999953,
+  "annual_return": -0.1224346596827256,
+  "max_drawdown": 0.5588629791512661,
+  "sharpe_ratio": -0.022862291755888487,
+  "calmar_ratio": -0.21907813587628336,
+  "win_rate": 0.4,
+  "total_trades": 45,
+  "avg_hold_days": 3.6,
+  "profit_factor": 0.8551653031500759,
+  "total_commission": 515.4327999999999,
+  "total_stamp_duty": 787.015,
+  "total_slippage_cost": 827.1030000000001,
+  "skipped_trades": 0
+}

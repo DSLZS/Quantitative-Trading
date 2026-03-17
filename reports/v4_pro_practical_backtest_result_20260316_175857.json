@@ -1,0 +1,15 @@
+{
+  "total_return": 0.0,
+  "annual_return": 0.0,
+  "max_drawdown": 0.0,
+  "sharpe_ratio": 0.0,
+  "calmar_ratio": 0.0,
+  "win_rate": 0.0,
+  "total_trades": 0,
+  "avg_hold_days": 0.0,
+  "profit_factor": 0.0,
+  "total_commission": 0.0,
+  "total_stamp_duty": 0.0,
+  "total_slippage_cost": 0.0,
+  "skipped_trades": 0
+}
