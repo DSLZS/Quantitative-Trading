@@ -225,13 +225,15 @@ class TushareLoader:
         end_date: str,
     ) -> Optional[pl.DataFrame]:
         """
-        从 Tushare 获取每日基本指标数据（包括换手率、量比等）。
+        【V8 增强 - 因子纯化】
+        从 Tushare 获取每日基本指标数据（包括换手率、量比、市值等）。
         
         调用 pro.daily_basic() 接口获取：
             - turnover_rate: 换手率
             - volume_ratio: 量比
             - pe, pe_ttm: 市盈率
             - pb: 市净率
+            - total_mv: 总市值（用于市值中性化）【V8 新增】
             - 等其他基本指标
         
         Args:
@@ -242,7 +244,7 @@ class TushareLoader:
         Returns:
             Optional[pl.DataFrame]: 包含每日基本指标的 Polars DataFrame，
                 如果获取失败返回 None。
-                列包括：ts_code, trade_date, turnover_rate, volume_ratio
+                列包括：ts_code, trade_date, turnover_rate, volume_ratio, total_mv
             
         注意:
             - daily_basic 接口返回的字段名为 volume_ratio，不是 vol_ratio
@@ -274,6 +276,98 @@ class TushareLoader:
             
         except Exception as e:
             logger.debug(f"Failed to fetch daily_basic data for {ts_code}: {e}")
+            return None
+    
+    def _fetch_stock_basic(
+        self,
+        ts_code: str,
+    ) -> Optional[dict]:
+        """
+        【V8 新增 - 因子纯化】
+        从 Tushare 获取股票基本信息（行业分类、上市日期等）。
+        
+        调用 pro.stock_basic() 接口获取：
+            - industry: 所属行业
+            - list_date: 上市日期
+            - name: 股票名称
+        
+        Args:
+            ts_code (str): Tushare 代码
+            
+        Returns:
+            Optional[dict]: 股票基本信息字典
+        """
+        try:
+            self._rate_limit()
+            
+            # 调用 stock_basic API
+            df = self.pro.stock_basic(ts_code=ts_code)
+            
+            if df is None or df.empty:
+                logger.debug(f"No stock_basic data for {ts_code}")
+                return None
+            
+            # 转换为字典
+            row = df.iloc[0].to_dict()
+            
+            logger.debug(f"Fetched stock_basic data for {ts_code}")
+            return row
+            
+        except Exception as e:
+            logger.debug(f"Failed to fetch stock_basic data for {ts_code}: {e}")
+            return None
+    
+    def _fetch_is_st_info(
+        self,
+        ts_code: str,
+        start_date: str,
+        end_date: str,
+    ) -> Optional[pl.DataFrame]:
+        """
+        【V8 新增 - 因子纯化】
+        从 Tushare 获取股票 ST 状态信息。
+        
+        调用 pro.namechange() 接口获取股票名称变更记录，
+        通过名称中包含"ST"、"*ST"等标识来判断 ST 状态。
+        
+        Args:
+            ts_code (str): Tushare 代码
+            start_date (str): 开始日期，格式 YYYYMMDD
+            end_date (str): 结束日期，格式 YYYYMMDD
+            
+        Returns:
+            Optional[pl.DataFrame]: 包含 ST 状态的 DataFrame
+                列包括：ts_code, start_date, end_date, is_st
+        """
+        try:
+            self._rate_limit()
+            
+            # 调用 namechange API 获取名称变更历史
+            df = self.pro.namechange(ts_code=ts_code)
+            
+            if df is None or df.empty:
+                # 无变更记录，默认非 ST
+                return pl.DataFrame({
+                    "ts_code": [ts_code],
+                    "start_date": [start_date],
+                    "end_date": [end_date],
+                    "is_st": [0],
+                })
+            
+            # 转换为 Polars
+            pl_df = pl.from_pandas(df)
+            
+            # 判断 ST 状态
+            st_keywords = ["ST", "*ST", "退"]
+            pl_df = pl_df.with_columns([
+                pl.col("new_name").str.contains_any(st_keywords).cast(pl.Int32).alias("is_st")
+            ])
+            
+            logger.debug(f"Fetched ST info for {ts_code}")
+            return pl_df
+            
+        except Exception as e:
+            logger.debug(f"Failed to fetch ST info for {ts_code}: {e}")
             return None
     
     def _fetch_adj_factor(
@@ -558,6 +652,7 @@ class TushareLoader:
         table_name: str = "stock_daily",
     ) -> pl.DataFrame:
         """
+        【V8 增强 - 因子纯化】
         过滤 DataFrame 列，只保留数据库中存在的字段。
         
         Args:
@@ -567,12 +662,13 @@ class TushareLoader:
         Returns:
             pl.DataFrame: 过滤后的 DataFrame
             
-        数据库表结构 (stock_daily):
+        数据库表结构 (stock_daily) - V8 增强:
             - symbol, trade_date, open, high, low, close
             - pre_close, change, pct_chg, volume, amount
             - adj_factor, turnover_rate, vol_ratio
+            - industry_code (V8 新增), total_mv (V8 新增), is_st (V8 新增)
         """
-        # 定义数据库表中存在的列
+        # 定义数据库表中存在的列 - V8 增强
         valid_columns = {
             "stock_daily": [
                 "symbol", "trade_date",
@@ -581,6 +677,8 @@ class TushareLoader:
                 "volume", "amount",
                 "adj_factor",
                 "turnover_rate", "vol_ratio",
+                # V8 新增字段
+                "industry_code", "total_mv", "is_st",
             ],
         }
         
