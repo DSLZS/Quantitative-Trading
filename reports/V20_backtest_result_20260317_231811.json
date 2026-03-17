@@ -1,0 +1,20 @@
+{
+  "start_date": "2025-01-02",
+  "end_date": "2026-03-12",
+  "initial_capital": 100000.0,
+  "total_return": -0.2857848809499995,
+  "annual_return": -0.2566283287668456,
+  "sharpe_ratio": -1.3643777775648291,
+  "max_drawdown": 0.3874761057648252,
+  "win_rate": 0.42657342657342656,
+  "total_trades": 2311,
+  "total_buy_amount": 11573369.45,
+  "total_sell_amount": 11514252.43,
+  "total_commission": 11555.0,
+  "total_stamp_duty": 5757.126215,
+  "total_slippage": 23087.62188,
+  "turnover_rate": 115.7336945,
+  "avg_holding_days": 3.3495495495495495,
+  "avg_position_count": 8.618881118881118,
+  "report_path": "reports\\V20_Iron_Blood_Report_20260317_231811.md"
+}
