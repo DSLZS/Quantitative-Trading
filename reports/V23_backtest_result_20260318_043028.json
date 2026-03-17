@@ -1,0 +1,20 @@
+{
+  "start_date": "2025-01-02",
+  "end_date": "2026-03-12",
+  "initial_capital": 100000.0,
+  "total_return": 0.16057285609999963,
+  "annual_return": 0.14020799153207597,
+  "sharpe_ratio": 1.007742544107715,
+  "max_drawdown": 0.08078729902954022,
+  "win_rate": 0.534965034965035,
+  "total_trades": 120,
+  "total_buy_amount": 795986.29,
+  "total_sell_amount": 703024.77,
+  "total_commission": 663.120945,
+  "total_stamp_duty": 351.512385,
+  "total_slippage": 1499.01106,
+  "turnover_rate": 7.9598629,
+  "avg_holding_days": 49.79245283018868,
+  "avg_position_count": 9.1993006993007,
+  "report_path": "reports\\V23_Auto_Healing_Report_20260318_043028.md"
+}
