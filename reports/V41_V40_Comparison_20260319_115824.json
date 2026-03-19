@@ -1,0 +1,3235 @@
+{
+  "v40": {
+    "initial_capital": 100000.0,
+    "final_value": 106916.13732365002,
+    "total_return": 0.06916137323650022,
+    "max_drawdown": 0.00691459575190434,
+    "sharpe_ratio": 2.3054743966414692,
+    "total_trades": 28,
+    "annual_return": 0.05983337473694372,
+    "win_rate": 0.5,
+    "avg_holding_days": 25.5
+  },
+  "v41": {
+    "initial_capital": 100000.0,
+    "final_value": 94169.74837226247,
+    "total_return": -0.05830251627737525,
+    "max_drawdown": 0.07023525005274127,
+    "sharpe_ratio": -1.9798295970831072,
+    "total_trades": 113,
+    "buy_trades": 57,
+    "sell_trades": 56,
+    "daily_portfolio_values": [
+      {
+        "trade_date": "2025-01-01",
+        "portfolio_value": 99983.78131914498,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-02",
+        "portfolio_value": 100117.55087263409,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-03",
+        "portfolio_value": 100100.78441393752,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-06",
+        "portfolio_value": 99998.8944191082,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-07",
+        "portfolio_value": 99982.26927054353,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-08",
+        "portfolio_value": 99816.33452706001,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-09",
+        "portfolio_value": 99800.15732104657,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-10",
+        "portfolio_value": 99846.92232522849,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-13",
+        "portfolio_value": 99830.66331601902,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-14",
+        "portfolio_value": 99774.15058552194,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-15",
+        "portfolio_value": 99758.02632732804,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-16",
+        "portfolio_value": 99573.9549791269,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-17",
+        "portfolio_value": 99558.0022311018,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-20",
+        "portfolio_value": 99474.63540433586,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-21",
+        "portfolio_value": 99459.37939304914,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-22",
+        "portfolio_value": 99465.78644011827,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-23",
+        "portfolio_value": 99450.45131556164,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-24",
+        "portfolio_value": 99278.17589800734,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-27",
+        "portfolio_value": 99262.9137028602,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-28",
+        "portfolio_value": 99252.34359678716,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-29",
+        "portfolio_value": 99237.22692850418,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-30",
+        "portfolio_value": 99040.88806729525,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-31",
+        "portfolio_value": 99026.38853818363,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-03",
+        "portfolio_value": 99004.01729189813,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-04",
+        "portfolio_value": 98989.5860338278,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-05",
+        "portfolio_value": 98858.11638394497,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-06",
+        "portfolio_value": 98843.99720227065,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-07",
+        "portfolio_value": 99011.58900014656,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-10",
+        "portfolio_value": 98997.39062964896,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-11",
+        "portfolio_value": 98844.48216700919,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-12",
+        "portfolio_value": 98830.63059474794,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-13",
+        "portfolio_value": 98661.35479550813,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-14",
+        "portfolio_value": 98647.85443739807,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-17",
+        "portfolio_value": 98589.619531286,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-18",
+        "portfolio_value": 98568.11817171125,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-19",
+        "portfolio_value": 98197.43543794834,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-20",
+        "portfolio_value": 98176.68189254499,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-21",
+        "portfolio_value": 97957.78160506242,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-24",
+        "portfolio_value": 97937.61207346717,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-25",
+        "portfolio_value": 97950.82802016554,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-26",
+        "portfolio_value": 97930.56288079401,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-27",
+        "portfolio_value": 97858.11304440515,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-28",
+        "portfolio_value": 97837.78410605043,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-03",
+        "portfolio_value": 97913.26427708153,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-04",
+        "portfolio_value": 97892.99918831608,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-05",
+        "portfolio_value": 97720.97550833444,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-06",
+        "portfolio_value": 97701.26886623059,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-07",
+        "portfolio_value": 97891.74623964189,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-10",
+        "portfolio_value": 97871.83501399877,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-11",
+        "portfolio_value": 97840.00757497143,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-12",
+        "portfolio_value": 97820.43461984333,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-13",
+        "portfolio_value": 97717.81403954007,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-14",
+        "portfolio_value": 97698.25407774275,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-17",
+        "portfolio_value": 97715.96855638686,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-18",
+        "portfolio_value": 97696.35084462649,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-19",
+        "portfolio_value": 97300.32484826774,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-20",
+        "portfolio_value": 97281.4680035447,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-21",
+        "portfolio_value": 97298.4817159661,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-24",
+        "portfolio_value": 97279.6419893281,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-25",
+        "portfolio_value": 97235.48011035191,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-26",
+        "portfolio_value": 97216.8556084623,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-27",
+        "portfolio_value": 97037.85475242647,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-28",
+        "portfolio_value": 97019.11368072718,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-31",
+        "portfolio_value": 97090.73868629617,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-01",
+        "portfolio_value": 97072.08082108204,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-02",
+        "portfolio_value": 97007.36829939506,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-03",
+        "portfolio_value": 96988.68804251665,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-04",
+        "portfolio_value": 96771.60775006964,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-07",
+        "portfolio_value": 96753.16866019784,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-08",
+        "portfolio_value": 97015.68544697172,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-09",
+        "portfolio_value": 96996.65637442589,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-10",
+        "portfolio_value": 96917.25572538779,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-11",
+        "portfolio_value": 96898.73128609745,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-14",
+        "portfolio_value": 96851.21526553512,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-15",
+        "portfolio_value": 96832.9079934499,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-16",
+        "portfolio_value": 96825.20204102233,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-17",
+        "portfolio_value": 96807.26084054807,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-18",
+        "portfolio_value": 96608.47398606343,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-21",
+        "portfolio_value": 96590.75964538152,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-22",
+        "portfolio_value": 96333.60497075567,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-23",
+        "portfolio_value": 96310.44420454897,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-24",
+        "portfolio_value": 96279.02210507967,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-25",
+        "portfolio_value": 96256.03372951559,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-28",
+        "portfolio_value": 96409.51357102468,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-29",
+        "portfolio_value": 96392.27651602405,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-30",
+        "portfolio_value": 96221.64455721418,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-01",
+        "portfolio_value": 96199.03299084956,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-02",
+        "portfolio_value": 96161.7270862486,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-05",
+        "portfolio_value": 96139.19549830043,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-06",
+        "portfolio_value": 95982.90370743166,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-07",
+        "portfolio_value": 95960.50761748613,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-08",
+        "portfolio_value": 95806.82936408206,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-09",
+        "portfolio_value": 95784.50875384337,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-12",
+        "portfolio_value": 95735.47844635317,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-13",
+        "portfolio_value": 95713.6426388455,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-14",
+        "portfolio_value": 95426.72489505107,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-15",
+        "portfolio_value": 95405.23889890825,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-16",
+        "portfolio_value": 95385.01235263555,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-19",
+        "portfolio_value": 95363.22535911687,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-20",
+        "portfolio_value": 95159.0970669039,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-21",
+        "portfolio_value": 95137.34895160072,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-22",
+        "portfolio_value": 95045.5967690145,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-23",
+        "portfolio_value": 95024.34549110213,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-26",
+        "portfolio_value": 95182.09873705488,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-27",
+        "portfolio_value": 95296.44667134127,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-28",
+        "portfolio_value": 95584.99174032966,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-29",
+        "portfolio_value": 95762.24414556708,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-30",
+        "portfolio_value": 95728.43843405049,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-02",
+        "portfolio_value": 95683.82050793366,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-03",
+        "portfolio_value": 95502.4342639316,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-04",
+        "portfolio_value": 95523.47974918484,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-05",
+        "portfolio_value": 95596.0281646341,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-06",
+        "portfolio_value": 95656.9839789667,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-09",
+        "portfolio_value": 95552.24335789388,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-10",
+        "portfolio_value": 95461.04098699433,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-11",
+        "portfolio_value": 95456.64137979565,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-12",
+        "portfolio_value": 95528.94266615997,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-13",
+        "portfolio_value": 95427.64187003871,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-16",
+        "portfolio_value": 95387.87086392751,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-17",
+        "portfolio_value": 95192.43245235409,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-18",
+        "portfolio_value": 95158.93990471282,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-19",
+        "portfolio_value": 94749.28584283253,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-20",
+        "portfolio_value": 94667.04569427084,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-23",
+        "portfolio_value": 94571.38913715229,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-24",
+        "portfolio_value": 94635.12521622294,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-25",
+        "portfolio_value": 94720.00801164171,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-26",
+        "portfolio_value": 94855.15469799572,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-27",
+        "portfolio_value": 94793.14562485728,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-30",
+        "portfolio_value": 94777.32379942485,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-01",
+        "portfolio_value": 94657.64317590237,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-02",
+        "portfolio_value": 94737.6184585571,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-03",
+        "portfolio_value": 94556.22812904342,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-04",
+        "portfolio_value": 94807.53414572171,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-07",
+        "portfolio_value": 94826.7528566291,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-08",
+        "portfolio_value": 94923.64459616745,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-09",
+        "portfolio_value": 94807.33499394376,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-10",
+        "portfolio_value": 94679.86140944336,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-11",
+        "portfolio_value": 94941.27769492228,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-14",
+        "portfolio_value": 95090.55389212046,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-15",
+        "portfolio_value": 95323.78472111495,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-16",
+        "portfolio_value": 95572.27318557148,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-17",
+        "portfolio_value": 95418.1702916157,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-18",
+        "portfolio_value": 95386.76500560726,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-21",
+        "portfolio_value": 95512.47064026677,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-22",
+        "portfolio_value": 95453.57701536333,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-23",
+        "portfolio_value": 95520.24430235692,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-24",
+        "portfolio_value": 95687.96550561156,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-25",
+        "portfolio_value": 96034.38740197851,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-28",
+        "portfolio_value": 96278.78885742916,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-29",
+        "portfolio_value": 95868.09090378872,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-30",
+        "portfolio_value": 95607.69205558662,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-31",
+        "portfolio_value": 95546.92758535917,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-01",
+        "portfolio_value": 95294.05760457371,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-04",
+        "portfolio_value": 95247.94318608666,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-05",
+        "portfolio_value": 95148.98647144008,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-06",
+        "portfolio_value": 95407.14889227298,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-07",
+        "portfolio_value": 95385.68481621883,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-08",
+        "portfolio_value": 95227.16178836557,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-11",
+        "portfolio_value": 95205.01746453409,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-12",
+        "portfolio_value": 95230.23672069848,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-13",
+        "portfolio_value": 95208.27831346977,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-14",
+        "portfolio_value": 94620.24361351531,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-15",
+        "portfolio_value": 94599.52918211704,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-18",
+        "portfolio_value": 94608.53229896662,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-19",
+        "portfolio_value": 94626.26096110897,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-20",
+        "portfolio_value": 94951.10809694747,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-21",
+        "portfolio_value": 94832.23395625495,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-22",
+        "portfolio_value": 94769.70027012941,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-25",
+        "portfolio_value": 94766.72661231154,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-26",
+        "portfolio_value": 94312.9000975925,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-27",
+        "portfolio_value": 94323.39290876895,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-28",
+        "portfolio_value": 94414.12310628792,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-29",
+        "portfolio_value": 94165.32677579323,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-01",
+        "portfolio_value": 94303.69420888666,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-02",
+        "portfolio_value": 94117.92173146979,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-03",
+        "portfolio_value": 93984.5394058152,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-04",
+        "portfolio_value": 93880.74622565425,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-05",
+        "portfolio_value": 93953.24220942993,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-08",
+        "portfolio_value": 94044.73954040732,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-09",
+        "portfolio_value": 93949.98468077145,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-10",
+        "portfolio_value": 93936.70233513362,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-11",
+        "portfolio_value": 93973.31028772288,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-12",
+        "portfolio_value": 94324.81788054097,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-15",
+        "portfolio_value": 94446.88945611544,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-16",
+        "portfolio_value": 94271.56059116116,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-17",
+        "portfolio_value": 94151.854921026,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-18",
+        "portfolio_value": 94178.48642502684,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-19",
+        "portfolio_value": 94046.69643258907,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-22",
+        "portfolio_value": 94153.29820128846,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-23",
+        "portfolio_value": 94295.71570182103,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-24",
+        "portfolio_value": 94443.00643976929,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-25",
+        "portfolio_value": 94378.96884126714,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-26",
+        "portfolio_value": 94361.50801198474,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-29",
+        "portfolio_value": 94439.92446794492,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-30",
+        "portfolio_value": 94773.75125094508,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-01",
+        "portfolio_value": 94627.68008697497,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-02",
+        "portfolio_value": 94482.01311175911,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-03",
+        "portfolio_value": 94341.53797745574,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-06",
+        "portfolio_value": 94224.7934234371,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-07",
+        "portfolio_value": 94023.72046526626,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-08",
+        "portfolio_value": 94050.37485969713,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-09",
+        "portfolio_value": 93963.34709724593,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-10",
+        "portfolio_value": 93969.61430953858,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-13",
+        "portfolio_value": 93932.10171715706,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-14",
+        "portfolio_value": 94199.98922351576,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-15",
+        "portfolio_value": 94364.88962096412,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-16",
+        "portfolio_value": 94533.5981940674,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-17",
+        "portfolio_value": 94808.64981845513,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-20",
+        "portfolio_value": 94743.69405275014,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-21",
+        "portfolio_value": 94584.23003441456,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-22",
+        "portfolio_value": 94658.4294198193,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-23",
+        "portfolio_value": 94607.57003476142,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-24",
+        "portfolio_value": 94701.62478879177,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-27",
+        "portfolio_value": 94662.71295182318,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-28",
+        "portfolio_value": 94389.0504980265,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-29",
+        "portfolio_value": 93945.28594452963,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-30",
+        "portfolio_value": 94196.39186062192,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-31",
+        "portfolio_value": 94352.71196678768,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-03",
+        "portfolio_value": 94332.17159134112,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-04",
+        "portfolio_value": 94265.26522197602,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-05",
+        "portfolio_value": 94099.67283215809,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-06",
+        "portfolio_value": 93782.16910487144,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-07",
+        "portfolio_value": 93655.12908578129,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-10",
+        "portfolio_value": 93753.97277622583,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-11",
+        "portfolio_value": 94005.32400811982,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-12",
+        "portfolio_value": 93982.9693938822,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-13",
+        "portfolio_value": 93626.58957619077,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-14",
+        "portfolio_value": 93669.61208832129,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-17",
+        "portfolio_value": 93476.3570887958,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-18",
+        "portfolio_value": 93393.61293479856,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-19",
+        "portfolio_value": 93252.89768496019,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-20",
+        "portfolio_value": 93355.09995708431,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-21",
+        "portfolio_value": 93480.982221879,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-24",
+        "portfolio_value": 93249.44184176873,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-25",
+        "portfolio_value": 93135.44251848377,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-26",
+        "portfolio_value": 93085.76965242659,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-27",
+        "portfolio_value": 93160.8580210193,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-28",
+        "portfolio_value": 93498.07074995778,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-01",
+        "portfolio_value": 93445.92359409988,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-02",
+        "portfolio_value": 93466.25039404871,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-03",
+        "portfolio_value": 93320.63977069943,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-04",
+        "portfolio_value": 93505.12229154655,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-05",
+        "portfolio_value": 93706.46063480554,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-08",
+        "portfolio_value": 93642.95152946259,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-09",
+        "portfolio_value": 93640.71018363674,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-10",
+        "portfolio_value": 93583.25162788935,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-11",
+        "portfolio_value": 93487.73950576404,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-12",
+        "portfolio_value": 93667.39564628931,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-15",
+        "portfolio_value": 93471.17995301634,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-16",
+        "portfolio_value": 93529.52099684485,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-17",
+        "portfolio_value": 93283.39945848707,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-18",
+        "portfolio_value": 93334.96359838791,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-19",
+        "portfolio_value": 93244.4073870564,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-22",
+        "portfolio_value": 93268.66228002917,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-23",
+        "portfolio_value": 93443.20253928365,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-24",
+        "portfolio_value": 93402.82222513008,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-25",
+        "portfolio_value": 93258.96458188884,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-26",
+        "portfolio_value": 93355.74637056714,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-29",
+        "portfolio_value": 93445.69734560068,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-30",
+        "portfolio_value": 93604.62813601522,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-31",
+        "portfolio_value": 93761.71337450194,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-01",
+        "portfolio_value": 93883.08156822636,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-02",
+        "portfolio_value": 94183.7025950153,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-05",
+        "portfolio_value": 94016.36140161983,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-06",
+        "portfolio_value": 94130.17179505863,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-07",
+        "portfolio_value": 94345.61994895717,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-08",
+        "portfolio_value": 94233.0718709022,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-09",
+        "portfolio_value": 94054.51355320995,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-12",
+        "portfolio_value": 94068.95675258413,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-13",
+        "portfolio_value": 94199.69338700238,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-14",
+        "portfolio_value": 94102.02603352666,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-15",
+        "portfolio_value": 94160.66992201871,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-16",
+        "portfolio_value": 94182.33478110645,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-19",
+        "portfolio_value": 94129.06723198389,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-20",
+        "portfolio_value": 94108.53352232839,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-21",
+        "portfolio_value": 94152.05791181486,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-22",
+        "portfolio_value": 94193.13373213533,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-23",
+        "portfolio_value": 94244.87171285771,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-26",
+        "portfolio_value": 94199.1975659942,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-27",
+        "portfolio_value": 94384.28608832849,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-28",
+        "portfolio_value": 94342.49897803097,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-29",
+        "portfolio_value": 94280.10205492887,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-30",
+        "portfolio_value": 94196.05095069353,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-02",
+        "portfolio_value": 94278.94068645698,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-03",
+        "portfolio_value": 94329.13362347995,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-04",
+        "portfolio_value": 94671.12328990595,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-05",
+        "portfolio_value": 94606.5569260319,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-06",
+        "portfolio_value": 94487.39441405871,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-09",
+        "portfolio_value": 94516.28532205369,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-10",
+        "portfolio_value": 94517.19048122322,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-11",
+        "portfolio_value": 94621.42808028654,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-12",
+        "portfolio_value": 94726.10997127311,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-13",
+        "portfolio_value": 94515.98624567196,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-16",
+        "portfolio_value": 94321.03087751739,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-17",
+        "portfolio_value": 94419.22471540415,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-18",
+        "portfolio_value": 94640.58212651659,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-19",
+        "portfolio_value": 94530.0629565977,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-20",
+        "portfolio_value": 94456.10773740125,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-23",
+        "portfolio_value": 94346.5986135632,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-24",
+        "portfolio_value": 94243.653132782,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-25",
+        "portfolio_value": 94242.02703436125,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-26",
+        "portfolio_value": 94144.38661893175,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-27",
+        "portfolio_value": 94191.21442740431,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-02",
+        "portfolio_value": 93940.05724913515,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-03",
+        "portfolio_value": 93926.31945784096,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-04",
+        "portfolio_value": 93965.2905387752,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-05",
+        "portfolio_value": 93991.11938013697,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-06",
+        "portfolio_value": 94153.60963760751,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-09",
+        "portfolio_value": 94146.19614704659,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-10",
+        "portfolio_value": 94325.74029374923,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-11",
+        "portfolio_value": 94464.8938774978,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-12",
+        "portfolio_value": 94399.45123666927,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-13",
+        "portfolio_value": 94218.39248747534,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-16",
+        "portfolio_value": 94110.15651620133,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-17",
+        "portfolio_value": 94074.81920067345,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-18",
+        "portfolio_value": 94186.3667394474,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-19",
+        "portfolio_value": 94169.74837226247,
+        "positions_count": 1,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      }
+    ],
+    "trades": [
+      {
+        "trade_date": "2025-01-01",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 55.78630068976481,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-02",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 57.317777295824676
+      },
+      {
+        "trade_date": "2025-01-03",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 58.5101948601576,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-06",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 57.68599966516445
+      },
+      {
+        "trade_date": "2025-01-07",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 57.80751246715723,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-08",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 56.33949208482184
+      },
+      {
+        "trade_date": "2025-01-09",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 55.58006182685831,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-10",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 56.23878630172748
+      },
+      {
+        "trade_date": "2025-01-13",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 55.986838501360296,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-14",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 55.61121136398388
+      },
+      {
+        "trade_date": "2025-01-15",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 55.316772138918104,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-16",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 53.66066590071197
+      },
+      {
+        "trade_date": "2025-01-17",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 54.46391626645047,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-20",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 53.81524299769846
+      },
+      {
+        "trade_date": "2025-01-21",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 50.99930525817467,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-22",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 51.24191556163332
+      },
+      {
+        "trade_date": "2025-01-23",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 51.39270593698685,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-24",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 49.84498741392174
+      },
+      {
+        "trade_date": "2025-01-27",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 51.03005528134844,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-28",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 51.10254444232626
+      },
+      {
+        "trade_date": "2025-01-29",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 50.306404657259954,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-01-30",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 48.51471472190342
+      },
+      {
+        "trade_date": "2025-01-31",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 47.237602556018885,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-02-03",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 47.18224628615013
+      },
+      {
+        "trade_date": "2025-02-04",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 46.8981162218614,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-02-05",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 45.74817857149796
+      },
+      {
+        "trade_date": "2025-02-06",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 45.34627711607337,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-02-07",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 47.19057217322327
+      },
+      {
+        "trade_date": "2025-02-10",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 45.740053493531015,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-02-11",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 44.37227627845514
+      },
+      {
+        "trade_date": "2025-02-12",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 44.01555567224685,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-02-13",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 42.47935672139074
+      },
+      {
+        "trade_date": "2025-02-14",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 100,
+        "price": 42.269099159492704,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-02-17",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 100,
+        "price": 41.84170960850798
+      },
+      {
+        "trade_date": "2025-02-18",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 41.02754231643241,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-02-19",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 39.2977065515253
+      },
+      {
+        "trade_date": "2025-02-20",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 39.16824233432164,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-02-21",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 38.19455154752021
+      },
+      {
+        "trade_date": "2025-02-24",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 37.71620129996002,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-02-25",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 37.90235872128061
+      },
+      {
+        "trade_date": "2025-02-26",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 37.95391214248737,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-02-27",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 37.71126128235728
+      },
+      {
+        "trade_date": "2025-02-28",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 38.11253637406131,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-03",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 38.611794529676565
+      },
+      {
+        "trade_date": "2025-03-04",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 37.953786319919026,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-05",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 37.21201388472048
+      },
+      {
+        "trade_date": "2025-03-06",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 36.5653132103848,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-07",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 37.63711239751935
+      },
+      {
+        "trade_date": "2025-03-10",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 37.0739718925067,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-11",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 37.03273093258702
+      },
+      {
+        "trade_date": "2025-03-12",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 36.23292556498734,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-13",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 35.83471368440114
+      },
+      {
+        "trade_date": "2025-03-14",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 36.200620079783384,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-17",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 36.405515344189645
+      },
+      {
+        "trade_date": "2025-03-18",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 36.344204554841205,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-19",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 34.47555616092156
+      },
+      {
+        "trade_date": "2025-03-20",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 34.452451064521526,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-21",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 34.64943739383662
+      },
+      {
+        "trade_date": "2025-03-24",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 34.40989014973936,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-25",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 34.300122268567904
+      },
+      {
+        "trade_date": "2025-03-26",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 33.874774092648586,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-27",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 33.0877701530206
+      },
+      {
+        "trade_date": "2025-03-28",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 34.16460310811933,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-03-31",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 34.634608705556076
+      },
+      {
+        "trade_date": "2025-04-01",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 33.957725755072666,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-02",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 33.743809154463705
+      },
+      {
+        "trade_date": "2025-04-03",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 34.01339843763082,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-04",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 33.03586711770187
+      },
+      {
+        "trade_date": "2025-04-07",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 33.41378181064291,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-08",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 34.83875842162535
+      },
+      {
+        "trade_date": "2025-04-09",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 34.88066331302101,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-10",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 34.59544238910915
+      },
+      {
+        "trade_date": "2025-04-11",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 33.62598716648646,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-14",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 33.497435044509615
+      },
+      {
+        "trade_date": "2025-04-15",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 33.08604155429296,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-16",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 33.15568249012477
+      },
+      {
+        "trade_date": "2025-04-17",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 32.175873004768775,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-18",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 31.285417890269173
+      },
+      {
+        "trade_date": "2025-04-21",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 31.611828588405814,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-22",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 30.427381998746604
+      },
+      {
+        "trade_date": "2025-04-23",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 30.10223089674033,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-24",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 30.089636784820975
+      },
+      {
+        "trade_date": "2025-04-25",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 29.816486183691545,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-28",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 30.421063255019785
+      },
+      {
+        "trade_date": "2025-04-29",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 200,
+        "price": 30.425147066991915,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-04-30",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 200,
+        "price": 29.671417727598058
+      },
+      {
+        "trade_date": "2025-05-01",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 29.191909147851643,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-05-02",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 29.15736375458654
+      },
+      {
+        "trade_date": "2025-05-05",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 29.05934157161933,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-05-06",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 28.62684575837321
+      },
+      {
+        "trade_date": "2025-05-07",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 28.83474795505403,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-05-08",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 28.410421034100292
+      },
+      {
+        "trade_date": "2025-05-09",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 28.709637178478285,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-05-12",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 28.63469934380123
+      },
+      {
+        "trade_date": "2025-05-13",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 27.906056339315,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-05-14",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 27.034145410086666
+      },
+      {
+        "trade_date": "2025-05-15",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 27.326229345473042,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-05-16",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 27.344066508626902
+      },
+      {
+        "trade_date": "2025-05-19",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 27.825145107330588,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-05-20",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 27.22968953719453
+      },
+      {
+        "trade_date": "2025-05-21",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 27.760702836179348,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-05-22",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 27.540614249664436
+      },
+      {
+        "trade_date": "2025-05-23",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 26.937174044198308,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-08-08",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 27.69937864942476
+      },
+      {
+        "trade_date": "2025-08-11",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 28.417435072387853,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-08-12",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 28.589883362785834
+      },
+      {
+        "trade_date": "2025-08-13",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 28.109270513657314,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-08-14",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 26.231623278486975
+      },
+      {
+        "trade_date": "2025-08-15",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 26.04732845399381,
+        "rank": 8
+      },
+      {
+        "trade_date": "2025-10-31",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 25.30474777631203
+      },
+      {
+        "trade_date": "2025-11-03",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 25.758823421345856,
+        "rank": 8
+      },
+      {
+        "trade_date": "2026-01-19",
+        "symbol": "601688.SH",
+        "action": "SELL",
+        "reason": "stop_loss",
+        "shares": 300,
+        "price": 25.161593161651865
+      },
+      {
+        "trade_date": "2026-01-20",
+        "symbol": "601688.SH",
+        "action": "BUY",
+        "reason": "signal",
+        "shares": 300,
+        "price": 25.747774593364547,
+        "rank": 8
+      }
+    ],
+    "version": "V41"
+  },
+  "comparison": {
+    "comparison_date": "2026-03-19 11:58:24",
+    "v40": {
+      "initial_capital": 100000.0,
+      "final_value": 106916.13732365002,
+      "total_return": 0.06916137323650022,
+      "max_drawdown": 0.00691459575190434,
+      "sharpe_ratio": 2.3054743966414692,
+      "total_trades": 28,
+      "annual_return": 0.05983337473694372,
+      "win_rate": 0.5,
+      "avg_holding_days": 25.5
+    },
+    "v41": {
+      "initial_capital": 100000.0,
+      "final_value": 94169.74837226247,
+      "total_return": -0.05830251627737525,
+      "max_drawdown": 0.07023525005274127,
+      "sharpe_ratio": -1.9798295970831072,
+      "total_trades": 113
+    },
+    "improvement": {
+      "return_improvement": -184.2992461673763,
+      "drawdown_change": 6.332065430083693,
+      "sharpe_change": -4.285303993724576
+    }
+  }
+}
