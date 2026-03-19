@@ -1,0 +1,2273 @@
+{
+  "v40": {
+    "initial_capital": 100000.0,
+    "final_value": 106916.13732365002,
+    "total_return": 0.06916137323650022,
+    "max_drawdown": 0.00691459575190434,
+    "sharpe_ratio": 2.3054743966414692,
+    "total_trades": 28,
+    "annual_return": 0.05983337473694372,
+    "win_rate": 0.5,
+    "avg_holding_days": 25.5
+  },
+  "v41": {
+    "initial_capital": 100000.0,
+    "final_value": 100000.0,
+    "total_return": 0.0,
+    "max_drawdown": 0.0,
+    "sharpe_ratio": 0.0,
+    "total_trades": 0,
+    "buy_trades": 0,
+    "sell_trades": 0,
+    "daily_portfolio_values": [
+      {
+        "trade_date": "2025-01-01",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-07",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-08",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-14",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-15",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-20",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-21",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-22",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-23",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-27",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-28",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-29",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-30",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-01-31",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-07",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-14",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-20",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-21",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-25",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-26",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-27",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-02-28",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-07",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-14",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-20",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-21",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-25",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-26",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-27",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-28",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-03-31",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-01",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-07",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-08",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-14",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-15",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-21",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-22",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-23",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-25",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-28",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-29",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-04-30",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-01",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-07",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-08",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-14",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-15",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-20",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-21",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-22",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-23",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-26",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-27",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-28",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-29",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-05-30",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-20",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-23",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-25",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-26",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-27",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-06-30",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-01",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-07",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-08",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-14",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-15",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-21",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-22",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-23",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-25",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-28",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-29",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-30",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-07-31",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-01",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-07",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-08",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-14",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-15",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-20",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-21",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-22",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-25",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-26",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-27",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-28",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-08-29",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-01",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-08",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-15",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-22",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-23",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-25",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-26",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-29",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-09-30",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-01",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-07",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-08",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-14",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-15",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-20",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-21",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-22",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-23",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-27",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-28",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-29",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-30",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-10-31",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-07",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-14",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-20",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-21",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-25",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-26",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-27",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-11-28",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-01",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-08",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-15",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-22",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-23",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-25",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-26",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-29",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-30",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2025-12-31",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-01",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-07",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-08",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-14",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-15",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-20",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-21",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-22",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-23",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-26",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-27",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-28",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-29",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-01-30",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-20",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-23",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-24",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-25",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-26",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-02-27",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-02",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-03",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-04",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-05",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-06",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-09",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-10",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-11",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-12",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-13",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-16",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-17",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-18",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      },
+      {
+        "trade_date": "2026-03-19",
+        "portfolio_value": 100000.0,
+        "positions_count": 0,
+        "market_volatility": 1.0,
+        "risk_per_position": 0.005
+      }
+    ],
+    "trades": [],
+    "version": "V41"
+  },
+  "comparison": {
+    "comparison_date": "2026-03-19 11:26:34",
+    "v40": {
+      "initial_capital": 100000.0,
+      "final_value": 106916.13732365002,
+      "total_return": 0.06916137323650022,
+      "max_drawdown": 0.00691459575190434,
+      "sharpe_ratio": 2.3054743966414692,
+      "total_trades": 28,
+      "annual_return": 0.05983337473694372,
+      "win_rate": 0.5,
+      "avg_holding_days": 25.5
+    },
+    "v41": {
+      "initial_capital": 100000.0,
+      "final_value": 100000.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe_ratio": 0.0,
+      "total_trades": 0
+    },
+    "improvement": {
+      "return_improvement": -100.0,
+      "drawdown_change": -0.691459575190434,
+      "sharpe_change": -2.3054743966414692
+    }
+  }
+}
