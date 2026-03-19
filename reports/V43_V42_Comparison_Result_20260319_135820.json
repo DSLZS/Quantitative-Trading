@@ -1,0 +1,14 @@
+{
+  "v42": {
+    "error": "V42Engine.__init__() got an unexpected keyword argument 'db'"
+  },
+  "v43": {
+    "total_return": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_trades": 0,
+    "win_rate": 0,
+    "error": null
+  },
+  "timestamp": "20260319_135820"
+}
