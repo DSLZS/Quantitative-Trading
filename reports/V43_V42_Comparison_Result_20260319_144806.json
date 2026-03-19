@@ -1,0 +1,19 @@
+{
+  "v42": {
+    "total_return": 0.011072219696066022,
+    "sharpe_ratio": 0.6844090755882836,
+    "max_drawdown": 0.022449674576827807,
+    "total_trades": 6,
+    "win_rate": 0.6666666666666666,
+    "error": null
+  },
+  "v43": {
+    "total_return": 0.018431375132999965,
+    "sharpe_ratio": 0.8556729044281178,
+    "max_drawdown": 0.023341232160949684,
+    "total_trades": 3,
+    "win_rate": 1.0,
+    "error": null
+  },
+  "timestamp": "20260319_144806"
+}
