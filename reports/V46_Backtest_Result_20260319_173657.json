@@ -1,0 +1,988 @@
+{
+  "version": "V46",
+  "timestamp": "20260319_173657",
+  "period": {
+    "start": "2024-01-01",
+    "end": "2024-12-31"
+  },
+  "initial_capital": 100000.0,
+  "final_value": 109000.21974865999,
+  "total_return": 0.0900021974865999,
+  "max_drawdown": 0.038398444941130684,
+  "sharpe_ratio": 1.3793304085197837,
+  "total_trades": 74,
+  "buy_trades": 39,
+  "sell_trades": 35,
+  "win_rate": 0.5142857142857142,
+  "avg_holding_days": 19.714285714285715,
+  "total_fees": 1061.55025134,
+  "wash_sale_stats": {
+    "total_blocked": 137,
+    "blocked_records": [
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-02",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-02",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-02",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-02",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-03",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-03",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-03",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-03",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-04",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-04",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-04",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-04",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-05",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-05",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-05",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-07-02)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-02",
+        "blocked_buy_date": "2024-07-05",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-07-02)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-07-23",
+        "blocked_buy_date": "2024-07-23",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-07-23)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-07-23",
+        "blocked_buy_date": "2024-07-23",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-07-23)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-07-23",
+        "blocked_buy_date": "2024-07-24",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-07-23)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-07-23",
+        "blocked_buy_date": "2024-07-24",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-07-23)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-07-23",
+        "blocked_buy_date": "2024-07-25",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-07-23)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-07-23",
+        "blocked_buy_date": "2024-07-25",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-07-23)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-07-23",
+        "blocked_buy_date": "2024-07-26",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-07-23)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-07-23",
+        "blocked_buy_date": "2024-07-26",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-07-23)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-07-29",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-07-30",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-07-30",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-07-30",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-07-30",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-07-31",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-07-31",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-07-31",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-07-31",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-08-01",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-08-01",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-08-01",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-08-01",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-08-02",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-08-02",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-08-02",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-07-29",
+        "blocked_buy_date": "2024-08-02",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-07-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-27",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-27",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-27",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-28",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-28",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-28",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-29",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-29",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-29",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-30",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-30",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-08-26)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-08-26",
+        "blocked_buy_date": "2024-08-30",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-08-26)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-09-09",
+        "blocked_buy_date": "2024-09-09",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-09-09)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-09-09",
+        "blocked_buy_date": "2024-09-10",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-09-09)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-09-09",
+        "blocked_buy_date": "2024-09-11",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-09-09)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-09-09",
+        "blocked_buy_date": "2024-09-12",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-09-09)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-09-09",
+        "blocked_buy_date": "2024-09-13",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-09-09)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-09-18",
+        "blocked_buy_date": "2024-09-18",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-09-18)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-09-18",
+        "blocked_buy_date": "2024-09-19",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-09-18)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-09-18",
+        "blocked_buy_date": "2024-09-20",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-09-18)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-09-18",
+        "blocked_buy_date": "2024-09-23",
+        "days_between": 5,
+        "reason": "wash_sale_window (5 days since 2024-09-18)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-09-25",
+        "blocked_buy_date": "2024-09-25",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-09-25)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-09-25",
+        "blocked_buy_date": "2024-09-26",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-09-25)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-09-25",
+        "blocked_buy_date": "2024-09-26",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-09-25)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-09-25",
+        "blocked_buy_date": "2024-09-27",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-09-25)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-09-25",
+        "blocked_buy_date": "2024-09-27",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-09-25)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-09-25",
+        "blocked_buy_date": "2024-09-30",
+        "days_between": 5,
+        "reason": "wash_sale_window (5 days since 2024-09-25)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-09-25",
+        "blocked_buy_date": "2024-09-30",
+        "days_between": 5,
+        "reason": "wash_sale_window (5 days since 2024-09-25)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-10-16",
+        "blocked_buy_date": "2024-10-16",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-10-16)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-10-16",
+        "blocked_buy_date": "2024-10-17",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-10-16)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-10-16",
+        "blocked_buy_date": "2024-10-18",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-10-16)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-10-16",
+        "blocked_buy_date": "2024-10-21",
+        "days_between": 5,
+        "reason": "wash_sale_window (5 days since 2024-10-16)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-10-22",
+        "blocked_buy_date": "2024-10-22",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-10-22)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-10-22",
+        "blocked_buy_date": "2024-10-23",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-10-22)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-10-22",
+        "blocked_buy_date": "2024-10-24",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-10-22)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-10-22",
+        "blocked_buy_date": "2024-10-24",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-10-22)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-10-22",
+        "blocked_buy_date": "2024-10-25",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-10-22)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-10-22",
+        "blocked_buy_date": "2024-10-25",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-10-22)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-10-29",
+        "blocked_buy_date": "2024-10-29",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-10-29)"
+      },
+      {
+        "symbol": "600007.SH",
+        "sell_date": "2024-10-24",
+        "blocked_buy_date": "2024-10-29",
+        "days_between": 5,
+        "reason": "wash_sale_window (5 days since 2024-10-24)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-10-29",
+        "blocked_buy_date": "2024-10-30",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-10-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-10-29",
+        "blocked_buy_date": "2024-10-31",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-10-29)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-10-29",
+        "blocked_buy_date": "2024-11-01",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-10-29)"
+      },
+      {
+        "symbol": "000021.SZ",
+        "sell_date": "2024-11-05",
+        "blocked_buy_date": "2024-11-05",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-11-05)"
+      },
+      {
+        "symbol": "000415.SZ",
+        "sell_date": "2024-11-07",
+        "blocked_buy_date": "2024-11-07",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-11-07)"
+      },
+      {
+        "symbol": "000415.SZ",
+        "sell_date": "2024-11-07",
+        "blocked_buy_date": "2024-11-08",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-11-07)"
+      },
+      {
+        "symbol": "000415.SZ",
+        "sell_date": "2024-11-07",
+        "blocked_buy_date": "2024-11-11",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-11-07)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-11-12",
+        "blocked_buy_date": "2024-11-12",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-11-12)"
+      },
+      {
+        "symbol": "000415.SZ",
+        "sell_date": "2024-11-07",
+        "blocked_buy_date": "2024-11-12",
+        "days_between": 5,
+        "reason": "wash_sale_window (5 days since 2024-11-07)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-11-12",
+        "blocked_buy_date": "2024-11-13",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-11-12)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-11-12",
+        "blocked_buy_date": "2024-11-14",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-11-12)"
+      },
+      {
+        "symbol": "000415.SZ",
+        "sell_date": "2024-11-14",
+        "blocked_buy_date": "2024-11-14",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-11-14)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-11-12",
+        "blocked_buy_date": "2024-11-15",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-11-12)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-11-18",
+        "blocked_buy_date": "2024-11-18",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-11-18)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-11-18",
+        "blocked_buy_date": "2024-11-19",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-11-18)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-11-18",
+        "blocked_buy_date": "2024-11-20",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-11-18)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-11-18",
+        "blocked_buy_date": "2024-11-20",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-11-18)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-11-18",
+        "blocked_buy_date": "2024-11-21",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-11-18)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-11-18",
+        "blocked_buy_date": "2024-11-21",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-11-18)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-11-18",
+        "blocked_buy_date": "2024-11-22",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-11-18)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-11-18",
+        "blocked_buy_date": "2024-11-22",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-11-18)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-11-25",
+        "blocked_buy_date": "2024-11-25",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-11-25)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-11-25",
+        "blocked_buy_date": "2024-11-26",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-11-25)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-11-25",
+        "blocked_buy_date": "2024-11-27",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-11-25)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-11-25",
+        "blocked_buy_date": "2024-11-28",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-11-25)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-11-25",
+        "blocked_buy_date": "2024-11-29",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-11-25)"
+      },
+      {
+        "symbol": "600104.SH",
+        "sell_date": "2024-12-06",
+        "blocked_buy_date": "2024-12-06",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-12-06)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-09",
+        "blocked_buy_date": "2024-12-09",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-12-09)"
+      },
+      {
+        "symbol": "600104.SH",
+        "sell_date": "2024-12-06",
+        "blocked_buy_date": "2024-12-09",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-12-06)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-09",
+        "blocked_buy_date": "2024-12-10",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-12-09)"
+      },
+      {
+        "symbol": "600104.SH",
+        "sell_date": "2024-12-06",
+        "blocked_buy_date": "2024-12-10",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-12-06)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-09",
+        "blocked_buy_date": "2024-12-11",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-12-09)"
+      },
+      {
+        "symbol": "600104.SH",
+        "sell_date": "2024-12-06",
+        "blocked_buy_date": "2024-12-11",
+        "days_between": 5,
+        "reason": "wash_sale_window (5 days since 2024-12-06)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-09",
+        "blocked_buy_date": "2024-12-12",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-12-09)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-09",
+        "blocked_buy_date": "2024-12-13",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-12-09)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-12-16",
+        "blocked_buy_date": "2024-12-16",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-12-16)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-17",
+        "blocked_buy_date": "2024-12-17",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-12-17)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-12-16",
+        "blocked_buy_date": "2024-12-17",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-12-16)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-12-16",
+        "blocked_buy_date": "2024-12-17",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-12-16)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-17",
+        "blocked_buy_date": "2024-12-18",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-12-17)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-12-16",
+        "blocked_buy_date": "2024-12-18",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-12-16)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-12-16",
+        "blocked_buy_date": "2024-12-18",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-12-16)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-17",
+        "blocked_buy_date": "2024-12-19",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-12-17)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-12-16",
+        "blocked_buy_date": "2024-12-19",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-12-16)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-12-16",
+        "blocked_buy_date": "2024-12-19",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-12-16)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-17",
+        "blocked_buy_date": "2024-12-20",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-12-17)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-12-16",
+        "blocked_buy_date": "2024-12-20",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-12-16)"
+      },
+      {
+        "symbol": "601816.SH",
+        "sell_date": "2024-12-16",
+        "blocked_buy_date": "2024-12-20",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-12-16)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-24",
+        "blocked_buy_date": "2024-12-24",
+        "days_between": 0,
+        "reason": "same_day_sell (2024-12-24)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-12-23",
+        "blocked_buy_date": "2024-12-24",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-12-23)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-24",
+        "blocked_buy_date": "2024-12-25",
+        "days_between": 1,
+        "reason": "wash_sale_window (1 days since 2024-12-24)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-12-23",
+        "blocked_buy_date": "2024-12-25",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-12-23)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-24",
+        "blocked_buy_date": "2024-12-26",
+        "days_between": 2,
+        "reason": "wash_sale_window (2 days since 2024-12-24)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-12-23",
+        "blocked_buy_date": "2024-12-26",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-12-23)"
+      },
+      {
+        "symbol": "002607.SZ",
+        "sell_date": "2024-12-24",
+        "blocked_buy_date": "2024-12-27",
+        "days_between": 3,
+        "reason": "wash_sale_window (3 days since 2024-12-24)"
+      },
+      {
+        "symbol": "600803.SH",
+        "sell_date": "2024-12-23",
+        "blocked_buy_date": "2024-12-27",
+        "days_between": 4,
+        "reason": "wash_sale_window (4 days since 2024-12-23)"
+      }
+    ]
+  },
+  "market_regime_stats": {
+    "risk_period_days": 0,
+    "normal_period_days": 242
+  },
+  "v44_data": null
+}
