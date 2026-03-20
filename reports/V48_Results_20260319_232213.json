@@ -1,0 +1,46 @@
+{
+  "V40": {
+    "total_return": 0.13224418495779974,
+    "sharpe_ratio": 1.596200528749487,
+    "max_drawdown": 0.029364886171577176,
+    "total_trades": 40,
+    "win_rate": 0.6,
+    "avg_holding_days": 18.2,
+    "annual_return": 0.1380701396306978
+  },
+  "V44": {
+    "total_return": 0.14669595014540013,
+    "sharpe_ratio": 1.4864054168437308,
+    "max_drawdown": 0.05225874262759949,
+    "total_trades": 87,
+    "win_rate": 0.4878048780487805,
+    "avg_holding_days": 16.70731707317073,
+    "annual_return": 0
+  },
+  "V47": {
+    "total_return": 0.13968246703790022,
+    "sharpe_ratio": 1.417108772554299,
+    "max_drawdown": 0.05225874262759949,
+    "total_trades": 87,
+    "win_rate": 0.4878048780487805,
+    "avg_holding_days": 16.73170731707317,
+    "annual_return": 0
+  },
+  "V48": {
+    "total_return": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_trades": 0,
+    "win_rate": 0,
+    "avg_holding_days": 0,
+    "annual_return": 0,
+    "invalid_stop_count": 0,
+    "blacklist_blocks": 0,
+    "circuit_breaker_triggers": 0,
+    "profit_lock_triggers": 0,
+    "trailing_stop_triggers": 0,
+    "weights_adjusted": true,
+    "adjusted_momentum_weight": 0.4,
+    "adjusted_r2_weight": 0.6
+  }
+}
