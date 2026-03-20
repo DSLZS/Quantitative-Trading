@@ -1,0 +1,23 @@
+{
+  "version": "V49",
+  "initial_capital": 100000.0,
+  "final_value": 98483.98182725998,
+  "total_return": -0.015160181727400196,
+  "max_drawdown": 0.044220817704818303,
+  "sharpe_ratio": -0.4627922390701352,
+  "total_trades": 67,
+  "buy_trades": 35,
+  "sell_trades": 32,
+  "win_rate": 0.375,
+  "avg_holding_days": 20.59375,
+  "total_fees": 680.22417274,
+  "invalid_stop_count": 0,
+  "blacklist_blocks": 1,
+  "circuit_breaker_triggers": 1,
+  "profit_lock_triggers": 19,
+  "trailing_stop_triggers": 4,
+  "portfolio_stop_loss_triggers": 0,
+  "time_lock_triggers": 0,
+  "dynamic_position_triggers": 95,
+  "weights_adjusted": false
+}
