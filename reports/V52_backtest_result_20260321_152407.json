@@ -1,0 +1,89 @@
+{
+  "status": "success",
+  "version": "V52.0",
+  "start_date": "2024-01-01",
+  "end_date": "2024-12-31",
+  "initial_capital": 100000.0,
+  "final_value": 100000.0,
+  "total_return": 0.0,
+  "annual_return": 0.0,
+  "max_drawdown": 0.0,
+  "max_single_day_loss": 0.0,
+  "num_trades": 0,
+  "profitable_trades": 0,
+  "losing_trades": 0,
+  "win_rate": 0,
+  "avg_win": 0,
+  "avg_loss": 0,
+  "profit_loss_ratio": 0,
+  "trades": [],
+  "trade_log": [],
+  "wash_sale_stats": {
+    "total_blocked": 0,
+    "blocked_records": []
+  },
+  "blacklist_stats": {
+    "total_blacklisted": 0,
+    "blacklist_records": []
+  },
+  "drawdown_stats": {
+    "daily_drawdown": 0.0,
+    "weekly_drawdown": 0.0,
+    "single_day_triggered": false,
+    "weekly_triggered": false,
+    "flash_cut_triggered": false,
+    "cut_position_active": false,
+    "auto_cooldown_active": false
+  },
+  "position_sizing_stats": {
+    "risk_target_per_position": 0.008,
+    "max_single_position_pct": 0.2,
+    "reduced_single_position_pct": 0.15,
+    "initial_atr_mult": 2.0,
+    "position_sizing_method": "Individual Stock Volatility",
+    "auto_cooldown_triggered": false
+  },
+  "sector_balancing_stats": {
+    "enabled": true,
+    "max_per_industry": 2,
+    "current_industry_holdings": {}
+  },
+  "step_trailing_stats": {
+    "enabled": true,
+    "tier1_threshold": "5% - 12%",
+    "tier1_atr_mult": 1.2,
+    "tier2_threshold": "> 12%",
+    "tier2_drawdown_ratio": 0.1,
+    "current_tier1_positions": 0,
+    "current_tier2_positions": 0
+  },
+  "v52_features": {
+    "t_t1_isolation": true,
+    "flash_cut_enabled": true,
+    "flash_cut_threshold": "3.5%",
+    "flash_cut_count": 0,
+    "step_trailing_enabled": true,
+    "step_trailing_count": 0,
+    "hwm_profit_protection": true,
+    "hwm_stop_count": 0,
+    "sector_balancing_enabled": true,
+    "max_per_industry": 2,
+    "position_inertia_enabled": true,
+    "auto_cooldown_enabled": true,
+    "auto_cooldown_triggered": false
+  },
+  "performance_targets": {
+    "annual_return_target": 0.15,
+    "max_drawdown_target": 0.04,
+    "profit_loss_ratio_target": 3.0,
+    "min_trades_target": 25,
+    "max_trades_target": 45,
+    "trade_count_fail_threshold": 50
+  },
+  "target_met": {
+    "annual_return": false,
+    "max_drawdown": true,
+    "profit_loss_ratio": false,
+    "trade_count": false
+  }
+}
