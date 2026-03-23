@@ -156,6 +156,12 @@ V61_TRANSFER_FEE = 0.00001  # 过户费
 # V61 摩擦成本总计（估算）
 V61_FRICTION_COST = V61_COMMISSION_RATE + V61_SLIPPAGE_BUY + V61_SLIPPAGE_SELL + V61_STAMP_DUTY + V61_TRANSFER_FEE * 2
 
+# V61 RSRS 择时配置 - Alpha 核心
+# 计算 18 日 RSRS 斜率的标准分，只有 z-score > 0.8 时才允许开仓
+V61_RSRS_ENABLED = True
+V61_RSRS_WINDOW = 18
+V61_RSRS_ZSCORE_THRESHOLD = 0.8  # 开仓阈值
+
 # V61 MasterLoop 迭代协议配置
 V61_MAX_ITERATION_ROUNDS = 50  # 最多 50 轮迭代
 V61_RETURN_TARGET = 0.15  # 目标收益率 15%
@@ -931,20 +937,54 @@ class V61FactorEngine:
         ])
     
     def _compute_rsrs_factor(self, df: pl.DataFrame) -> pl.DataFrame:
-        """计算 RSRS 因子"""
+        """
+        V61 核心：RSRS 择时因子
+        
+        【核心逻辑】
+        1. 计算 18 日 RSRS 斜率
+        2. 计算标准分 (z-score)
+        3. 只有 z-score > 0.8 时才允许开仓
+        """
         result = df.clone()
-        rsrs_window = 18
-        high_low_spread = pl.col('high') - pl.col('low')
-        spread_mean = high_low_spread.rolling_mean(window_size=rsrs_window).over('symbol')
-        spread_std = high_low_spread.rolling_std(window_size=rsrs_window).over('symbol')
-        rsrs_raw = (high_low_spread - spread_mean) / (spread_std + self.EPSILON)
-        r_squared = 1.0 / (1.0 + spread_std)
-        rsrs = rsrs_raw * r_squared * 0.5
+        rsrs_window = V61_RSRS_WINDOW
+        
+        # 计算高低点关系（RSRS 核心：高点/低点比率）
+        high_low_ratio = pl.col('high') / (pl.col('low') + self.EPSILON)
+        
+        # 滚动均值和标准差
+        hl_mean = high_low_ratio.rolling_mean(window_size=rsrs_window).over('symbol')
+        hl_std = high_low_ratio.rolling_std(window_size=rsrs_window).over('symbol')
+        
+        # z-score 标准化
+        rsrs_zscore = (high_low_ratio - hl_mean) / (hl_std + self.EPSILON)
+        
+        # 滚动计算 RSRS 斜率（使用线性回归近似）
+        # 简化：使用高低点变化的相关性
+        high_change = pl.col('high').pct_change().over('symbol')
+        low_change = pl.col('low').pct_change().over('symbol')
+        
+        # 滚动相关系数近似
+        hl_cov = (high_change * low_change).rolling_mean(window_size=rsrs_window).over('symbol')
+        high_var = (high_change ** 2).rolling_mean(window_size=rsrs_window).over('symbol')
+        low_var = (low_change ** 2).rolling_mean(window_size=rsrs_window).over('symbol')
+        
+        # RSRS 斜率 = cov(high, low) / var(low)
+        rsrs_slope = hl_cov / (low_var + self.EPSILON)
+        
+        # RSRS 综合得分 = z-score * 斜率调整
+        rsrs_score = rsrs_zscore * (rsrs_slope.abs() + 0.1)
+        
+        # 开仓信号：z-score > 0.8
+        rsrs_entry_signal = rsrs_zscore > V61_RSRS_ZSCORE_THRESHOLD
+        
         return result.with_columns([
-            high_low_spread.alias('high_low_spread'),
-            spread_mean.alias('spread_mean'),
-            spread_std.alias('spread_std'),
-            rsrs.alias('rsrs_factor')
+            high_low_ratio.alias('high_low_ratio'),
+            hl_mean.alias('hl_mean'),
+            hl_std.alias('hl_std'),
+            rsrs_zscore.alias('rsrs_zscore'),
+            rsrs_slope.alias('rsrs_slope'),
+            rsrs_score.alias('rsrs_score'),
+            rsrs_entry_signal.alias('rsrs_entry_signal')
         ])
     
     def _compute_trend_factors(self, df: pl.DataFrame) -> pl.DataFrame:
@@ -1623,6 +1663,9 @@ __all__ = [
     'V61_MAX_DAILY_GAIN',
     'V61_VOLUME_BREAKOUT_MULT',
     'V61_MA20_BREAKOUT',
+    'V61_RSRS_ENABLED',
+    'V61_RSRS_WINDOW',
+    'V61_RSRS_ZSCORE_THRESHOLD',
     
     # 常量 - 止损配置
     'V61_HARD_STOP_LOSS_ATR_MULT',

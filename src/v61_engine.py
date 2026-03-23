@@ -59,6 +59,8 @@ from v61_core import (
     V61_MIN_TREND_PERIOD, V61_MAX_TREND_PERIOD,
     V61_LOGIC_MUTATION_ENABLED, V61_LOGIC_MUTATION_THRESHOLD,
     V61_RISK_TARGET_PER_POSITION,
+    # V61 RSRS 择时配置
+    V61_RSRS_ENABLED, V61_RSRS_WINDOW, V61_RSRS_ZSCORE_THRESHOLD,
 )
 
 
@@ -531,10 +533,12 @@ class V61BacktestEngine:
         
         # V61 核心：只选择回调信号股票
         # 过滤条件：is_pullback_entry=True 且 is_volume_shrunk=True
+        # V61 新增：RSRS 择时过滤（z-score > 0.8）
         pullback_candidates = filtered_df.filter(
             (pl.col('is_pullback_entry') == True) & 
             (pl.col('is_volume_shrunk') == True) &
-            (pl.col('is_top_rs') == True)
+            (pl.col('is_top_rs') == True) &
+            (pl.col('rsrs_entry_signal') == True)  # V61: RSRS 择时过滤
         )
         
         if pullback_candidates.is_empty():
