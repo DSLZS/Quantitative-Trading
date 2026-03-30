@@ -216,7 +216,16 @@ class DatabaseManager:
             pdf = pd.DataFrame.from_records(rows, columns=columns)
             
             # Ensure column names are strings and strip whitespace
-            pdf.columns = [str(col).strip() for col in pdf.columns]
+            # Also filter out empty column names
+            cleaned_columns = []
+            for col in pdf.columns:
+                col_str = str(col).strip()
+                if not col_str:
+                    # Use index as fallback for empty column names
+                    cleaned_columns.append(f"col_{len(cleaned_columns)}")
+                else:
+                    cleaned_columns.append(col_str)
+            pdf.columns = cleaned_columns
             
             # Fix date columns - MySQL DATE/DATETIME types may be converted incorrectly
             for col in pdf.columns:
