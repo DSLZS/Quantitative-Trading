@@ -215,8 +215,15 @@ class DatabaseManager:
             # This handles mixed types and DECIMAL conversion automatically
             pdf = pd.DataFrame.from_records(rows, columns=columns)
             
+            # Ensure column names are strings and strip whitespace
+            pdf.columns = [str(col).strip() for col in pdf.columns]
+            
             # Fix date columns - MySQL DATE/DATETIME types may be converted incorrectly
             for col in pdf.columns:
+                # Skip if column name is empty
+                if not col:
+                    continue
+                    
                 # Check if column name suggests it's a date column
                 if 'date' in col.lower() or 'time' in col.lower():
                     # Try to convert to string first, then to proper date
@@ -226,7 +233,7 @@ class DatabaseManager:
                         # Try pandas to_datetime
                         pdf[col] = pd.to_datetime(pdf[col], errors='coerce')
                         # Convert to string format for Polars compatibility
-                        pdf[col] = pdf[col].dt.strftime('%Y-%m-%d').fillna('')
+                        pdf[col] = pd.to_datetime(pdf[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
                     except Exception:
                         # If date conversion fails, keep as string
                         pdf[col] = pdf[col].astype(str)
