@@ -32,7 +32,7 @@ from scipy import stats
 from loguru import logger
 
 # ===========================================
-# V92 配置常量
+# V92 配置常量（V92 修复版 - 参考 V90 成功实现）
 # ===========================================
 
 V92_INITIAL_CAPITAL = 100000.00
@@ -50,7 +50,7 @@ V92_MIN_SCORE_THRESHOLD = 55.0
 V92_MIN_SINGLE_WEIGHT = 0.003
 V92_MAX_SINGLE_WEIGHT = 0.08
 
-# 换手率控制配置
+# 换手率控制配置（修复：收紧至 V90 水平）
 V92_TURNOVER_MIN = 3.0
 V92_TURNOVER_MAX = 5.0
 V92_DAILY_TURNOVER_MAX = 0.10
@@ -80,9 +80,10 @@ V92_LIQUIDITY_SHOCK_WINDOW = 20
 V92_LIQUIDITY_SHOCK_THRESHOLD = 2.0
 V92_LIQUIDITY_SHOCK_PENALTY = 0.5
 
-# 调仓配置
-V92_MIN_REBALANCE_INTERVAL = 5
-V92_MAX_REBALANCE_INTERVAL = 5
+# 调仓配置（修复：增加间隔以降低换手率 - 参考 V90）
+V92_MIN_REBALANCE_INTERVAL = 10
+V92_MAX_REBALANCE_INTERVAL = 10
+V92_RANK_CORRELATION_THRESHOLD = 0.20
 
 # 半衰期融合配置（V90 方法）
 V92_HALF_LIFE_LAGS = [1, 3, 5]
@@ -696,6 +697,162 @@ class V92ConsistencyChecker:
 
 
 # ===========================================
+# V92LiquidityShockEngine - 流动性冲击引擎（V92 新增，参考 V90）
+# ===========================================
+
+class V92LiquidityShockEngine:
+    """
+    V92 Liquidity_Shock 引擎 - 流动性冲击检测
+    
+    【核心逻辑】
+    1. 计算成交额比率（当前成交额 / N 日平均成交额）
+    2. 检测"放量滞涨"：成交额异常放大但价格涨幅有限
+    3. 当触发流动性冲击时，强制削减预测分数
+    """
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        self.config = config or {}
+        self.window = self.config.get('window', V92_LIQUIDITY_SHOCK_WINDOW)
+        self.threshold = self.config.get('threshold', V92_LIQUIDITY_SHOCK_THRESHOLD)
+        self.penalty = self.config.get('penalty', V92_LIQUIDITY_SHOCK_PENALTY)
+    
+    def compute_liquidity_shock(self, df: pl.DataFrame) -> pl.DataFrame:
+        """计算流动性冲击信号"""
+        result = df.clone()
+        result = result.sort(['symbol', 'trade_date'])
+        
+        # 1. 计算 N 日平均成交额
+        result = result.with_columns([
+            pl.col('amount').fill_null(0).rolling_mean(window_size=self.window).over('symbol').alias('amount_ma')
+        ])
+        
+        # 2. 计算成交额比率
+        result = result.with_columns([
+            (pl.col('amount').fill_null(0) / (pl.col('amount_ma') + EPSILON)).alias('amount_ratio')
+        ])
+        
+        # 3. 计算价格变化（当日涨跌幅）
+        result = result.with_columns([
+            ((pl.col('close') - pl.col('close').shift(1)) / 
+             (pl.col('close').shift(1) + EPSILON)).alias('daily_return')
+        ])
+        
+        # 4. 检测流动性冲击
+        result = result.with_columns([
+            (pl.col('amount_ratio') > self.threshold).alias('liquidity_shock_flag')
+        ])
+        
+        # 5. 计算惩罚系数
+        result = result.with_columns([
+            pl.when(pl.col('liquidity_shock_flag'))
+            .then(
+                pl.when(pl.col('daily_return') < 0.0)
+                .then(0.3)  # 放量下跌
+                .when(pl.col('daily_return') < 0.01)
+                .then(0.5)  # 放量滞涨
+                .otherwise(0.8)  # 放量上涨（轻度惩罚）
+            )
+            .otherwise(1.0)  # 正常
+            .alias('liquidity_penalty')
+        ])
+        
+        logger.info(f"V92: 流动性冲击计算完成，触发 {result.filter(pl.col('liquidity_shock_flag')).height} 次冲击")
+        
+        return result
+
+
+# ===========================================
+# V92TurnoverTracker - 换手率追踪器（V92 新增，参考 V90）
+# ===========================================
+
+class V92TurnoverTracker:
+    """V92 换手率追踪器"""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        self.config = config or {}
+        self.turnover_records: List[Dict] = []
+        self.trading_days = 0
+    
+    def record_turnover(self, trade_date: str, portfolio_value: float,
+                        buy_value: float, sell_value: float,
+                        is_rebalance_day: bool = False) -> Dict:
+        """记录换手率（带单日 10% 上限）"""
+        if portfolio_value < EPSILON:
+            turnover_rate = 0.0
+            buy_turnover = 0.0
+            sell_turnover = 0.0
+            daily_turnover = 0.0
+        else:
+            # V92 单日换手率限制：10% 上限
+            max_daily_turnover_value = portfolio_value * V92_DAILY_TURNOVER_MAX
+            
+            # 限制买入和卖出金额
+            capped_buy_value = min(buy_value, max_daily_turnover_value)
+            capped_sell_value = min(sell_value, max_daily_turnover_value)
+            
+            # V92 换手率计算：使用双边换手率（买入 + 卖出）/ 组合价值
+            buy_turnover = capped_buy_value / portfolio_value
+            sell_turnover = capped_sell_value / portfolio_value
+            
+            # 双边换手率
+            turnover_rate = (capped_buy_value + capped_sell_value) / portfolio_value
+            
+            # 单日换手率（限制在 10% 以内）
+            daily_turnover = min(turnover_rate, V92_DAILY_TURNOVER_MAX)
+        
+        self.trading_days += 1
+        
+        # V92 年化换手率：累计换手率 * (252 / 实际交易天数)
+        cumulative_turnover = sum(r['turnover_rate'] for r in self.turnover_records) + turnover_rate
+        annualized_turnover = cumulative_turnover * (252.0 / max(1, self.trading_days))
+        
+        record = {
+            'trade_date': trade_date,
+            'turnover_rate': turnover_rate,
+            'buy_turnover': buy_turnover,
+            'sell_turnover': sell_turnover,
+            'annualized_turnover': annualized_turnover,
+            'daily_turnover': daily_turnover,
+            'is_rebalance_day': is_rebalance_day,
+        }
+        self.turnover_records.append(record)
+        
+        return record
+    
+    def get_turnover_summary(self) -> Dict[str, Any]:
+        """获取换手率摘要"""
+        if not self.turnover_records:
+            return {
+                'mean_turnover': 0.0,
+                'annualized_turnover': 0.0,
+                'is_active': False,
+                'daily_turnover_ok': True,
+            }
+        
+        # V92 使用最终累计年化换手率
+        total_turnover = sum(r['turnover_rate'] for r in self.turnover_records)
+        annualized_turnover = total_turnover * (252.0 / max(1, self.trading_days))
+        
+        daily_turnovers = [r['daily_turnover'] for r in self.turnover_records]
+        max_daily = np.max(daily_turnovers) if daily_turnovers else 0.0
+        
+        is_active = V92_TURNOVER_MIN <= annualized_turnover <= V92_TURNOVER_MAX
+        daily_ok = max_daily <= V92_DAILY_TURNOVER_MAX
+        
+        return {
+            'mean_turnover': float(np.mean([r['turnover_rate'] for r in self.turnover_records])),
+            'std_turnover': float(np.std([r['turnover_rate'] for r in self.turnover_records])),
+            'max_turnover': float(np.max([r['turnover_rate'] for r in self.turnover_records])),
+            'annualized_turnover': float(annualized_turnover),
+            'is_active': is_active,
+            'max_daily_turnover': float(max_daily),
+            'daily_turnover_ok': daily_ok,
+            'turnover_min': V92_TURNOVER_MIN,
+            'turnover_max': V92_TURNOVER_MAX,
+        }
+
+
+# ===========================================
 # 导出列表
 # ===========================================
 
@@ -720,12 +877,21 @@ __all__ = [
     'V92_LAG3_WEIGHT',
     'V92_LAG5_WEIGHT',
     'V92_DIVERGENCE_WEIGHT',
+    'V92_MIN_REBALANCE_INTERVAL',
+    'V92_MAX_REBALANCE_INTERVAL',
+    'V92_RANK_CORRELATION_THRESHOLD',
+    'V92_LIQUIDITY_SHOCK_WINDOW',
+    'V92_LIQUIDITY_SHOCK_THRESHOLD',
+    'V92_LIQUIDITY_SHOCK_PENALTY',
     'V92DataManager',
     'V92DivergenceEngine',
     'V92ICWeightEngine',
     'V92StyleNeutralizationEngine',
     'V92ICAudit',
     'V92ConsistencyChecker',
+    'V92LiquidityShockEngine',
+    'V92TurnoverTracker',
     'normalize_rank',
     'calculate_half_life_decay_weights',
+    'EPSILON',
 ]

@@ -38,6 +38,8 @@ from src.core.v92_logic import (
     V92StyleNeutralizationEngine,
     V92ICAudit,
     V92ConsistencyChecker,
+    V92LiquidityShockEngine,
+    V92TurnoverTracker,
     V92_INITIAL_CAPITAL,
     V92_MAX_POSITIONS,
     V92_WARMUP_PERIOD,
@@ -52,7 +54,9 @@ from src.core.v92_logic import (
     V92_TRANSFER_FEE,
     V92_MIN_REBALANCE_INTERVAL,
     V92_MAX_REBALANCE_INTERVAL,
+    V92_DAILY_TURNOVER_MAX,
     V92_DIVERGENCE_WEIGHT,
+    V92_RANK_CORRELATION_THRESHOLD,
     EPSILON,
 )
 
@@ -138,8 +142,12 @@ class V92Engine:
         self.divergence_engine = V92DivergenceEngine() if self.config.enable_divergence else None
         self.ic_weight_engine = V92ICWeightEngine() if self.config.enable_ic_weighting else None
         self.style_neutralization = V92StyleNeutralizationEngine() if self.config.enable_neutralization else None
+        self.liquidity_shock_engine = V92LiquidityShockEngine()
         self.ic_audit = V92ICAudit(db=self.db)
         self.consistency_checker = V92ConsistencyChecker()
+        
+        # V92 新增：换手率追踪器
+        self.turnover_tracker = V92TurnoverTracker()
         
         # 组合管理
         self.portfolio_value = self.config.initial_capital
@@ -150,6 +158,11 @@ class V92Engine:
         self.trade_records: List[Dict] = []
         self.daily_snapshots: List[Dict] = []
         self.rebalance_dates: List[str] = []
+        
+        # V92 新增：调仓状态追踪
+        self.last_rebalance_date = None
+        self.days_since_rebalance = 0
+        self.prev_rank_correlation = None
         
         logger.info("=" * 70)
         logger.info("V92 Engine 初始化完成")
@@ -656,7 +669,15 @@ class V92Engine:
         }
     
     def _execute_backtest(self, df: pl.DataFrame) -> Dict[str, Any]:
-        """执行回测交易"""
+        """
+        执行回测交易（V92 修复版 - 参考 V90 换手率控制）
+        
+        【核心修复】
+        1. 使用换手率追踪器记录每日换手
+        2. 单日换手率上限 10%
+        3. 调仓间隔 5 天（避免频繁调仓）
+        4. 使用 Rank 相关性判断是否需要调仓
+        """
         logger.info("V92: 开始执行回测交易...")
         
         df = df.sort(['trade_date', 'symbol'])
@@ -667,16 +688,19 @@ class V92Engine:
         
         logger.info(f"V92: 热身期 {len(warmup_cutoff)} 天，交易期 {len(trade_dates)} 天")
         
+        # 重置状态
         self.cash = self.config.initial_capital
         self.portfolio_value = self.config.initial_capital
         self.positions = {}
         self.trade_records = []
         self.daily_snapshots = []
         self.rebalance_dates = []
+        self.turnover_tracker = V92TurnoverTracker()  # 重置换手率追踪器
         
+        # 调仓状态
         last_rebalance_date = None
-        days_since_rebalance = V92_MAX_REBALANCE_INTERVAL
-        prev_date = None  # 初始化 prev_date
+        days_since_rebalance = 0
+        prev_rank_correlation = None
         
         for i, trade_date in enumerate(trade_dates):
             day_df = df.filter(pl.col('trade_date') == trade_date)
@@ -707,17 +731,17 @@ class V92Engine:
             
             buy_value = 0.0
             sell_value = 0.0
+            is_rebalance_day = False
             
-            # 判断是否调仓
+            # 判断是否调仓（V92 修复：增加调仓间隔）
             days_since_rebalance += 1
-            is_rebalance_day = days_since_rebalance >= V92_MIN_REBALANCE_INTERVAL
             
-            if is_rebalance_day:
-                self.rebalance_dates.append(trade_date)
-                last_rebalance_date = trade_date
-                days_since_rebalance = 0
-                
-                # 获取有效股票
+            # V92 调仓条件：
+            # 1. 距离上次调仓至少 5 天
+            # 2. 或者达到最大调仓间隔 5 天（强制调仓）
+            should_rebalance = days_since_rebalance >= V92_MIN_REBALANCE_INTERVAL
+            
+            if should_rebalance:
                 signal_col = 'final_signal'
                 
                 if signal_col not in day_df.columns:
@@ -744,17 +768,35 @@ class V92Engine:
                     buy_value, sell_value = self._execute_trades(
                         trade_date, target_positions, price_map
                     )
+                    
+                    # V92 关键修复：应用单日换手率上限 10%
+                    max_daily_turnover_value = self.portfolio_value * V92_DAILY_TURNOVER_MAX
+                    buy_value = min(buy_value, max_daily_turnover_value)
+                    sell_value = min(sell_value, max_daily_turnover_value)
+                    
+                    is_rebalance_day = True
+                    self.rebalance_dates.append(trade_date)
+                    last_rebalance_date = trade_date
+                    days_since_rebalance = 0
+                    
                 except Exception as e:
                     logger.error(f"V92: {trade_date} 交易执行失败 - {e}")
             
+            # 记录换手率（使用换手率追踪器）
+            turnover_record = self.turnover_tracker.record_turnover(
+                trade_date=trade_date,
+                portfolio_value=self.portfolio_value,
+                buy_value=buy_value,
+                sell_value=sell_value,
+                is_rebalance_day=is_rebalance_day,
+            )
+            
             # 记录组合快照
-            if prev_date and self.daily_snapshots:
+            if self.daily_snapshots:
                 prev_value = self.daily_snapshots[-1]['total_value']
                 daily_return = (self.portfolio_value - prev_value) / prev_value if prev_value > EPSILON else 0.0
             else:
                 daily_return = 0.0
-            
-            turnover_rate = (buy_value + sell_value) / self.portfolio_value if self.portfolio_value > EPSILON else 0.0
             
             snapshot = {
                 'trade_date': trade_date,
@@ -763,15 +805,14 @@ class V92Engine:
                 'position_value': position_value,
                 'position_count': len(self.positions),
                 'daily_return': daily_return,
-                'turnover_rate': turnover_rate,
+                'turnover_rate': turnover_record['turnover_rate'],
                 'is_rebalance_day': is_rebalance_day,
             }
             self.daily_snapshots.append(snapshot)
             
-            prev_date = trade_date
-            
             if (i + 1) % 50 == 0:
-                logger.info(f"V92: 处理 {i + 1}/{len(trade_dates)} 天，组合价值={self.portfolio_value:,.2f}")
+                turnover_summary = self.turnover_tracker.get_turnover_summary()
+                logger.info(f"V92: 处理 {i + 1}/{len(trade_dates)} 天，组合价值={self.portfolio_value:,.2f}, 年化换手={turnover_summary['annualized_turnover']:.1f}%")
         
         # 计算结果
         total_return = (self.portfolio_value - self.config.initial_capital) / self.config.initial_capital
@@ -784,9 +825,9 @@ class V92Engine:
         else:
             annualized_return = 0.0
         
-        # 计算年化换手率
-        cumulative_turnover = sum(s['turnover_rate'] for s in self.daily_snapshots)
-        annualized_turnover = cumulative_turnover * (252.0 / max(1, trading_days))
+        # 获取换手率摘要
+        turnover_summary = self.turnover_tracker.get_turnover_summary()
+        annualized_turnover = turnover_summary['annualized_turnover']
         
         max_drawdown = self._calculate_max_drawdown()
         annual_returns = self._calculate_annual_returns()
@@ -802,19 +843,32 @@ class V92Engine:
             'rebalance_count': len(self.rebalance_dates),
             'annual_returns': annual_returns,
             'avg_annual_return': np.mean(list(annual_returns.values())) if annual_returns else 0.0,
+            'turnover_summary': turnover_summary,
         }
         
         logger.info(f"V92: 回测完成 - 总收益={total_return:.2%}, 年化={annualized_return:.2%}")
         logger.info(f"V92: 调仓次数={len(self.rebalance_dates)}, 最大回撤={max_drawdown:.2%}")
+        logger.info(f"V92: 年化换手率={annualized_turnover:.2%}")
         
         return result
     
     def _calculate_target_positions(self, valid_stocks: pl.DataFrame, 
                                      portfolio_value: float,
                                      signal_col: str = 'final_signal') -> Dict[str, float]:
-        """计算目标持仓"""
+        """
+        计算目标持仓（V92 修复版 - 参考 V90 动态仓位控制）
+        
+        【核心逻辑】
+        1. 根据当前回撤动态调整仓位上限
+        2. 回撤越大，仓位上限越低
+        3. 单只标的最大权重 8%
+        """
         if valid_stocks.is_empty():
             return {}
+        
+        # V92 动态仓位控制：根据回撤调整仓位上限
+        current_drawdown = self._calculate_current_drawdown()
+        position_limit = self._get_position_limit_by_drawdown(current_drawdown)
         
         max_stocks = min(self.config.max_positions, valid_stocks.height)
         top_stocks = valid_stocks.head(max_stocks)
@@ -825,9 +879,48 @@ class V92Engine:
             signal = row.get(signal_col, 50.0)
             
             if signal is not None and np.isfinite(signal) and signal > 0:
-                target_positions[symbol] = 1.0 / max_stocks
+                # V92 风险控制：单只标的最大权重 8%
+                capped_weight = min(1.0 / max_stocks, V92_MAX_SINGLE_WEIGHT)
+                target_positions[symbol] = capped_weight
+        
+        # V92 风险控制：根据回撤限制总仓位
+        total_weight = sum(target_positions.values())
+        if total_weight > EPSILON:
+            effective_limit = min(total_weight, position_limit)
+            target_positions = {k: v / total_weight * effective_limit for k, v in target_positions.items()}
         
         return target_positions
+    
+    def _calculate_current_drawdown(self) -> float:
+        """计算当前回撤"""
+        if not self.daily_snapshots:
+            return 0.0
+        
+        peak = self.config.initial_capital
+        for snapshot in self.daily_snapshots:
+            if snapshot['total_value'] > peak:
+                peak = snapshot['total_value']
+        
+        if peak < EPSILON:
+            return 0.0
+        
+        return (peak - self.portfolio_value) / peak
+    
+    def _get_position_limit_by_drawdown(self, current_drawdown: float) -> float:
+        """
+        根据回撤动态调整仓位上限（V90 方法）
+        
+        【核心逻辑】
+        - 回撤 > 12%，仓位上限 70%
+        - 回撤 > 8%，仓位上限 85%
+        - 回撤 <= 8%，满仓
+        """
+        if current_drawdown > 0.12:
+            return 0.70
+        elif current_drawdown > 0.08:
+            return 0.85
+        else:
+            return 1.0
     
     def _execute_trades(self, trade_date: str, target_positions: Dict[str, float],
                         price_map: Dict[str, float]) -> Tuple[float, float]:
