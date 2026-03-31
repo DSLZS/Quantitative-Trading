@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-V96 策略重构 - 数据库检查脚本
-使用 Polars + connectorx 直接读取数据库
+V97 策略重启 - 数据库检查脚本
+使用 Polars read_database_uri 直接读取数据库
 
 强制要求:
-    1. 使用 pl.read_database 配合 connectorx
+    1. 使用 pl.read_database_uri(query, uri=...) - 严禁使用已废弃的 pl.read_database
     2. 显式检查"银行"行业数据
     3. 实现 fillna 或行业映射逻辑
 """
@@ -15,7 +15,6 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import polars as pl
-import connectorx as cx
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -23,12 +22,12 @@ from loguru import logger
 load_dotenv()
 
 
-def get_db_url() -> str:
+def get_mysql_uri() -> str:
     """
-    从环境变量构建 MySQL 连接 URL。
+    从环境变量构建 MySQL 连接 URI。
     
     Returns:
-        str: MySQL 连接 URL，格式为 mysql://user:password@host:port/database
+        str: MySQL 连接 URI，格式为 mysql://user:password@host:port/database
     """
     host = os.getenv("MYSQL_HOST", "localhost")
     port = os.getenv("MYSQL_PORT", "3306")
@@ -39,22 +38,49 @@ def get_db_url() -> str:
     return f"mysql://{user}:{password}@{host}:{port}/{database}"
 
 
-def read_db(query: str) -> pl.DataFrame:
+def get_sqlite_uri(db_path: str) -> str:
     """
-    使用 connectorx 读取数据库。
+    构建 SQLite 连接 URI。
+    
+    Args:
+        db_path: SQLite 数据库文件路径
+        
+    Returns:
+        str: SQLite URI，格式为 sqlite:///absolute/path
+    """
+    abs_path = os.path.abspath(db_path)
+    return f"sqlite:///{abs_path}"
+
+
+def read_db(query: str, db_type: str = "mysql") -> pl.DataFrame:
+    """
+    使用 polars.read_database_uri 读取数据库。
     
     Args:
         query: SQL 查询语句
+        db_type: 数据库类型，"mysql" 或 "sqlite"
         
     Returns:
         pl.DataFrame: 查询结果
+        
+    Raises:
+        Exception: 数据库读取失败
     """
-    db_url = get_db_url()
+    if db_type == "mysql":
+        db_uri = get_mysql_uri()
+    elif db_type == "sqlite":
+        # 默认 SQLite 路径
+        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "quantitative_trading.db")
+        db_uri = get_sqlite_uri(db_path)
+    else:
+        raise ValueError(f"不支持的数据库类型：{db_type}")
+    
     try:
-        # 使用 connectorx 读取数据
-        df = cx.read_sql(db_url, query)
-        return pl.from_pandas(df)
+        # V97 强制要求：使用 polars.read_database_uri 而非已废弃的 pl.read_database
+        df = pl.read_database_uri(query, uri=db_uri)
+        return df
     except Exception as e:
+        logger.error(f"数据库读取失败：{e}")
         raise e
 
 
