@@ -160,6 +160,62 @@ class DataLoader:
         
         return False
     
+    def repair_2024_data(self, df: Optional[pl.DataFrame] = None,
+                          ts_code: Optional[str] = None,
+                          start_date: Optional[str] = None,
+                          end_date: Optional[str] = None) -> Optional[pl.DataFrame]:
+        """
+        【主动防御】修复 2024 年缺失的数据。
+        
+        【核心逻辑】
+        1. 检测 2024 年 total_mv 缺失
+        2. 主动从 Tushare API 重新拉取
+        3. 用 amount/turnover_rate 估算
+        4. 严禁打印报错后停止运行
+        
+        Args:
+            df: 已有的 DataFrame (可选)
+            ts_code: 股票代码 (用于重新拉取)
+            start_date: 开始日期
+            end_date: 结束日期
+            
+        Returns:
+            修复后的 DataFrame
+        """
+        logger.info("[数据防御] 启动 repair_2024_data...")
+        
+        # 场景 1: 已有 DataFrame，尝试修复
+        if df is not None and not df.is_empty():
+            if 'total_mv' in df.columns:
+                null_ratio = df['total_mv'].null_count() / len(df) if len(df) > 0 else 0
+                if null_ratio > 0.3:
+                    logger.warning(f"[数据防御] total_mv 缺失比例：{null_ratio:.1%}")
+                    
+                    # 尝试用 amount/turnover_rate 估算
+                    if 'amount' in df.columns and 'turnover_rate' in df.columns:
+                        logger.info("[数据防御] 用 amount/turnover_rate 估算 total_mv")
+                        estimated_mv = df['amount'] / (df['turnover_rate'].fill_null(0.01) + pl.lit(1e-6)) * 100
+                        df = df.with_columns([
+                            pl.col('total_mv').fill_null(estimated_mv).alias('total_mv')
+                        ])
+            
+            return df
+        
+        # 场景 2: 从 API 重新拉取
+        if ts_code and start_date and end_date:
+            logger.info(f"[数据防御] 从 API 重新拉取 {ts_code} 的数据...")
+            try:
+                # 尝试拉取 daily_basic 数据
+                daily_basic_df = self.fetch_daily_basic(ts_code, start_date, end_date)
+                if daily_basic_df is not None and not daily_basic_df.is_empty():
+                    logger.info(f"[数据防御] 成功获取 daily_basic 数据 {len(daily_basic_df)} 条")
+                    return daily_basic_df
+            except Exception as e:
+                logger.error(f"[数据防御] 从 API 拉取失败：{e}")
+        
+        logger.warning("[数据防御] 无法修复数据，返回 None")
+        return None
+    
     def fetch_daily_basic(self, ts_code: str, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
         """
         获取 daily_basic 数据（包括 total_mv）。
