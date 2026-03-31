@@ -1,0 +1,40 @@
+{
+  "alpha_metrics": {
+    "t1_ic": {
+      "mean_ic": -0.0005887730207021726,
+      "ic_std": 0.12345659383826955,
+      "ic_ir": -0.0047690690500782505,
+      "num_days": 198,
+      "min_ic": -0.34295750057524454,
+      "max_ic": 0.4031045734104789
+    },
+    "ic_decay": {
+      "t1_ic": -0.0005887730207021726,
+      "t3_ic": -0.010412425536405841,
+      "t5_ic": -0.01461839284840899,
+      "is_monotonic": true,
+      "decay_pattern": "T+1(-0.0006) -> T+3(-0.0104) -> T+5(-0.0146)"
+    },
+    "passed": false
+  },
+  "backtest_metrics": {
+    "portfolio_df": "     trade_date  portfolio_value  daily_return  num_positions  transaction_cost  cumulative_return\n0    2024-03-12    -1.483266e+06             0            791       1265.600000                  0\n1    2024-03-13    -1.483266e+06             0            791          0.000000                  0\n2    2024-03-14    -1.483266e+06             0            791          0.000000                  0\n3    2024-03-15    -1.483266e+06             0            791          0.000000                  0\n4    2024-03-18    -1.483266e+06             0            791          0.000000                  0\n..          ...              ...           ...            ...               ...                ...\n193  2024-12-25    -1.929292e+07             0             50     -35169.541640                  0\n194  2024-12-26    -1.925680e+07             0             50     -36116.344509                  0\n195  2024-12-27    -1.922276e+07             0             50     -34046.027228                  0\n196  2024-12-30    -1.918877e+07             0             50     -33985.833852                  0\n197  2024-12-31    -1.914287e+07             0             50     -45899.539920                  0\n\n[198 rows x 6 columns]",
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "volatility": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_transaction_cost": -8833938.516212666,
+    "num_trading_days": 198,
+    "final_value": -19142871.329684835
+  },
+  "factor_ics": {},
+  "config": {
+    "commission_rate": 0.0003,
+    "stamp_duty_rate": 0.001,
+    "slippage_rate": 0.0005,
+    "top_n": 50,
+    "position_per_stock": 0.02,
+    "initial_capital": 100000.0
+  }
+}

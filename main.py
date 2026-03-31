@@ -1,25 +1,31 @@
 #!/usr/bin/env python3
 """
-V103 Unified Main Entry - 裁判 - 选手机制.
+V104 Unified Main Entry - 因子工厂攻坚战.
 
 【架构强制规范】
-1. BacktestReferee 是唯一裁判，不可修改
-2. AlphaResearchV103 是选手，负责因子计算
+1. BacktestReferee 是唯一裁判，不可修改 (初始资金锁定 10 万)
+2. AlphaResearchV104 是选手，负责因子计算
 3. 废弃所有 run_vXXX.py 脚本
+
+【V104 核心改进】
+1. 因子生存竞争：10+ 原始因子内部测试
+2. 高频特征截面化：成交量加权标准差、收益率偏度
+3. IC 倒挂修复：严格使用 T-1 日数据计算因子
+4. 自迭代优化：T+1 IC < 0.03 时自动进行多轮迭代
 
 【使用说明】
 运行 2019/2021/2024 年回测，输出以 IC 为核心的详细审计报告。
 
 使用示例:
-    python main.py --year 2024
-    python main.py --all  # 运行所有年份
+    python main.py --year 2024 --version 104
+    python main.py --all --version 104
 
 【验收指标】
 | 指标 | 目标值 | 判定标准 |
 |------|--------|----------|
-| T+1 Rank IC | > 0.05 | 核心指标：低于 0.03 视为优化失败 |
-| IC Decay | T+1 > T+2 > T+3 | 信号衰减必须符合单调性 |
-| 模块独立性 | 100% | 回测引擎逻辑必须完全位于 backtest_referee.py |
+| T+1 Rank IC | > 0.05 | 核心指标：低于 0.03 触发自动迭代 |
+| IC Decay | T+1 > T+3 > T+5 | 信号衰减必须符合单调性 |
+| 因子多样性 | >= 10 个 | 必须构建至少 10 个原始因子 |
 """
 
 import sys
@@ -37,9 +43,9 @@ from loguru import logger
 import pandas as pd
 import numpy as np
 
-# V103 核心模块导入
+# V104 核心模块导入
 from engine.backtest_referee import BacktestReferee, get_backtest_referee
-from alpha_research_v103 import AlphaResearchV103, get_alpha_research
+from alpha_research_v104 import AlphaResearchV104, get_alpha_research
 from data_loader import DataLoader, get_loader
 
 # Load environment variables
@@ -54,19 +60,19 @@ logger.add(
 )
 
 
-class V103Runner:
+class V104Runner:
     """
-    V103 统一回测运行器。
+    V104 统一回测运行器 - 因子工厂攻坚战。
     
     【裁判 - 选手机制】
-    - BacktestReferee: 裁判 (不可变)
-    - AlphaResearchV103: 选手 (因子计算)
+    - BacktestReferee: 裁判 (不可变，初始资金锁定 10 万)
+    - AlphaResearchV104: 选手 (因子生存竞争)
     
     【运行流程】
     1. 加载数据（从 Parquet 或数据库）
     2. 初始化裁判和选手
     3. 裁判执行审计
-    4. 输出报告
+    4. 输出报告（包含因子清洗前后 IC 对比和单调性审计）
     """
     
     def __init__(
@@ -85,15 +91,16 @@ class V103Runner:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
-        # 初始化选手 (Alpha Module)
-        self.alpha_module = get_alpha_research(use_neutralization=True)
+        # 初始化选手 (Alpha Module) - V104
+        self.alpha_module = get_alpha_research(use_neutralization=True, auto_iterate=True)
         
         # 初始化裁判 (Backtest Referee) - 唯一裁判
         self.referee = get_backtest_referee(self.alpha_module, output_dir=output_dir)
         
-        logger.info("V103Runner initialized")
+        logger.info("V104Runner initialized")
         logger.info(f"  Alpha Module: {type(self.alpha_module).__name__}")
         logger.info(f"  Referee: {type(self.referee).__name__}")
+        logger.info(f"  Initial Capital: {self.referee.INITIAL_CAPITAL:,.0f}")
     
     def load_data(self, year: int) -> pd.DataFrame:
         """
@@ -166,7 +173,7 @@ class V103Runner:
             审计结果
         """
         logger.info("=" * 70)
-        logger.info(f"V103 Audit - Year {year}")
+        logger.info(f"V104 Audit - Year {year}")
         logger.info("=" * 70)
         
         # 1. 加载数据
@@ -201,7 +208,7 @@ class V103Runner:
         result = self.referee.run_audit(df)
         
         # 4. 生成年度特定报告
-        report_path = self.generate_v103_report(result, year)
+        report_path = self.generate_v104_report(result, year)
         
         # 5. 汇总结果
         result['year'] = year
@@ -209,10 +216,10 @@ class V103Runner:
         
         return result
     
-    def generate_v103_report(self, result: dict, year: int) -> str:
-        """生成 V103 年度审计报告。"""
+    def generate_v104_report(self, result: dict, year: int) -> str:
+        """生成 V104 年度审计报告。"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        report_path = self.output_dir / f"v103_audit_{year}_{timestamp}.md"
+        report_path = self.output_dir / f"v104_audit_{year}_{timestamp}.md"
         
         t1_ic = result.get('t1_ic', {})
         ic_decay = result.get('ic_decay', {})
@@ -223,12 +230,19 @@ class V103Runner:
         # 获取清洗前后对比
         cleaning_comparison = self.alpha_module.get_cleaning_comparison()
         
+        # 获取因子生存竞争结果
+        competition_results = self.alpha_module.get_competition_results()
+        
+        # 获取迭代历史
+        iteration_history = self.alpha_module.get_iteration_history()
+        
         # 生成 Markdown 报告
-        report_content = f"""# V103 Alpha Core Audit Report
+        report_content = f"""# V104 Alpha Factory Audit Report
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 **Year**: {year}
 **Architecture**: Referee-Player (裁判 - 选手)
+**Version**: V104 因子工厂攻坚战
 
 ---
 
@@ -408,7 +422,7 @@ class V103Runner:
             汇总审计结果
         """
         logger.info("=" * 70)
-        logger.info(f"V103 Multi-Year Audit - Years: {years}")
+        logger.info(f"V104 Multi-Year Audit - Years: {years}")
         logger.info("=" * 70)
         
         results = []
@@ -456,7 +470,7 @@ class V103Runner:
     def _generate_summary_report(self, summary: dict) -> str:
         """生成汇总报告。"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        report_path = self.output_dir / f"v103_summary_{timestamp}.md"
+        report_path = self.output_dir / f"v104_summary_{timestamp}.md"
         
         results = summary.get('results', [])
         
@@ -475,10 +489,11 @@ class V103Runner:
                 })
         
         # 生成报告内容
-        report_content = f"""# V103 Multi-Year Audit Summary
+        report_content = f"""# V104 Multi-Year Audit Summary
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 **Architecture**: Referee-Player (裁判 - 选手)
+**Version**: V104 因子工厂攻坚战
 
 ---
 
@@ -521,11 +536,11 @@ class V103Runner:
 
 ## 4. Conclusion (结论)
 
-{f'The V103 system has demonstrated {"consistent" if summary["passed_count"] >= len(summary["years"]) * 0.67 else "mixed"} predictive power across multiple years.' if summary['passed_count'] > 0 else 'The V103 system needs further optimization to achieve consistent predictive power.'}
+{f'The V104 system has demonstrated {"consistent" if summary["passed_count"] >= len(summary["years"]) * 0.67 else "mixed"} predictive power across multiple years.' if summary['passed_count'] > 0 else 'The V104 system needs further optimization to achieve consistent predictive power.'}
 
 ---
 
-*Report generated by V103 Unified Main Entry*
+*Report generated by V104 Unified Main Entry (Factor Factory)*
 """
         
         with open(report_path, 'w', encoding='utf-8') as f:
@@ -538,7 +553,7 @@ class V103Runner:
 
 def main():
     """主入口函数。"""
-    parser = argparse.ArgumentParser(description="V103 Unified Main Entry - Referee-Player Architecture")
+    parser = argparse.ArgumentParser(description="V104 Unified Main Entry - Factor Factory")
     parser.add_argument(
         '--year',
         type=int,
@@ -571,16 +586,16 @@ def main():
     args = parser.parse_args()
     
     logger.info("=" * 70)
-    logger.info("V103 Unified Main Entry - Referee-Player Architecture")
+    logger.info("V104 Unified Main Entry - Factor Factory")
     logger.info("=" * 70)
     logger.info("【架构强制规范】")
-    logger.info("  - BacktestReferee: 唯一裁判 (不可变)")
-    logger.info("  - AlphaResearchV103: 选手 (因子计算)")
+    logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+    logger.info("  - AlphaResearchV104: 选手 (因子生存竞争)")
     logger.info("  - 废弃所有 run_vXXX.py 脚本")
     logger.info("=" * 70)
     
     # 初始化运行器
-    runner = V103Runner(
+    runner = V104Runner(
         parquet_path=args.parquet,
         output_dir=args.output,
     )
@@ -592,7 +607,7 @@ def main():
         summary = runner.run_multi_year_audit(years)
         
         logger.info("=" * 70)
-        logger.info("V103 Multi-Year Audit Complete!")
+        logger.info("V104 Multi-Year Audit Complete!")
         logger.info(f"  Years: {years}")
         logger.info(f"  Passed: {summary['passed_count']}/{summary['total_count']}")
         logger.info(f"  Cross-Year IC: {summary['cross_year_ic_mean']:.4f} ± {summary['cross_year_ic_std']:.4f}")
@@ -603,7 +618,7 @@ def main():
         result = runner.run_audit(args.year)
         
         logger.info("=" * 70)
-        logger.info("V103 Audit Complete!")
+        logger.info("V104 Audit Complete!")
         logger.info(f"  Year: {args.year}")
         logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
         logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")

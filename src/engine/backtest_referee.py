@@ -64,7 +64,7 @@ class BacktestReferee:
     SLIPPAGE_RATE = 0.0005        # 滑点 (万分之五)
     TOP_N = 50                    # 持仓股票数量
     POSITION_PER_STOCK = 0.02     # 单股票仓位 (2% = 100%/50)
-    INITIAL_CAPITAL = 1_000_000   # 初始资金 (100 万)
+    INITIAL_CAPITAL = 100_000.00  # 初始资金 (10 万) - V104 锁定
     
     # ==================== 验收阈值 ====================
     IC_THRESHOLD = 0.05           # T+1 IC 阈值
