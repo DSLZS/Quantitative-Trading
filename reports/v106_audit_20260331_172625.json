@@ -1,0 +1,61 @@
+{
+  "version": "V106",
+  "timestamp": "20260331_172625",
+  "ic_metrics": {
+    "t1_ic": {
+      "mean_ic": -0.022053365416285785,
+      "ic_std": 0.07175081403572908,
+      "ic_ir": -0.30736049078556904,
+      "num_days": 50,
+      "min_ic": -0.20179483511157115,
+      "max_ic": 0.17407296757934101
+    },
+    "ic_strong": false,
+    "ic_stable": false,
+    "passed": false
+  },
+  "ic_decay": {
+    "T+1": -0.021551859871371076,
+    "T+3": -0.01565014763673504,
+    "T+5": -0.03096419357129016
+  },
+  "ablation_results": {
+    "linear_weighted": -0.016584841156029106,
+    "gated": -0.021551859871371076,
+    "improvement": -0.29949148554469596,
+    "improvement_percent": "-29.9%"
+  },
+  "gate_states": {
+    "volatility_switch": {
+      "high_vol_count": 930,
+      "low_vol_count": 4070,
+      "momentum_mean": -1.1386902816668272e-19,
+      "reversion_mean": 5.046468293750712e-18
+    },
+    "consistency_filter": {
+      "valid_count": 2109,
+      "invalid_count": 2891,
+      "valid_ratio": 0.4218,
+      "signal_before_mean": 8.881784197001253e-19,
+      "signal_after_mean": -0.0004372634541976159
+    },
+    "third_moment": {
+      "skewness_mean": -3.8191672047105385e-18,
+      "kurtosis_mean": 4.618527782440651e-18,
+      "correction_factor_mean": 0.9985469538874788
+    }
+  },
+  "healing_records": [
+    {
+      "timestamp": "2026-03-31T17:26:23.164169",
+      "column": "vwap",
+      "method": "hlc_average",
+      "status": "success"
+    }
+  ],
+  "config": {
+    "use_gating": true,
+    "enable_ablation": true,
+    "auto_heal": true
+  }
+}
