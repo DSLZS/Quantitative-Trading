@@ -1,0 +1,48 @@
+{
+  "alpha_metrics": {
+    "t1_ic": {
+      "mean_ic": -0.018633105816639794,
+      "ic_std": 0.161027030400833,
+      "ic_ir": -0.11571414917270563,
+      "num_days": 198,
+      "min_ic": -0.4285133362607032,
+      "max_ic": 0.4413780891326392
+    },
+    "top_factor": {
+      "factor": "volume_ma_ratio_5",
+      "ic": 0.026511062637183433,
+      "all_ics": {
+        "momentum_5": -0.009032195958193864,
+        "momentum_10": -0.02138290438721286,
+        "momentum_20": -0.018680798803739983,
+        "volatility_5": -0.016211975743443307,
+        "volatility_20": -0.015715486450458244,
+        "volume_ma_ratio_5": 0.026511062637183433,
+        "volume_ma_ratio_20": 0.00846167470493677,
+        "volume_price_divergence_5": -0.021260532924970047,
+        "volume_price_health": 0.017364171453057846,
+        "vcp_score": -0.014455051280390213,
+        "volume_entropy_20": 0.017648343489752735,
+        "turnover_stable": -0.0065330046933922605,
+        "rsi_14": -0.007751646459744235,
+        "macd": -0.011004625942206563,
+        "macd_signal": -0.011332918814187508
+      }
+    },
+    "passed": false
+  },
+  "backtest_metrics": {
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_transaction_cost": 981.2319646642632
+  },
+  "config": {
+    "initial_capital": 1000000.0,
+    "top_n": 50,
+    "commission_rate": 0.0003,
+    "stamp_duty_rate": 0.001,
+    "slippage_rate": 0.001
+  }
+}
