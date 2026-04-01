@@ -1,0 +1,77 @@
+{
+  "version": "V112",
+  "timestamp": "2026-04-01T10:33:28.585909",
+  "summary": {
+    "total_factors": 33,
+    "orthogonalization_method": "gram_schmidt",
+    "neutralization_3d": true
+  },
+  "top_5_effective_factors": [
+    {
+      "name": "beta_20",
+      "ic": -0.0430029350103188,
+      "rank": 1
+    },
+    {
+      "name": "volatility_interaction",
+      "ic": 0.03679399649452184,
+      "rank": 2
+    },
+    {
+      "name": "volatility_rank",
+      "ic": 0.036788235233258484,
+      "rank": 3
+    },
+    {
+      "name": "volatility_20",
+      "ic": 0.036784496534179624,
+      "rank": 4
+    },
+    {
+      "name": "price_rank",
+      "ic": -0.035287315199656846,
+      "rank": 5
+    }
+  ],
+  "bottom_5_ineffective_factors": [
+    {
+      "name": "bp_rank",
+      "ic": 0.0,
+      "rank": 1
+    },
+    {
+      "name": "ep_rank",
+      "ic": 0.0,
+      "rank": 2
+    },
+    {
+      "name": "value_rank",
+      "ic": 0.0,
+      "rank": 3
+    },
+    {
+      "name": "momentum_250",
+      "ic": 0.0,
+      "rank": 4
+    },
+    {
+      "name": "liquidity_stress_10",
+      "ic": 0.0,
+      "rank": 5
+    }
+  ],
+  "orthogonalization_stats": {},
+  "neutralization_stats": {},
+  "dynamic_weights": {},
+  "audit_logs": {
+    "data_audit_count": 1,
+    "alpha_audit_count": 1
+  },
+  "recommendations": [
+    "Consider removing bp_rank (IC=0.0000)",
+    "Consider removing ep_rank (IC=0.0000)",
+    "Consider removing value_rank (IC=0.0000)",
+    "Consider removing momentum_250 (IC=0.0000)",
+    "Consider removing liquidity_stress_10 (IC=0.0000)"
+  ]
+}
