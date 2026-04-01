@@ -1,0 +1,60 @@
+{
+  "version": "V114",
+  "timestamp": "2026-04-01T11:33:42.674699",
+  "t1_ic": {
+    "mean_ic": 0.0017217606169599485,
+    "ic_std": 0.03450669435406501,
+    "ic_ir": 0.0498964229750138,
+    "num_days": 484,
+    "min_ic": -0.11655028919932041,
+    "max_ic": 0.10822010291412816
+  },
+  "ic_decay": {
+    "T+1": 0.0017217606169599485,
+    "T+3": 0.0017038695459974489,
+    "T+5": 0.0021545336033770065
+  },
+  "factor_ics": {},
+  "feature_cross_features": [
+    "alpha_cross_ofi_vol",
+    "alpha_regime_switch"
+  ],
+  "neutralization_stats": {
+    "method": "residual_weighted_mix",
+    "original_weight": 0.3,
+    "residual_weight": 0.7,
+    "n_factors_processed": 16456
+  },
+  "lookahead_bias_check": {
+    "passed": false,
+    "issues": [
+      "T+5 IC (0.0022) > T+3 IC (0.0017)"
+    ],
+    "ic_decay": {
+      "T+1": 0.0017217606169599485,
+      "T+3": 0.0017038695459974489,
+      "T+5": 0.0021545336033770065
+    }
+  },
+  "heatmap_path": "reports\\v114_ic_heatmap.png",
+  "reflection_path": "reports\\v114_reflection.json",
+  "improvement_hypotheses": [
+    {
+      "hypothesis": "\u589e\u52a0\u66f4\u9ad8\u9636\u7684\u7279\u5f81\u4ea4\u53c9\uff083 \u9636\u4ea4\u4e92\uff09",
+      "implementation": "Boosted_Interaction with n_interactions=10",
+      "expected_improvement": "+0.005 IC"
+    },
+    {
+      "hypothesis": "\u8c03\u6574\u6b8b\u5dee\u6df7\u5408\u6bd4\u4f8b\uff08\u4ece 3:7 \u6539\u4e3a 5:5\uff09",
+      "implementation": "Change original_weight from 0.3 to 0.5",
+      "expected_improvement": "+0.003 IC"
+    },
+    {
+      "hypothesis": "\u589e\u52a0\u884c\u4e1a\u4e2d\u6027\u5316",
+      "implementation": "Enable neutralize_industry in NeutralizationEngine",
+      "expected_improvement": "+0.002 IC"
+    }
+  ],
+  "passed": false,
+  "report_path": "reports\\v114_audit_2024_20260401_113342.md"
+}
