@@ -1,0 +1,103 @@
+{
+  "version": "V113",
+  "timestamp": "2026-04-01T10:55:19.218530",
+  "summary": {
+    "total_factors": 33,
+    "orthogonalization_method": "selective_gram_schmidt",
+    "neutralization_method": "residual_weighting",
+    "selective_orthogonalization": true
+  },
+  "top_5_effective_factors": [
+    {
+      "name": "volume_rank",
+      "ic": 0.004167402328480637,
+      "rank": 1
+    },
+    {
+      "name": "price_rank",
+      "ic": 0.003892274659667235,
+      "rank": 2
+    },
+    {
+      "name": "big_order_ratio",
+      "ic": -0.003856999777346732,
+      "rank": 3
+    },
+    {
+      "name": "beta_20",
+      "ic": -0.0015953602369596048,
+      "rank": 4
+    },
+    {
+      "name": "liquidity_stress_5",
+      "ic": 0.0,
+      "rank": 5
+    }
+  ],
+  "bottom_5_ineffective_factors": [
+    {
+      "name": "volatility_interaction",
+      "ic": 0.0,
+      "rank": 1
+    },
+    {
+      "name": "relative_value_rank",
+      "ic": 0.0,
+      "rank": 2
+    },
+    {
+      "name": "accumulation_distribution",
+      "ic": 0.0,
+      "rank": 3
+    },
+    {
+      "name": "bias_momentum_repair",
+      "ic": 0.0,
+      "rank": 4
+    },
+    {
+      "name": "bp_rank",
+      "ic": 0.0,
+      "rank": 5
+    }
+  ],
+  "orthogonalization_stats": {
+    "method": "selective_gram_schmidt",
+    "threshold": 0.7,
+    "input_features": 33,
+    "output_features": 33,
+    "orthogonalized_pairs": 17,
+    "total_orthogonalizations": 1552,
+    "dates_processed": 198
+  },
+  "neutralization_stats": {
+    "method": "residual_weighting",
+    "variables": [
+      "size",
+      "volatility"
+    ],
+    "n_factors_processed": 33
+  },
+  "dynamic_weights": {},
+  "invalid_features": [],
+  "lookahead_bias_check": {
+    "passed": true,
+    "issues": [],
+    "ic_decay": {
+      "T+1": 0.005249571087874516,
+      "T+3": 0.004003317504061739,
+      "T+5": 0.003776728569456912
+    }
+  },
+  "audit_logs": {
+    "data_audit_count": 1,
+    "alpha_audit_count": 1
+  },
+  "recommendations": [
+    "Consider removing volatility_interaction (IC=0.0000)",
+    "Consider removing relative_value_rank (IC=0.0000)",
+    "Consider removing accumulation_distribution (IC=0.0000)",
+    "Consider removing bias_momentum_repair (IC=0.0000)",
+    "Consider removing bp_rank (IC=0.0000)"
+  ]
+}
