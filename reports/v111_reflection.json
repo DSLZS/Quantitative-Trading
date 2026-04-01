@@ -1,0 +1,162 @@
+{
+  "version": "V111",
+  "timestamp": "2026-04-01T08:53:00.176791",
+  "summary": {
+    "total_factors": 33,
+    "selected_factors": 20,
+    "rejected_factors": 14
+  },
+  "top_5_effective_factors": [
+    {
+      "name": "beta_20",
+      "ic": -0.043003519139893163,
+      "rank": 1
+    },
+    {
+      "name": "volatility_20",
+      "ic": 0.036788235233258484,
+      "rank": 2
+    },
+    {
+      "name": "volatility_rank",
+      "ic": 0.036788235233258484,
+      "rank": 3
+    },
+    {
+      "name": "volatility_interaction",
+      "ic": 0.036788235233258484,
+      "rank": 4
+    },
+    {
+      "name": "price_rank",
+      "ic": -0.035287315199656846,
+      "rank": 5
+    }
+  ],
+  "bottom_5_ineffective_factors": [
+    {
+      "name": "bp_rank",
+      "ic": 0.0,
+      "rank": 1
+    },
+    {
+      "name": "ep_rank",
+      "ic": 0.0,
+      "rank": 2
+    },
+    {
+      "name": "value_rank",
+      "ic": 0.0,
+      "rank": 3
+    },
+    {
+      "name": "momentum_250",
+      "ic": 0.0,
+      "rank": 4
+    },
+    {
+      "name": "liquidity_stress_10",
+      "ic": 0.0,
+      "rank": 5
+    }
+  ],
+  "feature_selection": {
+    "selected_features": [
+      "liquidity_stress_5",
+      "amihud_illiq",
+      "turnover_vol_ratio",
+      "skewness_rank",
+      "tail_risk",
+      "momentum_5",
+      "momentum_10",
+      "momentum_20",
+      "momentum_60",
+      "momentum_120",
+      "reversion_5",
+      "reversion_10",
+      "price_rank",
+      "downside_volatility",
+      "volatility_rank",
+      "beta_20",
+      "order_flow_imbalance_5",
+      "smart_money_divergence",
+      "bias_momentum_repair",
+      "relative_value_rank"
+    ],
+    "rejected_features": [
+      "liquidity_stress_10",
+      "kurtosis_interaction",
+      "momentum_250",
+      "volume_price_health",
+      "volume_rank",
+      "value_rank",
+      "ep_rank",
+      "bp_rank",
+      "accumulation_distribution",
+      "trade_date",
+      "vwap_distance",
+      "volatility_20",
+      "big_order_ratio",
+      "volatility_interaction"
+    ],
+    "stats": {
+      "initial_count": 34,
+      "passed_ic": 24,
+      "rejected_ic": 10,
+      "passed_corr": 20,
+      "rejected_corr": 4,
+      "final_count": 20,
+      "ics": {
+        "liquidity_stress_5": -0.02168628768121727,
+        "liquidity_stress_10": 0.0,
+        "amihud_illiq": -0.01871002456624361,
+        "turnover_vol_ratio": -0.021804926291184416,
+        "kurtosis_interaction": -0.0002462194792346684,
+        "skewness_rank": -0.010546586749124284,
+        "tail_risk": 0.03453087742647796,
+        "momentum_5": -0.014940344456781078,
+        "momentum_10": -0.01172548193698262,
+        "momentum_20": -0.01828765146996508,
+        "momentum_60": -0.014969203499167765,
+        "momentum_120": -0.04163737174050396,
+        "momentum_250": 0.0,
+        "reversion_5": 0.014940344456781078,
+        "reversion_10": 0.01172548193698262,
+        "volume_price_health": -0.005806446421223115,
+        "vwap_distance": -0.020451083781721616,
+        "volume_rank": 0.009391377135581467,
+        "price_rank": -0.03546643862706627,
+        "volatility_20": 0.04115294110839086,
+        "downside_volatility": -0.02732284291030556,
+        "volatility_rank": 0.04115294110839086,
+        "beta_20": -0.043221811115222566,
+        "order_flow_imbalance_5": -0.016437271584213445,
+        "smart_money_divergence": -0.011939618040489259,
+        "big_order_ratio": -0.03401576024796081,
+        "value_rank": 0.0,
+        "ep_rank": 0.0,
+        "bp_rank": 0.0,
+        "bias_momentum_repair": 0.02456522128724101,
+        "accumulation_distribution": -0.007749945893190876,
+        "relative_value_rank": 0.022671374740934454,
+        "volatility_interaction": 0.04115294110839086,
+        "trade_date": 0.0
+      }
+    }
+  },
+  "interaction_discoveries": [],
+  "dynamic_weights": {},
+  "neutralization_stats": {},
+  "audit_logs": {
+    "data_audit_count": 1,
+    "alpha_audit_count": 1
+  },
+  "recommendations": [
+    "Consider removing bp_rank (IC=0.0000)",
+    "Consider removing ep_rank (IC=0.0000)",
+    "Consider removing value_rank (IC=0.0000)",
+    "Consider removing momentum_250 (IC=0.0000)",
+    "Consider removing liquidity_stress_10 (IC=0.0000)",
+    "Feature selection removed 14 low-quality features"
+  ]
+}

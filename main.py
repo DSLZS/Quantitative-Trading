@@ -57,6 +57,7 @@ from engine.backtest_referee import BacktestReferee, get_backtest_referee
 from alpha_research_v108 import AlphaResearchV108, get_alpha_research as get_alpha_research_v108, AutoEnvHealer
 from alpha_research_v109 import AlphaResearchV109, get_alpha_research as get_alpha_research_v109
 from alpha_research_v110 import AlphaResearchV110, get_alpha_research as get_alpha_research_v110
+from alpha_research_v111 import AlphaResearchV111, get_alpha_research as get_alpha_research_v111
 from data_loader import DataLoader, get_loader
 
 # Load environment variables
@@ -1124,6 +1125,351 @@ class V110Runner:
         return str(report_path)
 
 
+class V111Runner:
+    """
+    V111 统一回测运行器 - 特征筛选与 GBDT 增强 (Feature Selection + Boosted Alpha).
+    
+    【裁判 - 选手机制】
+    - BacktestReferee: 裁判 (不可变，初始资金锁定 10 万)
+    - AlphaResearchV111: 选手 (特征筛选 + GBDT Stumps + 四维中性化)
+    
+    【V111 核心改进】
+    1. FeatureSelector: 互信息 + RFE 特征筛选
+    2. BoostedAlpha: GBDT Stumps 非线性集成
+    3. Enhanced Neutralization: 行业 + 市值 + IVOL + Turnover 四维中性化
+    4. Auto-Reflection: 自动化分析与反哺 (reports/v111_reflection.json)
+    """
+    
+    def __init__(
+        self,
+        parquet_path: Optional[str] = None,
+        output_dir: str = "reports",
+    ) -> None:
+        """
+        初始化 V111 运行器。
+        
+        Args:
+            parquet_path: Parquet 数据文件路径（可选）
+            output_dir: 报告输出目录
+        """
+        self.parquet_path = parquet_path
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 获取数据库 URL
+        db_url = os.getenv("DATABASE_URL")
+        
+        # 初始化选手 (Alpha Module) - V111
+        self.alpha_module = get_alpha_research_v111(
+            enable_neutralization=True,
+            enable_boosted_alpha=True,
+            enable_dynamic_weight=True,
+            enable_feature_selection=True,
+            auto_heal=True,
+            db_url=db_url,
+            reflection_output=str(Path(output_dir) / "v111_reflection.json")
+        )
+        
+        # 初始化裁判 (Backtest Referee) - 唯一裁判
+        self.referee = get_backtest_referee(self.alpha_module, output_dir=output_dir)
+        
+        logger.info("V111Runner initialized")
+        logger.info(f"  Alpha Module: {type(self.alpha_module).__name__}")
+        logger.info(f"  Referee: {type(self.referee).__name__}")
+        logger.info(f"  Initial Capital: {self.referee.INITIAL_CAPITAL:,.0f}")
+        logger.info(f"  Factor Count: {len(self.alpha_module.ALL_FACTOR_COLUMNS)}")
+    
+    def load_data(self, year: int) -> pd.DataFrame:
+        """加载指定年份的数据"""
+        if self.parquet_path and Path(self.parquet_path).exists():
+            logger.info(f"Loading data from Parquet: {self.parquet_path}")
+            df = pd.read_parquet(self.parquet_path)
+            
+            if 'trade_date' in df.columns:
+                df['trade_date'] = pd.to_datetime(df['trade_date'])
+                df = df[df['trade_date'].dt.year == year]
+                df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+            
+            logger.info(f"Loaded {len(df)} rows for year {year}")
+            return df
+        
+        logger.info(f"Attempting to load data for year {year} from database...")
+        
+        try:
+            from sqlalchemy import create_engine, text
+            
+            db_url = os.getenv("DATABASE_URL")
+            if not db_url:
+                raise ValueError("DATABASE_URL not configured")
+            
+            engine = create_engine(db_url)
+            
+            start_date = f"{year}0101"
+            end_date = f"{year}1231"
+            
+            query = text("""
+                SELECT symbol, trade_date, open, high, low, close, pre_close,
+                       change, pct_chg, volume, amount, turnover_rate, total_mv,
+                       pe_ttm, pb, industry_code
+                FROM stock_daily
+                WHERE trade_date BETWEEN :start_date AND :end_date
+                ORDER BY symbol, trade_date
+            """)
+            
+            df = pd.read_sql_query(query, engine, params={
+                'start_date': start_date,
+                'end_date': end_date,
+            })
+            
+            logger.info(f"Loaded {len(df)} rows from database for year {year}")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Failed to load data from database: {e}")
+            return pd.DataFrame()
+    
+    def run_audit(self, year: int) -> dict:
+        """运行单一年份的审计"""
+        logger.info("=" * 70)
+        logger.info(f"V111 Audit - Year {year}")
+        logger.info("=" * 70)
+        
+        df = self.load_data(year)
+        
+        if df.empty:
+            logger.warning(f"No data loaded for year {year}")
+            return {'year': year, 'error': 'No data loaded', 'passed': False}
+        
+        logger.info("[Preprocessing] Converting data types...")
+        
+        if 'trade_date' in df.columns:
+            if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                df['trade_date'] = pd.to_datetime(df['trade_date'])
+            df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+        
+        numeric_columns = ['open', 'high', 'low', 'close', 'volume', 'amount', 
+                          'turnover_rate', 'total_mv', 'pe_ttm', 'pb']
+        for col in numeric_columns:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        logger.info("[Referee] Running audit...")
+        result = self.referee.run_audit(df)
+        
+        report_path = self.generate_v111_report(result, year)
+        
+        result['year'] = year
+        result['custom_report_path'] = report_path
+        
+        return result
+    
+    def generate_v111_report(self, result: dict, year: int) -> str:
+        """生成 V111 年度审计报告"""
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        report_path = self.output_dir / f"v111_audit_{year}_{timestamp}.md"
+        
+        t1_ic = result.get('t1_ic', {})
+        ic_decay = result.get('ic_decay', {})
+        backtest_result = result.get('backtest_result', {})
+        passed = result.get('passed', False)
+        
+        factor_ics_v111 = self.alpha_module.get_factor_ics()
+        feature_selection_report = self.alpha_module.get_feature_selection_report()
+        dynamic_weights = self.alpha_module.get_dynamic_weights()
+        interaction_pairs = self.alpha_module.get_boosted_alpha_interactions()
+        
+        top_weights = sorted(dynamic_weights.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        factor_ic_info = ""
+        if factor_ics_v111:
+            for factor_name, ic in sorted(factor_ics_v111.items(), key=lambda x: abs(x[1]), reverse=True):
+                weight = dynamic_weights.get(factor_name, 0)
+                status = '✓' if abs(ic) > 0.03 else '✗'
+                factor_ic_info += f"| {factor_name} | {ic:.4f} | {weight:.3f} | {status} |\n"
+        
+        interaction_info = ""
+        for a, b, g in interaction_pairs[:5]:
+            interaction_info += f"| {a} × {b} | {g:.4f} |\n"
+        
+        report_content = f"""# V111 Alpha Audit Report
+
+**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**Year**: {year}
+**Architecture**: Referee-Player (裁判 - 选手)
+**Version**: V111 特征筛选与 GBDT 增强
+
+---
+
+## 1. Executive Summary (执行摘要)
+
+| Metric | Value | Threshold | Status |
+|--------|-------|-----------|--------|
+| T+1 Rank IC | {t1_ic.get('mean_ic', 0):.4f} | > 0.03 | {'✓ PASSED' if t1_ic.get('mean_ic', 0) > 0.03 else '✗ FAILED'} |
+| IC IR | {t1_ic.get('ic_ir', 0):.2f} | > 0.5 | {'✓ PASSED' if t1_ic.get('ic_ir', 0) > 0.5 else '✗ FAILED'} |
+| IC Decay | {'Monotonic' if ic_decay.get('is_monotonic', False) else 'Non-monotonic'} | Monotonic | {'✓ PASSED' if ic_decay.get('is_monotonic', False) else '✗ FAILED'} |
+
+**Overall Assessment**: **{'PASSED ✓' if passed else 'FAILED ✗'}**
+
+---
+
+## 2. V111 Core Features (V111 核心特性)
+
+### 2.1 Feature Selection (特征筛选)
+
+| Metric | Value |
+|--------|-------|
+| Initial Features | {feature_selection_report.get('stats', {}).get('initial_count', 0)} |
+| Passed IC Filter | {feature_selection_report.get('stats', {}).get('passed_ic', 0)} |
+| Passed Correlation Filter | {feature_selection_report.get('stats', {}).get('passed_corr', 0)} |
+| Final Selected | {len(feature_selection_report.get('selected_features', []))} |
+
+### 2.2 BoostedAlpha (GBDT Stumps)
+
+| Component | Description |
+|-----------|-------------|
+| Decision Stumps | 10 thresholds per factor |
+| Interaction Discovery | Top 5 factor pairs |
+
+### 2.3 Top Interaction Features
+
+| Interaction | Gain |
+|-------------|------|
+{interaction_info if interaction_info else "*No interactions found*"}
+
+### 2.4 Top Weighted Factors
+
+| Factor | Weight | IC |
+|--------|--------|-----|
+"""
+        
+        for factor_name, weight in top_weights:
+            ic = factor_ics_v111.get(factor_name, 0)
+            report_content += f"| {factor_name} | {weight:.4f} | {ic:.4f} |\n"
+        
+        report_content += f"""
+### 2.5 4D Neutralization
+
+| Variable | Description |
+|----------|-------------|
+| Industry | Sector dummy variables |
+| Market Cap | ln(total_mv) |
+| IVOL | (high-low)/close (intraday volatility) |
+| Turnover | volume/market_cap |
+
+---
+
+## 3. IC Decay Analysis (IC 衰减分析)
+
+| Horizon | IC | Pattern |
+|---------|-----|---------|
+| T+1 | {ic_decay.get('t1_ic', 0):.4f} | Baseline |
+| T+3 | {ic_decay.get('t3_ic', 0):.4f} | {'✓ Monotonic' if ic_decay.get('t1_ic', 0) >= ic_decay.get('t3_ic', 0) else '✗ Non-monotonic'} |
+| T+5 | {ic_decay.get('t5_ic', 0):.4f} | {'✓ Monotonic' if ic_decay.get('t3_ic', 0) >= ic_decay.get('t5_ic', 0) else '✗ Non-monotonic'} |
+
+**Decay Pattern**: {ic_decay.get('decay_pattern', 'N/A')}
+
+---
+
+## 4. Backtest Performance (回测表现)
+
+| Metric | Value |
+|--------|-------|
+| Initial Capital | {self.referee.INITIAL_CAPITAL:,.0f} |
+| Final Value | {backtest_result.get('final_value', 0):,.2f} |
+| Total Return | {backtest_result.get('total_return', 0):.2%} |
+| Annual Return | {backtest_result.get('annual_return', 0):.2%} |
+| Sharpe Ratio | {backtest_result.get('sharpe_ratio', 0):.2f} |
+| Max Drawdown | {backtest_result.get('max_drawdown', 0):.2%} |
+
+---
+
+## 5. Factor IC Analysis (因子 IC 分析)
+
+| Factor | IC | Weight | Status |
+|--------|-----|--------|--------|
+{factor_ic_info if factor_ic_info else "*No factor IC data available*"}
+
+---
+
+## 6. Auto-Reflection (自动反哺)
+
+**Reflection saved to**: `reports/v111_reflection.json`
+
+Contains:
+- Top 5 effective factors
+- Bottom 5 ineffective factors
+- Feature selection statistics
+- Interaction discoveries
+- Dynamic weights
+
+---
+
+## 7. Conclusion (结论)
+
+| Metric | Target | Actual | Status |
+|--------|--------|--------|--------|
+| T+1 Rank IC | > 0.03 | {t1_ic.get('mean_ic', 0):.4f} | {'✓' if t1_ic.get('mean_ic', 0) > 0.03 else '✗'} |
+| IC IR | > 0.5 | {t1_ic.get('ic_ir', 0):.2f} | {'✓' if t1_ic.get('ic_ir', 0) > 0.5 else '✗'} |
+| IC Decay | Monotonic | {ic_decay.get('decay_pattern', 'N/A')} | {'✓' if ic_decay.get('is_monotonic', False) else '✗'} |
+
+**{'PASSED ✓' if passed else 'FAILED ✗'}**
+
+---
+
+*Report generated by V111 Unified Main Entry (Feature Selection + Boosted Alpha)*
+"""
+        
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+        
+        logger.info(f"Report saved to: {report_path}")
+        
+        json_result = {
+            'alpha_metrics': {'t1_ic': t1_ic, 'ic_decay': ic_decay, 'passed': passed},
+            'backtest_metrics': backtest_result,
+            'factor_ics': factor_ics_v111,
+            'feature_selection': feature_selection_report,
+            'interactions': [{'a': a, 'b': b, 'gain': g} for a, b, g in interaction_pairs],
+            'config': {'year': year, 'initial_capital': self.referee.INITIAL_CAPITAL},
+        }
+        
+        json_path = self.output_dir / f"v111_audit_{year}_{timestamp}.json"
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(json_result, f, indent=2, default=str)
+        
+        return str(report_path)
+    
+    def run_multi_year_audit(self, years: list[int]) -> dict:
+        """运行多年份的审计"""
+        logger.info("=" * 70)
+        logger.info(f"V111 Multi-Year Audit - Years: {years}")
+        logger.info("=" * 70)
+        
+        results = []
+        passed_count = 0
+        all_ic_values = []
+        
+        for year in years:
+            result = self.run_audit(year)
+            results.append(result)
+            if result.get('passed', False):
+                passed_count += 1
+            if 't1_ic' in result:
+                all_ic_values.append(result['t1_ic'].get('mean_ic', 0))
+        
+        cross_year_ic_mean = float(np.mean(all_ic_values)) if all_ic_values else 0
+        cross_year_ic_std = float(np.std(all_ic_values, ddof=1)) if len(all_ic_values) > 1 else 0
+        cross_year_ic_ir = cross_year_ic_mean / cross_year_ic_std if cross_year_ic_std > 1e-10 else 0
+        
+        summary = {
+            'years': years, 'results': results, 'passed_count': passed_count,
+            'total_count': len(years), 'cross_year_ic_mean': cross_year_ic_mean,
+            'cross_year_ic_std': cross_year_ic_std, 'cross_year_ic_ir': cross_year_ic_ir,
+        }
+        
+        return summary
+
+
 class V108Runner:
     """
     V108 统一回测运行器 - 因子库与执行引擎。
@@ -1758,9 +2104,9 @@ def main():
     parser.add_argument(
         '--version',
         type=int,
-        default=110,
-        choices=[108, 109, 110],
-        help='Version to run (108, 109, or 110, default: 110)'
+        default=111,
+        choices=[108, 109, 110, 111],
+        help='Version to run (108, 109, 110, or 111, default: 111)'
     )
     parser.add_argument(
         '--parquet',
@@ -1830,6 +2176,49 @@ def main():
             
             logger.info("=" * 70)
             logger.info("V110 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
+            logger.info("=" * 70)
+            
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+    
+    elif version == 111:
+        logger.info("=" * 70)
+        logger.info("V111 Unified Main Entry - Feature Selection + Boosted Alpha")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV111: 选手 (特征筛选 + GBDT Stumps + 四维中性化)")
+        logger.info("  - Auto-Reflection: reports/v111_reflection.json")
+        logger.info("=" * 70)
+        
+        runner = V111Runner(
+            parquet_path=args.parquet,
+            output_dir=args.output,
+        )
+        
+        if args.all:
+            years = [2019, 2021, 2024]
+            logger.info(f"Running V111 audit for all years: {years}")
+            summary = runner.run_multi_year_audit(years)
+            
+            logger.info("=" * 70)
+            logger.info("V111 Multi-Year Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Passed: {summary['passed_count']}/{summary['total_count']}")
+            logger.info(f"  Cross-Year IC: {summary['cross_year_ic_mean']:.4f} ± {summary['cross_year_ic_std']:.4f}")
+            logger.info("=" * 70)
+            
+        elif args.year:
+            logger.info(f"Running V111 audit for year: {args.year}")
+            result = runner.run_audit(args.year)
+            
+            logger.info("=" * 70)
+            logger.info("V111 Audit Complete!")
             logger.info(f"  Year: {args.year}")
             logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
             logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
