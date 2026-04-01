@@ -602,8 +602,9 @@ class BacktestReferee:
             'score_df': score_df,
         }
         
+        version = getattr(self, 'VERSION', 'V103')
         logger.info("=" * 70)
-        logger.info(f"{self.VERSION} Audit Complete - Status: {'PASSED ✓' if passed else 'FAILED ✗'}")
+        logger.info(f"{version} Audit Complete - Status: {'PASSED ✓' if passed else 'FAILED ✗'}")
         logger.info(f"  T+1 IC: {t1_ic['mean_ic']:.4f} (target > {self.IC_THRESHOLD})")
         logger.info(f"  IC IR: {t1_ic['ic_ir']:.2f} (target > {self.IC_IR_THRESHOLD})")
         logger.info(f"  IC Decay: {ic_decay['decay_pattern']}")

@@ -62,6 +62,7 @@ from alpha_research_v112 import AlphaResearchV112, get_alpha_research as get_alp
 from alpha_research_v113 import AlphaResearchV113, get_alpha_research as get_alpha_research_v113
 from alpha_research_v116 import AlphaResearchV116, get_alpha_research as get_alpha_research_v116, run_v116_backtest, RealDataLoader, DataHealingError
 from alpha_research_v117 import AlphaResearchV117, get_alpha_research as get_alpha_research_v117, run_v117_backtest
+from alpha_research_v118 import AlphaResearchV118, get_alpha_research as get_alpha_research_v118, run_v118_backtest, RealDataLoader, DataHealingError
 from data_loader import DataLoader, get_loader
 
 # Load environment variables
@@ -3476,9 +3477,9 @@ def main():
     parser.add_argument(
         '--version',
         type=int,
-        default=117,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117],
-        help='Version to run (108, 109, 110, 111, 112, 113, 116, or 117, default: 117)'
+        default=118,
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118],
+        help='Version to run (108, 109, 110, 111, 112, 113, 116, 117, or 118, default: 118)'
     )
     parser.add_argument(
         '--parquet',
@@ -3779,6 +3780,58 @@ def main():
             logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
             logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
             logger.info("=" * 70)
+            
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 118:
+        logger.info("=" * 70)
+        logger.info("V118 Unified Main Entry - Factor Feature Distillation & Monotonicity Fix")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV118: 选手 (MI 预筛选 + Lowdin 正交化 + Auto-Flip)")
+        logger.info("  - 禁用 Mock 数据：强制使用真实数据")
+        logger.info("  - 适应度函数：IC_Mean - IC_Std (稳定性优先)")
+        logger.info("  - Max Order: 3 (禁止高阶复杂因子)")
+        logger.info("  - 毒素因子黑名单：turnover_rate, volatility_20, momentum_10")
+        logger.info("=" * 70)
+        
+        if args.all:
+            years = [2019, 2021, 2024]
+            logger.info(f"Running V118 audit for all years: {years}")
+            try:
+                from alpha_research_v118 import BacktestRunnerV118, RealDataLoader, DataHealingError
+                loader = RealDataLoader()
+                df = loader.load_data(start_date='20240101', end_date='20241231')
+                runner_instance = BacktestRunnerV118()
+                result = runner_instance.run(df)
+                logger.info("=" * 70)
+                logger.info("V118 Audit Complete!")
+                logger.info(f"  Status: {'PASSED' if result.get('passed', False) else 'FAILED'}")
+                logger.info("=" * 70)
+            except DataHealingError as e:
+                logger.error(f"V118 requires real data: {e}")
+            
+        elif args.year:
+            logger.info(f"Running V118 audit for year: {args.year}")
+            try:
+                from alpha_research_v118 import BacktestRunnerV118, RealDataLoader, DataHealingError
+                loader = RealDataLoader()
+                start_date = f"{args.year}0101"
+                end_date = f"{args.year}1231"
+                df = loader.load_data(start_date=start_date, end_date=end_date)
+                runner_instance = BacktestRunnerV118()
+                result = runner_instance.run(df)
+                logger.info("=" * 70)
+                logger.info("V118 Audit Complete!")
+                logger.info(f"  Year: {args.year}")
+                logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+                logger.info("=" * 70)
+            except DataHealingError as e:
+                logger.error(f"V118 requires real data: {e}")
             
         else:
             parser.print_help()
