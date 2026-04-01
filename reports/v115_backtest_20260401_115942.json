@@ -1,0 +1,1411 @@
+{
+  "version": "V115",
+  "timestamp": "20260401_115942",
+  "ic_metrics": {
+    "mean_ic": -0.007763105242096838,
+    "ic_std": 0.1343215201334354,
+    "ic_ir": -0.05779494778189635,
+    "num_days": 30
+  },
+  "config": {
+    "enable_genetic_mining": true,
+    "enable_regime_aware": true,
+    "enable_ablation": true
+  },
+  "audit_report": {
+    "version": "V115",
+    "timestamp": "2026-04-01T11:59:42.343161",
+    "config": {
+      "enable_genetic_mining": true,
+      "enable_regime_aware": true,
+      "enable_ablation": true,
+      "data_mode": "database"
+    },
+    "genetic_mining": {
+      "version": "V115",
+      "timestamp": "2026-04-01T11:59:42.343169",
+      "config": {
+        "population_size": 50,
+        "generations": 20,
+        "mutation_rate": 0.2,
+        "crossover_rate": 0.6,
+        "min_order": 3
+      },
+      "results": {
+        "total_evaluated": 5000,
+        "best_factors": [],
+        "generation_history": [
+          {
+            "generation": 0,
+            "best_ic": 0.07720919084576941,
+            "avg_ic": 0.005420727234282334,
+            "valid_count": 50,
+            "high_order_count": 10
+          },
+          {
+            "generation": 1,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.006185416195279281,
+            "valid_count": 50,
+            "high_order_count": 2
+          },
+          {
+            "generation": 2,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.008596287127388256,
+            "valid_count": 50,
+            "high_order_count": 3
+          },
+          {
+            "generation": 3,
+            "best_ic": 0.04240410044153303,
+            "avg_ic": 0.017568710300666885,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 4,
+            "best_ic": 0.04580041216471674,
+            "avg_ic": 0.022473733277949392,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 5,
+            "best_ic": 0.07248890035721091,
+            "avg_ic": 0.016049424633175727,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 6,
+            "best_ic": 0.05062331085290721,
+            "avg_ic": 0.021420734265802297,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 7,
+            "best_ic": 0.06581621477892192,
+            "avg_ic": 0.03796746475176091,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 8,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.030602749099639857,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 9,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 10,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 11,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 12,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 13,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 14,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 15,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 16,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 17,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 18,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 19,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 0,
+            "best_ic": 0.08767773776177137,
+            "avg_ic": 0.009729060129930992,
+            "valid_count": 50,
+            "high_order_count": 11
+          },
+          {
+            "generation": 1,
+            "best_ic": 0.08767773776177137,
+            "avg_ic": 0.015009257521190294,
+            "valid_count": 50,
+            "high_order_count": 13
+          },
+          {
+            "generation": 2,
+            "best_ic": 0.06547899159663866,
+            "avg_ic": 0.006151528663413417,
+            "valid_count": 50,
+            "high_order_count": 17
+          },
+          {
+            "generation": 3,
+            "best_ic": 0.08024009603841536,
+            "avg_ic": 0.021195596784168217,
+            "valid_count": 50,
+            "high_order_count": 24
+          },
+          {
+            "generation": 4,
+            "best_ic": 0.054781185201353264,
+            "avg_ic": 0.0049987961024239086,
+            "valid_count": 50,
+            "high_order_count": 36
+          },
+          {
+            "generation": 5,
+            "best_ic": 0.09627851140456183,
+            "avg_ic": 0.0270134881417971,
+            "valid_count": 50,
+            "high_order_count": 24
+          },
+          {
+            "generation": 6,
+            "best_ic": 0.05136454581832732,
+            "avg_ic": 0.011781841756206161,
+            "valid_count": 50,
+            "high_order_count": 27
+          },
+          {
+            "generation": 7,
+            "best_ic": 0.05136454581832732,
+            "avg_ic": 0.016305129032955477,
+            "valid_count": 50,
+            "high_order_count": 16
+          },
+          {
+            "generation": 8,
+            "best_ic": 0.05136454581832732,
+            "avg_ic": 0.03426868347338935,
+            "valid_count": 50,
+            "high_order_count": 7
+          },
+          {
+            "generation": 9,
+            "best_ic": 0.06551298629343845,
+            "avg_ic": 0.008065106406867905,
+            "valid_count": 50,
+            "high_order_count": 7
+          },
+          {
+            "generation": 10,
+            "best_ic": 0.06551298629343845,
+            "avg_ic": 0.025419457938008615,
+            "valid_count": 50,
+            "high_order_count": 8
+          },
+          {
+            "generation": 11,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.03567101734861905,
+            "valid_count": 50,
+            "high_order_count": 1
+          },
+          {
+            "generation": 12,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.038792156862745085,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 13,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.038792156862745085,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 14,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.039583833533413354,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 15,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.039583833533413354,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 16,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.039583833533413354,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 17,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.039583833533413354,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 18,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.039583833533413354,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 19,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.039583833533413354,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 0,
+            "best_ic": 0.08600240096038414,
+            "avg_ic": 0.008461807615973083,
+            "valid_count": 50,
+            "high_order_count": 19
+          },
+          {
+            "generation": 1,
+            "best_ic": 0.08141858445505859,
+            "avg_ic": 0.004592065166492128,
+            "valid_count": 50,
+            "high_order_count": 18
+          },
+          {
+            "generation": 2,
+            "best_ic": 0.07424559950091826,
+            "avg_ic": 0.006558922742640371,
+            "valid_count": 50,
+            "high_order_count": 8
+          },
+          {
+            "generation": 3,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.0047010804321728685,
+            "valid_count": 50,
+            "high_order_count": 14
+          },
+          {
+            "generation": 4,
+            "best_ic": 0.039583833533413354,
+            "avg_ic": 0.010804321728691476,
+            "valid_count": 50,
+            "high_order_count": 8
+          },
+          {
+            "generation": 5,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.014962336934773907,
+            "valid_count": 50,
+            "high_order_count": 12
+          },
+          {
+            "generation": 6,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.031678706682673065,
+            "valid_count": 50,
+            "high_order_count": 2
+          },
+          {
+            "generation": 7,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.03973307723089235,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 8,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0406595918367347,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 9,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 10,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 11,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 12,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 13,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 14,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 15,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 16,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 17,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 18,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 19,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 0,
+            "best_ic": 0.10305882352941176,
+            "avg_ic": 0.014038840167714627,
+            "valid_count": 50,
+            "high_order_count": 15
+          },
+          {
+            "generation": 1,
+            "best_ic": 0.043843337334933966,
+            "avg_ic": 0.0057596118447378955,
+            "valid_count": 50,
+            "high_order_count": 14
+          },
+          {
+            "generation": 2,
+            "best_ic": 0.05756435907696411,
+            "avg_ic": 0.004788698145925036,
+            "valid_count": 50,
+            "high_order_count": 23
+          },
+          {
+            "generation": 3,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.007730708283313324,
+            "valid_count": 50,
+            "high_order_count": 9
+          },
+          {
+            "generation": 4,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.017599913993698996,
+            "valid_count": 50,
+            "high_order_count": 5
+          },
+          {
+            "generation": 5,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.03689104441776711,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 6,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 7,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.039909019607843134,
+            "valid_count": 50,
+            "high_order_count": 1
+          },
+          {
+            "generation": 8,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.03909454981992797,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 9,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 10,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 11,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 12,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 13,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 14,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 15,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 16,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 17,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 18,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 19,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 0,
+            "best_ic": 0.11044417767106843,
+            "avg_ic": 0.0101546141065442,
+            "valid_count": 50,
+            "high_order_count": 16
+          },
+          {
+            "generation": 1,
+            "best_ic": 0.06722689075630252,
+            "avg_ic": 0.009681139468553377,
+            "valid_count": 50,
+            "high_order_count": 13
+          },
+          {
+            "generation": 2,
+            "best_ic": 0.06722689075630252,
+            "avg_ic": 0.011229778038875123,
+            "valid_count": 50,
+            "high_order_count": 11
+          },
+          {
+            "generation": 3,
+            "best_ic": 0.06574469787915166,
+            "avg_ic": 0.011290769973907882,
+            "valid_count": 50,
+            "high_order_count": 18
+          },
+          {
+            "generation": 4,
+            "best_ic": 0.08266026410564224,
+            "avg_ic": 0.023383518490089752,
+            "valid_count": 50,
+            "high_order_count": 13
+          },
+          {
+            "generation": 5,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.00985549019607843,
+            "valid_count": 50,
+            "high_order_count": 8
+          },
+          {
+            "generation": 6,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.019354173669467786,
+            "valid_count": 50,
+            "high_order_count": 11
+          },
+          {
+            "generation": 7,
+            "best_ic": 0.04322048819527811,
+            "avg_ic": 0.020459734048142122,
+            "valid_count": 50,
+            "high_order_count": 19
+          },
+          {
+            "generation": 8,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.029783689475790312,
+            "valid_count": 50,
+            "high_order_count": 10
+          },
+          {
+            "generation": 9,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.04053320528211285,
+            "valid_count": 50,
+            "high_order_count": 1
+          },
+          {
+            "generation": 10,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 11,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 12,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 13,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 14,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 15,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 16,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 17,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 18,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          },
+          {
+            "generation": 19,
+            "best_ic": 0.0407234893957583,
+            "avg_ic": 0.0407234893957583,
+            "valid_count": 50,
+            "high_order_count": 0
+          }
+        ]
+      },
+      "mining_log": [
+        {
+          "timestamp": "2026-04-01T11:57:54.987370",
+          "action": "MiningAttempt",
+          "details": "Attempt 1/5"
+        },
+        {
+          "timestamp": "2026-04-01T11:57:54.987557",
+          "action": "StartEvolution",
+          "details": "Starting evolution with 50 individuals"
+        },
+        {
+          "timestamp": "2026-04-01T11:57:54.991436",
+          "action": "InitializePopulation",
+          "details": "Generated 50 factors"
+        },
+        {
+          "timestamp": "2026-04-01T11:57:55.747100",
+          "action": "Generation 0",
+          "details": "Best IC: 0.0772, Avg IC: 0.0054, Valid: 50/50, High-Order: 10"
+        },
+        {
+          "timestamp": "2026-04-01T11:57:56.567296",
+          "action": "Generation 1",
+          "details": "Best IC: 0.0407, Avg IC: 0.0062, Valid: 50/50, High-Order: 2"
+        },
+        {
+          "timestamp": "2026-04-01T11:57:57.609862",
+          "action": "Generation 2",
+          "details": "Best IC: 0.0407, Avg IC: 0.0086, Valid: 50/50, High-Order: 3"
+        },
+        {
+          "timestamp": "2026-04-01T11:57:58.691811",
+          "action": "Generation 3",
+          "details": "Best IC: 0.0424, Avg IC: 0.0176, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:57:59.709441",
+          "action": "Generation 4",
+          "details": "Best IC: 0.0458, Avg IC: 0.0225, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:00.540918",
+          "action": "Generation 5",
+          "details": "Best IC: 0.0725, Avg IC: 0.0160, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:01.491514",
+          "action": "Generation 6",
+          "details": "Best IC: 0.0506, Avg IC: 0.0214, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:02.651201",
+          "action": "Generation 7",
+          "details": "Best IC: 0.0658, Avg IC: 0.0380, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:03.675129",
+          "action": "Generation 8",
+          "details": "Best IC: 0.0407, Avg IC: 0.0306, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:04.898787",
+          "action": "Generation 9",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:06.077085",
+          "action": "Generation 10",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:07.230604",
+          "action": "Generation 11",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:08.426575",
+          "action": "Generation 12",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:09.586299",
+          "action": "Generation 13",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:10.784724",
+          "action": "Generation 14",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:11.948906",
+          "action": "Generation 15",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:13.151551",
+          "action": "Generation 16",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:14.412371",
+          "action": "Generation 17",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:15.585224",
+          "action": "Generation 18",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:16.873044",
+          "action": "Generation 19",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:16.873968",
+          "action": "EvolutionComplete",
+          "details": "Found 0 high-order factors (order >= 3)"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:16.874175",
+          "action": "MiningAttempt",
+          "details": "Attempt 2/5"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:16.874280",
+          "action": "StartEvolution",
+          "details": "Starting evolution with 50 individuals"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:16.877139",
+          "action": "InitializePopulation",
+          "details": "Generated 50 factors"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:17.643971",
+          "action": "Generation 0",
+          "details": "Best IC: 0.0877, Avg IC: 0.0097, Valid: 50/50, High-Order: 11"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:18.501709",
+          "action": "Generation 1",
+          "details": "Best IC: 0.0877, Avg IC: 0.0150, Valid: 50/50, High-Order: 13"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:19.350184",
+          "action": "Generation 2",
+          "details": "Best IC: 0.0655, Avg IC: 0.0062, Valid: 50/50, High-Order: 17"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:20.329431",
+          "action": "Generation 3",
+          "details": "Best IC: 0.0802, Avg IC: 0.0212, Valid: 50/50, High-Order: 24"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:20.924283",
+          "action": "Generation 4",
+          "details": "Best IC: 0.0548, Avg IC: 0.0050, Valid: 50/50, High-Order: 36"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:22.026459",
+          "action": "Generation 5",
+          "details": "Best IC: 0.0963, Avg IC: 0.0270, Valid: 50/50, High-Order: 24"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:22.760383",
+          "action": "Generation 6",
+          "details": "Best IC: 0.0514, Avg IC: 0.0118, Valid: 50/50, High-Order: 27"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:23.555202",
+          "action": "Generation 7",
+          "details": "Best IC: 0.0514, Avg IC: 0.0163, Valid: 50/50, High-Order: 16"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:24.785034",
+          "action": "Generation 8",
+          "details": "Best IC: 0.0514, Avg IC: 0.0343, Valid: 50/50, High-Order: 7"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:25.653823",
+          "action": "Generation 9",
+          "details": "Best IC: 0.0655, Avg IC: 0.0081, Valid: 50/50, High-Order: 7"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:26.645856",
+          "action": "Generation 10",
+          "details": "Best IC: 0.0655, Avg IC: 0.0254, Valid: 50/50, High-Order: 8"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:27.765036",
+          "action": "Generation 11",
+          "details": "Best IC: 0.0396, Avg IC: 0.0357, Valid: 50/50, High-Order: 1"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:28.982534",
+          "action": "Generation 12",
+          "details": "Best IC: 0.0396, Avg IC: 0.0388, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:30.149480",
+          "action": "Generation 13",
+          "details": "Best IC: 0.0396, Avg IC: 0.0388, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:31.322523",
+          "action": "Generation 14",
+          "details": "Best IC: 0.0396, Avg IC: 0.0396, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:32.493958",
+          "action": "Generation 15",
+          "details": "Best IC: 0.0396, Avg IC: 0.0396, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:33.716408",
+          "action": "Generation 16",
+          "details": "Best IC: 0.0396, Avg IC: 0.0396, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:34.880291",
+          "action": "Generation 17",
+          "details": "Best IC: 0.0396, Avg IC: 0.0396, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:36.052052",
+          "action": "Generation 18",
+          "details": "Best IC: 0.0396, Avg IC: 0.0396, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:37.247065",
+          "action": "Generation 19",
+          "details": "Best IC: 0.0396, Avg IC: 0.0396, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:37.247919",
+          "action": "EvolutionComplete",
+          "details": "Found 0 high-order factors (order >= 3)"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:37.248074",
+          "action": "MiningAttempt",
+          "details": "Attempt 3/5"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:37.248211",
+          "action": "StartEvolution",
+          "details": "Starting evolution with 50 individuals"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:37.251006",
+          "action": "InitializePopulation",
+          "details": "Generated 50 factors"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:37.897050",
+          "action": "Generation 0",
+          "details": "Best IC: 0.0860, Avg IC: 0.0085, Valid: 50/50, High-Order: 19"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:38.625191",
+          "action": "Generation 1",
+          "details": "Best IC: 0.0814, Avg IC: 0.0046, Valid: 50/50, High-Order: 18"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:39.489449",
+          "action": "Generation 2",
+          "details": "Best IC: 0.0742, Avg IC: 0.0066, Valid: 50/50, High-Order: 8"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:40.283661",
+          "action": "Generation 3",
+          "details": "Best IC: 0.0396, Avg IC: 0.0047, Valid: 50/50, High-Order: 14"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:41.612811",
+          "action": "Generation 4",
+          "details": "Best IC: 0.0396, Avg IC: 0.0108, Valid: 50/50, High-Order: 8"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:42.741859",
+          "action": "Generation 5",
+          "details": "Best IC: 0.0407, Avg IC: 0.0150, Valid: 50/50, High-Order: 12"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:44.007145",
+          "action": "Generation 6",
+          "details": "Best IC: 0.0407, Avg IC: 0.0317, Valid: 50/50, High-Order: 2"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:45.198070",
+          "action": "Generation 7",
+          "details": "Best IC: 0.0407, Avg IC: 0.0397, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:46.417983",
+          "action": "Generation 8",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:47.608942",
+          "action": "Generation 9",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:48.773127",
+          "action": "Generation 10",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:49.977517",
+          "action": "Generation 11",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:51.165665",
+          "action": "Generation 12",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:52.374197",
+          "action": "Generation 13",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:53.608390",
+          "action": "Generation 14",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:54.802438",
+          "action": "Generation 15",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:55.987257",
+          "action": "Generation 16",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:57.205719",
+          "action": "Generation 17",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:58.380635",
+          "action": "Generation 18",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:59.558205",
+          "action": "Generation 19",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:59.559120",
+          "action": "EvolutionComplete",
+          "details": "Found 0 high-order factors (order >= 3)"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:59.559347",
+          "action": "MiningAttempt",
+          "details": "Attempt 4/5"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:59.559517",
+          "action": "StartEvolution",
+          "details": "Starting evolution with 50 individuals"
+        },
+        {
+          "timestamp": "2026-04-01T11:58:59.562542",
+          "action": "InitializePopulation",
+          "details": "Generated 50 factors"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:00.385796",
+          "action": "Generation 0",
+          "details": "Best IC: 0.1031, Avg IC: 0.0140, Valid: 50/50, High-Order: 15"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:00.970299",
+          "action": "Generation 1",
+          "details": "Best IC: 0.0438, Avg IC: 0.0058, Valid: 50/50, High-Order: 14"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:01.281480",
+          "action": "Generation 2",
+          "details": "Best IC: 0.0576, Avg IC: 0.0048, Valid: 50/50, High-Order: 23"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:01.842331",
+          "action": "Generation 3",
+          "details": "Best IC: 0.0407, Avg IC: 0.0077, Valid: 50/50, High-Order: 9"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:02.744818",
+          "action": "Generation 4",
+          "details": "Best IC: 0.0407, Avg IC: 0.0176, Valid: 50/50, High-Order: 5"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:03.879222",
+          "action": "Generation 5",
+          "details": "Best IC: 0.0407, Avg IC: 0.0369, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:05.061191",
+          "action": "Generation 6",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:06.273142",
+          "action": "Generation 7",
+          "details": "Best IC: 0.0407, Avg IC: 0.0399, Valid: 50/50, High-Order: 1"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:07.399963",
+          "action": "Generation 8",
+          "details": "Best IC: 0.0407, Avg IC: 0.0391, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:08.569690",
+          "action": "Generation 9",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:09.739894",
+          "action": "Generation 10",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:10.953711",
+          "action": "Generation 11",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:12.131931",
+          "action": "Generation 12",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:13.288764",
+          "action": "Generation 13",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:14.541274",
+          "action": "Generation 14",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:15.745841",
+          "action": "Generation 15",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:16.920580",
+          "action": "Generation 16",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:18.082400",
+          "action": "Generation 17",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:19.254380",
+          "action": "Generation 18",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:20.457278",
+          "action": "Generation 19",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:20.458206",
+          "action": "EvolutionComplete",
+          "details": "Found 0 high-order factors (order >= 3)"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:20.458392",
+          "action": "MiningAttempt",
+          "details": "Attempt 5/5"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:20.458633",
+          "action": "StartEvolution",
+          "details": "Starting evolution with 50 individuals"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:20.462290",
+          "action": "InitializePopulation",
+          "details": "Generated 50 factors"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:21.273276",
+          "action": "Generation 0",
+          "details": "Best IC: 0.1104, Avg IC: 0.0102, Valid: 50/50, High-Order: 16"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:22.115375",
+          "action": "Generation 1",
+          "details": "Best IC: 0.0672, Avg IC: 0.0097, Valid: 50/50, High-Order: 13"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:23.100277",
+          "action": "Generation 2",
+          "details": "Best IC: 0.0672, Avg IC: 0.0112, Valid: 50/50, High-Order: 11"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:24.017809",
+          "action": "Generation 3",
+          "details": "Best IC: 0.0657, Avg IC: 0.0113, Valid: 50/50, High-Order: 18"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:24.979505",
+          "action": "Generation 4",
+          "details": "Best IC: 0.0827, Avg IC: 0.0234, Valid: 50/50, High-Order: 13"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:25.659481",
+          "action": "Generation 5",
+          "details": "Best IC: 0.0407, Avg IC: 0.0099, Valid: 50/50, High-Order: 8"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:26.692121",
+          "action": "Generation 6",
+          "details": "Best IC: 0.0407, Avg IC: 0.0194, Valid: 50/50, High-Order: 11"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:27.649401",
+          "action": "Generation 7",
+          "details": "Best IC: 0.0432, Avg IC: 0.0205, Valid: 50/50, High-Order: 19"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:28.737019",
+          "action": "Generation 8",
+          "details": "Best IC: 0.0407, Avg IC: 0.0298, Valid: 50/50, High-Order: 10"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:29.916704",
+          "action": "Generation 9",
+          "details": "Best IC: 0.0407, Avg IC: 0.0405, Valid: 50/50, High-Order: 1"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:31.141001",
+          "action": "Generation 10",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:32.309888",
+          "action": "Generation 11",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:33.460912",
+          "action": "Generation 12",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:34.634893",
+          "action": "Generation 13",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:35.831681",
+          "action": "Generation 14",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:37.029813",
+          "action": "Generation 15",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:38.191402",
+          "action": "Generation 16",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:39.381068",
+          "action": "Generation 17",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:40.669371",
+          "action": "Generation 18",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:41.947483",
+          "action": "Generation 19",
+          "details": "Best IC: 0.0407, Avg IC: 0.0407, Valid: 50/50, High-Order: 0"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:41.948349",
+          "action": "EvolutionComplete",
+          "details": "Found 0 high-order factors (order >= 3)"
+        },
+        {
+          "timestamp": "2026-04-01T11:59:41.948512",
+          "action": "MiningComplete",
+          "details": "Found 0 unique factors with IC >= 0.01"
+        }
+      ]
+    },
+    "regime_statistics": {
+      "total_days": 2,
+      "regime_distribution": {
+        "high_vol_small_cap": {
+          "count": 2,
+          "percentage": 1.0
+        }
+      },
+      "current_regime": "high_vol_small_cap",
+      "regime_description": "高波动/小盘股 (High Volatility / Small Cap)"
+    },
+    "ablation_report": "# V115 Factor Ablation Study Report\n\n## Summary\n\n- **Baseline IC**: -0.0078\n- **Important Factors**: 0\n- **Harmful Factors**: 6\n\n## Factor Importance Ranking\n\n| Rank | Factor | IC Change | Importance | Status |\n|------|--------|-----------|------------|--------|\n| 1 | volatility_20 | +0.0264 | -0.0264 | ⚠ Harmful |\n| 2 | momentum_10 | +0.0264 | -0.0264 | ⚠ Harmful |\n| 3 | turnover_rate | +0.0264 | -0.0264 | ⚠ Harmful |\n| 4 | pe_ttm | +0.0264 | -0.0264 | ⚠ Harmful |\n| 5 | pb | +0.0264 | -0.0264 | ⚠ Harmful |\n| 6 | total_mv | +0.0494 | -0.0494 | ⚠ Harmful |\n\n## Recommendations\n\n### Factors to Keep (重要因子)\nNone\n\n### Factors to Remove (有害因子)\nvolatility_20, momentum_10, turnover_rate, pe_ttm, pb, total_mv\n\n## Action Plan\n\n1. **立即剔除**: volatility_20, momentum_10, turnover_rate, pe_ttm, pb\n2. **保留核心**: None\n3. **重新评估**: 剩余因子需要在不同场景下进一步验证\n",
+    "factor_ics": {
+      "volatility_20": -0.039583833533413354,
+      "momentum_10": -0.03912605042016806,
+      "turnover_rate": -0.02449299719887955,
+      "total_mv": 0.018685874349739902,
+      "pe_ttm": 0.0407234893957583,
+      "pb": 0.011399759903961587
+    },
+    "audit_log": [
+      {
+        "timestamp": "2026-04-01T11:57:54.961518",
+        "action": "ComputeScore",
+        "details": "Starting V115 score computation with 1500 rows"
+      },
+      {
+        "timestamp": "2026-04-01T11:57:54.962216",
+        "action": "DatabaseMode",
+        "details": "Connected to database"
+      },
+      {
+        "timestamp": "2026-04-01T11:57:54.987007",
+        "action": "RegimeDetection",
+        "details": "Detected regime: high_vol_small_cap"
+      },
+      {
+        "timestamp": "2026-04-01T11:57:54.987202",
+        "action": "GeneticMining",
+        "details": "Starting genetic factor mining..."
+      },
+      {
+        "timestamp": "2026-04-01T11:59:41.948622",
+        "action": "GeneticMiningComplete",
+        "details": "Mined 0 genetic factors"
+      },
+      {
+        "timestamp": "2026-04-01T11:59:42.019079",
+        "action": "LowICWarning",
+        "details": "T+1 IC (-0.0078) < 0.01, running ablation study"
+      },
+      {
+        "timestamp": "2026-04-01T11:59:42.173904",
+        "action": "AblationComplete",
+        "details": "Found 6 harmful factors"
+      },
+      {
+        "timestamp": "2026-04-01T11:59:42.313661",
+        "action": "ComputeScoreComplete",
+        "details": "Final T+1 IC: -0.0078"
+      }
+    ]
+  }
+}

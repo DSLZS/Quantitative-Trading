@@ -37,7 +37,7 @@ pd.options.mode.chained_assignment = None
 
 class BacktestReferee:
     """
-    V103 不可变裁判引擎。
+    不可变裁判引擎。
     
     【裁判职责】
     1. 接收选手 (AlphaModule) 提交的信号
@@ -65,6 +65,9 @@ class BacktestReferee:
     TOP_N = 50                    # 持仓股票数量
     POSITION_PER_STOCK = 0.02     # 单股票仓位 (2% = 100%/50)
     INITIAL_CAPITAL = 100_000.00  # 初始资金 (10 万) - V104 锁定
+    
+    # ==================== 版本号 (动态) ====================
+    VERSION = "V103"  # 可被子类覆盖
     
     # ==================== 验收阈值 ====================
     IC_THRESHOLD = 0.05           # T+1 IC 阈值
@@ -600,7 +603,7 @@ class BacktestReferee:
         }
         
         logger.info("=" * 70)
-        logger.info(f"V103 Audit Complete - Status: {'PASSED ✓' if passed else 'FAILED ✗'}")
+        logger.info(f"{self.VERSION} Audit Complete - Status: {'PASSED ✓' if passed else 'FAILED ✗'}")
         logger.info(f"  T+1 IC: {t1_ic['mean_ic']:.4f} (target > {self.IC_THRESHOLD})")
         logger.info(f"  IC IR: {t1_ic['ic_ir']:.2f} (target > {self.IC_IR_THRESHOLD})")
         logger.info(f"  IC Decay: {ic_decay['decay_pattern']}")
@@ -630,7 +633,7 @@ class BacktestReferee:
             报告文件路径
         """
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        report_path = self.output_dir / f"v103_audit_{timestamp}.md"
+        report_path = self.output_dir / f"{self.VERSION.lower()}_audit_{timestamp}.md"
         
         # 提取回测指标
         total_return = backtest_result.get('total_return', 0)
@@ -776,7 +779,7 @@ class BacktestReferee:
             },
         }
         
-        json_path = self.output_dir / f"v103_audit_{timestamp}.json"
+        json_path = self.output_dir / f"{self.VERSION.lower()}_audit_{timestamp}.json"
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(json_result, f, indent=2, default=str)
         
