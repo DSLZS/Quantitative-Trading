@@ -67,7 +67,7 @@ class BacktestReferee:
     INITIAL_CAPITAL = 100_000.00  # 初始资金 (10 万) - V104 锁定
     
     # ==================== 版本号 (动态) ====================
-    VERSION = "V103"  # 可被子类覆盖
+    VERSION = "V119"  # 可被子类覆盖
     
     # ==================== 验收阈值 ====================
     IC_THRESHOLD = 0.05           # T+1 IC 阈值
@@ -602,7 +602,7 @@ class BacktestReferee:
             'score_df': score_df,
         }
         
-        version = getattr(self, 'VERSION', 'V103')
+        version = getattr(self, 'VERSION', 'V119')
         logger.info("=" * 70)
         logger.info(f"{version} Audit Complete - Status: {'PASSED ✓' if passed else 'FAILED ✗'}")
         logger.info(f"  T+1 IC: {t1_ic['mean_ic']:.4f} (target > {self.IC_THRESHOLD})")

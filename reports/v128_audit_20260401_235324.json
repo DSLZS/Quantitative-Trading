@@ -1,0 +1,62 @@
+{
+  "alpha_metrics": {
+    "t1_ic": {
+      "mean_ic": 0.044903155531108414,
+      "ic_std": 0.1642008194007215,
+      "ic_ir": 0.2734648687807407,
+      "num_days": 484,
+      "min_ic": -0.66368725950618,
+      "max_ic": 0.6463385466149526
+    },
+    "ic_decay": {
+      "t1_ic": 0.044903155531108414,
+      "t3_ic": 0.035093314147928455,
+      "t5_ic": 0.03654220201936385,
+      "is_monotonic": false,
+      "decay_pattern": "T+1(0.0449) -> T+3(0.0351) -> T+5(0.0365)"
+    },
+    "passed": false
+  },
+  "backtest_metrics": {
+    "portfolio_df": "     trade_date  portfolio_value  daily_return  num_positions  transaction_cost  cumulative_return\n0    2024-03-12       -80.000000             0             50         80.000000                  0\n1    2024-03-13       -79.837760             0             50         -0.162240                  0\n2    2024-03-14       -79.700758             0             50         -0.137002                  0\n3    2024-03-15       -79.534981             0             50         -0.165778                  0\n4    2024-03-18       -79.423314             0             50         -0.111667                  0\n..          ...              ...           ...            ...               ...                ...\n479  2026-03-06       -32.984726             0             50         -0.063585                  0\n480  2026-03-09       -32.940131             0             50         -0.044595                  0\n481  2026-03-10       -32.871615             0             50         -0.068515                  0\n482  2026-03-11       -32.810080             0             50         -0.061536                  0\n483  2026-03-12       -32.772545             0             50         -0.037535                  0\n\n[484 rows x 6 columns]",
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "volatility": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_transaction_cost": 32.77254495292691,
+    "num_trading_days": 484,
+    "final_value": -32.77254495292695
+  },
+  "factor_ics": {
+    "pct_chg": 0.030083963447314805,
+    "change": 0.02919766257253694,
+    "momentum_5": -0.030774139475242546,
+    "momentum_20": -0.029911574150815943,
+    "volatility_5": 0.035161887989474346,
+    "ma_deviation_5": -0.02901942236737274,
+    "ma_deviation_20": 0.03343365449132317,
+    "price_position_20": -0.02634518942496933,
+    "price_position_60": -0.021308679369891722,
+    "bias_60": 0.02578818763038131,
+    "volume_price_stable": 0.032084414154539324,
+    "volume_price_divergence_5": 0.019995473140693432,
+    "volume_price_divergence_20": 0.0222711742008719,
+    "turnover_bias_20": 0.025194368437535825,
+    "volume_shrink_ratio": -0.02461763291230032,
+    "rsi_14": -0.022399981612314115,
+    "mfi_14": -0.014520941954654299,
+    "macd": -0.0175549010172571,
+    "macd_signal": -0.013963281693244711,
+    "macd_hist": -0.017853864199258065,
+    "hist_sharpe_20d": -0.026101292047692976
+  },
+  "config": {
+    "commission_rate": 0.0003,
+    "stamp_duty_rate": 0.001,
+    "slippage_rate": 0.0005,
+    "top_n": 50,
+    "position_per_stock": 0.02,
+    "initial_capital": 100000.0
+  }
+}
