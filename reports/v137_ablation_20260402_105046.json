@@ -1,0 +1,73 @@
+{
+  "timestamp": "2026-04-02T10:50:46.252936",
+  "version": "V137",
+  "ablation_results": {
+    "volume_price_contradiction": {
+      "original_ic": 0.02673120342325527,
+      "ic_change": -0.002673120342325527,
+      "contribution": "positive"
+    },
+    "volume_confirmed_momentum": {
+      "original_ic": -0.01424540569144866,
+      "ic_change": 0.001424540569144866,
+      "contribution": "negative"
+    },
+    "pct_chg": {
+      "original_ic": 0.01139903636569766,
+      "ic_change": -0.001139903636569766,
+      "contribution": "positive"
+    },
+    "liquidity_alpha": {
+      "original_ic": -0.003835283462457779,
+      "ic_change": 0.00038352834624577793,
+      "contribution": "negative"
+    },
+    "change": {
+      "original_ic": -0.003237840621598392,
+      "ic_change": 0.00032378406215983926,
+      "contribution": "negative"
+    },
+    "ofi_normalized": {
+      "original_ic": -0.00312913765551563,
+      "ic_change": 0.00031291376555156306,
+      "contribution": "negative"
+    }
+  },
+  "bin_stats": {
+    "volume_price_contradiction": {
+      "0": 0.4629415422237506,
+      "1": 0.4739380964627543,
+      "2": 0.4762439349914499,
+      "3": 0.4764747996413354,
+      "4": 0.4817374685083833
+    },
+    "volume_confirmed_momentum": {
+      "0": 0.4790721585027823,
+      "1": 0.4783379324246363,
+      "2": 0.4793213039023289,
+      "3": 0.47864115824288184,
+      "4": 0.45595788303158774
+    },
+    "pct_chg": {
+      "0": 0.4604306845450082,
+      "1": 0.47936196811918425,
+      "2": 0.4857387821124722,
+      "3": 0.48318426385298024,
+      "4": 0.4626535455053043
+    }
+  },
+  "selected_factors": [
+    "volume_price_contradiction",
+    "volume_confirmed_momentum",
+    "pct_chg"
+  ],
+  "factor_ics": {
+    "pct_chg": 0.01139903636569766,
+    "change": -0.003237840621598392,
+    "volume_price_contradiction": 0.02673120342325527,
+    "liquidity_alpha": -0.003835283462457779,
+    "ofi_normalized": -0.00312913765551563,
+    "volume_confirmed_momentum": 0.01424540569144866
+  },
+  "year": 2024
+}

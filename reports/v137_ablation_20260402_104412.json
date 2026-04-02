@@ -1,0 +1,67 @@
+{
+  "timestamp": "2026-04-02T10:44:12.075613",
+  "version": "V137",
+  "ablation_results": {
+    "volume_price_contradiction": {
+      "original_ic": 0.02673120342325527,
+      "ic_change": -0.002673120342325527,
+      "contribution": "positive"
+    },
+    "volume_confirmed_momentum": {
+      "original_ic": -0.01424540569144866,
+      "ic_change": 0.001424540569144866,
+      "contribution": "negative"
+    },
+    "pct_chg": {
+      "original_ic": 0.01139903636569766,
+      "ic_change": -0.001139903636569766,
+      "contribution": "positive"
+    },
+    "liquidity_alpha": {
+      "original_ic": -0.003835283462457779,
+      "ic_change": 0.00038352834624577793,
+      "contribution": "negative"
+    },
+    "change": {
+      "original_ic": -0.003237840621598392,
+      "ic_change": 0.00032378406215983926,
+      "contribution": "negative"
+    },
+    "ofi_normalized": {
+      "original_ic": -0.00312913765551563,
+      "ic_change": 0.00031291376555156306,
+      "contribution": "negative"
+    }
+  },
+  "bin_stats": {
+    "volume_price_contradiction": {
+      "0": 0.4669295983690452,
+      "1": 0.47604767942344267,
+      "2": 0.4798234328834361
+    },
+    "volume_confirmed_momentum": {
+      "0": 0.47900221161001455,
+      "1": 0.4794754215957977,
+      "2": 0.4643192272884615
+    },
+    "pct_chg": {
+      "0": 0.4678459726059218,
+      "1": 0.48496316595638267,
+      "2": 0.4699932682245519
+    }
+  },
+  "selected_factors": [
+    "volume_price_contradiction",
+    "volume_confirmed_momentum",
+    "pct_chg"
+  ],
+  "factor_ics": {
+    "pct_chg": 0.01139903636569766,
+    "change": -0.003237840621598392,
+    "volume_price_contradiction": 0.02673120342325527,
+    "liquidity_alpha": -0.003835283462457779,
+    "ofi_normalized": -0.00312913765551563,
+    "volume_confirmed_momentum": 0.01424540569144866
+  },
+  "year": 2024
+}

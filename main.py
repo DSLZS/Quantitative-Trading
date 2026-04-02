@@ -57,6 +57,7 @@ from engine.backtest_referee import BacktestReferee, get_backtest_referee
 from alpha_research_v108 import AlphaResearchV108, get_alpha_research as get_alpha_research_v108, AutoEnvHealer
 from alpha_research_v109 import AlphaResearchV109, get_alpha_research as get_alpha_research_v109
 from alpha_research_v136 import AlphaResearchV136, get_alpha_research as get_alpha_research_v136, run_v136_backtest
+from alpha_research_v137 import AlphaResearchV137, get_alpha_research as get_alpha_research_v137
 from alpha_research_v110 import AlphaResearchV110, get_alpha_research as get_alpha_research_v110
 from alpha_research_v111 import AlphaResearchV111, get_alpha_research as get_alpha_research_v111
 from alpha_research_v112 import AlphaResearchV112, get_alpha_research as get_alpha_research_v112
@@ -159,7 +160,7 @@ class V136Runner:
             
             query = text("""
                 SELECT symbol, trade_date, open, high, low, close, pre_close,
-                       change, pct_chg, volume, amount, turnover_rate, total_mv
+                       `change`, pct_chg, volume, amount, turnover_rate, total_mv
                 FROM stock_daily
                 WHERE trade_date BETWEEN :start_date AND :end_date
                 ORDER BY symbol, trade_date
@@ -2229,12 +2230,10 @@ class V112Runner:
         
         # 初始化选手 (Alpha Module) - V112
         self.alpha_module = get_alpha_research_v112(
-            enable_neutralization=True,
             enable_orthogonalization=True,
-            enable_dynamic_weight=True,
+            enable_neutralization=True,
             auto_heal=True,
-            db_url=db_url,
-            reflection_output=str(Path(output_dir) / "v112_reflection.json")
+            db_url=db_url
         )
         
         # 初始化裁判 (Backtest Referee) - 唯一裁判
@@ -3843,9 +3842,9 @@ def main():
     parser.add_argument(
         '--version',
         type=int,
-        default=136,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136],
-        help='Version to run (108, 109, 110, 111, 112, 113, 116, 117, 118, or 136, default: 136)'
+        default=137,
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137],
+        help='Version to run (108, 109, 110, 111, 112, 113, 116, 117, 118, 136, or 137, default: 137)'
     )
     parser.add_argument(
         '--parquet',
@@ -4243,6 +4242,191 @@ def main():
             logger.info(f"  Year: {args.year}")
             logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
             logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
+            logger.info("=" * 70)
+            
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 137:
+        logger.info("=" * 70)
+        logger.info("V137 Unified Main Entry - Forced Architecture Regression & Multi-Round Feature Purification")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV137: 选手 (AdaptiveFeatureEnsemble + LiquidityAlpha)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - 分箱非线性映射：5 分位分箱 + 胜率动态权重 (R5 Optimized)")
+        logger.info("  - 量价背离逻辑：Volume_Price_Contradiction, Liquidity_Alpha")
+        logger.info("  - Inner-Loop: 强制多轮自我迭代")
+        logger.info("  - R5 优化：IC 阈值 0.008, 5 分位分箱，10 因子集成，极值增强×2.0")
+        logger.info("=" * 70)
+        
+        from src.alpha_research_v137 import get_alpha_research as get_alpha_research_v137
+        
+        db_url = os.getenv("DATABASE_URL")
+        # V137-R11: 10 分位分箱 + 选择 3 因子 + 增强分箱区分度
+        alpha_module = get_alpha_research_v137(
+            ic_threshold=0.005,
+            n_factors=3,
+            n_bins=10,
+            enable_ensemble=True,
+            enable_liquidity=True,
+            auto_heal=True,
+            db_url=db_url
+        )
+        
+        referee = get_backtest_referee(alpha_module, output_dir=args.output)
+        referee.VERSION = "V137"
+        
+        def load_v137_data(year: int) -> pd.DataFrame:
+            if args.parquet and Path(args.parquet).exists():
+                df = pd.read_parquet(args.parquet)
+                if 'trade_date' in df.columns:
+                    df['trade_date'] = pd.to_datetime(df['trade_date'])
+                    df = df[df['trade_date'].dt.year == year]
+                    df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+                return df
+            
+            try:
+                from sqlalchemy import create_engine, text
+                db_url = os.getenv("DATABASE_URL")
+                if not db_url:
+                    raise ValueError("DATABASE_URL not configured")
+                engine = create_engine(db_url)
+                query = text("""
+                    SELECT symbol, trade_date, open, high, low, close, pre_close,
+                           `change`, pct_chg, volume, amount, turnover_rate, total_mv
+                    FROM stock_daily
+                    WHERE trade_date BETWEEN :start_date AND :end_date
+                    ORDER BY symbol, trade_date
+                """)
+                df = pd.read_sql_query(query, engine, params={
+                    'start_date': f"{year}0101",
+                    'end_date': f"{year}1231",
+                })
+                return df
+            except Exception as e:
+                logger.error(f"Failed to load data: {e}")
+                return pd.DataFrame()
+        
+        if args.all:
+            years = [2019, 2021, 2024]
+            logger.info(f"Running V137 audit for all years: {years}")
+            results = []
+            passed_count = 0
+            all_ic_values = []
+            
+            for year in years:
+                df = load_v137_data(year)
+                if df.empty:
+                    logger.warning(f"No data for year {year}")
+                    continue
+                
+                if 'trade_date' in df.columns:
+                    if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                        df['trade_date'] = pd.to_datetime(df['trade_date'])
+                    df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+                
+                numeric_columns = ['open', 'high', 'low', 'close', 'volume', 'amount', 
+                                  'turnover_rate', 'total_mv']
+                for col in numeric_columns:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                
+                result = referee.run_audit(df)
+                result['year'] = year
+                results.append(result)
+                
+                if result.get('passed', False):
+                    passed_count += 1
+                if 't1_ic' in result:
+                    all_ic_values.append(result['t1_ic'].get('mean_ic', 0))
+            
+            cross_year_ic_mean = float(np.mean(all_ic_values)) if all_ic_values else 0
+            cross_year_ic_std = float(np.std(all_ic_values, ddof=1)) if len(all_ic_values) > 1 else 0
+            cross_year_ic_ir = cross_year_ic_mean / cross_year_ic_std if cross_year_ic_std > 1e-10 else 0
+            
+            # 生成消融实验报告
+            ablation_results = alpha_module.get_ablation_results()
+            bin_stats = alpha_module.get_bin_stats()
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            reflection_path = Path(args.output) / f"v137_ablation_{timestamp}.json"
+            reflection = {
+                'timestamp': datetime.now().isoformat(),
+                'version': 'V137',
+                'ablation_results': ablation_results,
+                'bin_stats': bin_stats,
+                'selected_factors': alpha_module.get_selected_factors(),
+                'factor_ics': alpha_module.get_factor_ics(),
+                'summary': {
+                    'years': years,
+                    'passed_count': passed_count,
+                    'total_count': len(years),
+                    'cross_year_ic_mean': cross_year_ic_mean,
+                    'cross_year_ic_std': cross_year_ic_std,
+                    'cross_year_ic_ir': cross_year_ic_ir,
+                }
+            }
+            with open(reflection_path, 'w', encoding='utf-8') as f:
+                json.dump(reflection, f, indent=2, default=str)
+            logger.info(f"Ablation report saved to: {reflection_path}")
+            
+            logger.info("=" * 70)
+            logger.info("V137 Multi-Year Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Passed: {passed_count}/{len(years)}")
+            logger.info(f"  Cross-Year IC: {cross_year_ic_mean:.4f} ± {cross_year_ic_std:.4f}")
+            logger.info(f"  Cross-Year IC IR: {cross_year_ic_ir:.2f}")
+            logger.info("=" * 70)
+            
+        elif args.year:
+            logger.info(f"Running V137 audit for year: {args.year}")
+            df = load_v137_data(args.year)
+            
+            if df.empty:
+                logger.warning(f"No data loaded for year {args.year}")
+                sys.exit(1)
+            
+            if 'trade_date' in df.columns:
+                if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                    df['trade_date'] = pd.to_datetime(df['trade_date'])
+                df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+            
+            numeric_columns = ['open', 'high', 'low', 'close', 'volume', 'amount', 
+                              'turnover_rate', 'total_mv']
+            for col in numeric_columns:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+            
+            result = referee.run_audit(df)
+            
+            # 生成消融实验报告
+            ablation_results = alpha_module.get_ablation_results()
+            bin_stats = alpha_module.get_bin_stats()
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            reflection_path = Path(args.output) / f"v137_ablation_{timestamp}.json"
+            reflection = {
+                'timestamp': datetime.now().isoformat(),
+                'version': 'V137',
+                'ablation_results': ablation_results,
+                'bin_stats': bin_stats,
+                'selected_factors': alpha_module.get_selected_factors(),
+                'factor_ics': alpha_module.get_factor_ics(),
+                'year': args.year
+            }
+            with open(reflection_path, 'w', encoding='utf-8') as f:
+                json.dump(reflection, f, indent=2, default=str)
+            logger.info(f"Ablation report saved to: {reflection_path}")
+            
+            logger.info("=" * 70)
+            logger.info("V137 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  Report: {result.get('report_path', 'N/A')}")
             logger.info("=" * 70)
             
         else:
