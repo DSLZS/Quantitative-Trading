@@ -62,6 +62,7 @@ from alpha_research_v138 import AlphaResearchV138, get_alpha_research as get_alp
 from alpha_research_v139 import AlphaResearchV139, get_alpha_research as get_alpha_research_v139
 from alpha_research_v140 import AlphaResearchV140, get_alpha_research as get_alpha_research_v140
 from alpha_research_v141 import AlphaResearchV141, get_alpha_research as get_alpha_research_v141
+from alpha_research_v142 import AlphaResearchV142, get_alpha_research as get_alpha_research_v142
 
 # V140 全局常量
 MAX_FACTORS = 12  # V140: 仅保留前 12 个正交因子
@@ -84,6 +85,423 @@ logger.add(
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
     level="INFO",
 )
+
+
+class V142Runner:
+    """
+    V142 统一回测运行器 - 特征提纯与 IC 强度修复.
+    
+    【裁判 - 选手机制】
+    - BacktestReferee: 裁判 (不可变，初始资金锁定 10 万)
+    - AlphaResearchV142: 选手 (FeatureDistillation + ResidualBasedRecall + RegimeAwareWeighting)
+    
+    【V142 核心改进】
+    1. FeatureDistillation: 特征提纯（残差缩放 + Sigmoid 门控）
+       - Standardized Residual Scaling: Residual = Factor_Recall - β * Factor_Core
+       - Sigmoid-Gating: Gated = Sigmoid(Rank(Factor_A)) * Rank(Factor_B)
+    2. ResidualBasedRecall: 基于残差分析的因子召回
+    3. RegimeAwareWeighting: 场景感知动态权重 2.0
+    
+    【目标指标】
+    - T+1 Rank IC > 0.045 (必须超过 V140 的 0.0425)
+    - IC Decay 单调递减 (T+1 > T+3 > T+5)
+    - Feature Distillation >= 2
+    """
+    
+    def __init__(
+        self,
+        parquet_path: Optional[str] = None,
+        output_dir: str = "reports",
+    ) -> None:
+        self.parquet_path = parquet_path
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        
+        db_url = os.getenv("DATABASE_URL")
+        
+        self.alpha_module = get_alpha_research_v142(
+            ic_threshold=0.0001,
+            n_factors=MAX_FACTORS,
+            n_bins=10,
+            enable_ensemble=True,
+            enable_distillation=True,
+            enable_regime_weighting=True,
+            enable_orthogonalization=True,
+            auto_heal=True,
+            db_url=db_url,
+            max_recall_factors=3
+        )
+        
+        self.referee = get_backtest_referee(self.alpha_module, output_dir=output_dir)
+        self.referee.VERSION = "V142"
+        
+        logger.info("V142Runner initialized")
+        logger.info(f"  Alpha Module: {type(self.alpha_module).__name__}")
+        logger.info(f"  Referee: {type(self.referee).__name__}")
+        logger.info(f"  Initial Capital: {self.referee.INITIAL_CAPITAL:,.0f}")
+        logger.info(f"  Feature Distillation: Enabled")
+        logger.info(f"  Residual Recall: Enabled")
+        logger.info(f"  Regime-Aware Weighting: Enabled")
+    
+    def load_data(self, year: int) -> pd.DataFrame:
+        """加载指定年份的数据"""
+        if self.parquet_path and Path(self.parquet_path).exists():
+            logger.info(f"Loading data from Parquet: {self.parquet_path}")
+            df = pd.read_parquet(self.parquet_path)
+            
+            if 'trade_date' in df.columns:
+                df['trade_date'] = pd.to_datetime(df['trade_date'])
+                df = df[df['trade_date'].dt.year == year]
+                df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+            
+            logger.info(f"Loaded {len(df)} rows for year {year}")
+            return df
+        
+        logger.info(f"Attempting to load data for year {year} from database...")
+        
+        try:
+            from sqlalchemy import create_engine, text
+            
+            db_url = os.getenv("DATABASE_URL")
+            if not db_url:
+                raise ValueError("DATABASE_URL not configured")
+            
+            engine = create_engine(db_url)
+            
+            start_date = f"{year}0101"
+            end_date = f"{year}1231"
+            
+            query = text("""
+                SELECT symbol, trade_date, open, high, low, close, pre_close,
+                       `change`, pct_chg, volume, amount, turnover_rate, total_mv
+                FROM stock_daily
+                WHERE trade_date BETWEEN :start_date AND :end_date
+                ORDER BY symbol, trade_date
+            """)
+            
+            df = pd.read_sql_query(query, engine, params={
+                'start_date': start_date,
+                'end_date': end_date,
+            })
+            
+            logger.info(f"Loaded {len(df)} rows from database for year {year}")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Failed to load data from database: {e}")
+            return pd.DataFrame()
+    
+    def run_audit(self, year: int) -> dict:
+        """运行单一年份的审计"""
+        logger.info("=" * 70)
+        logger.info(f"V142 Audit - Year {year}")
+        logger.info("=" * 70)
+        
+        df = self.load_data(year)
+        
+        if df.empty:
+            logger.warning(f"No data loaded for year {year}")
+            return {'year': year, 'error': 'No data loaded', 'passed': False}
+        
+        logger.info("[Preprocessing] Converting data types...")
+        
+        if 'trade_date' in df.columns:
+            if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                df['trade_date'] = pd.to_datetime(df['trade_date'])
+            df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+        
+        numeric_columns = ['open', 'high', 'low', 'close', 'volume', 'amount', 
+                          'turnover_rate', 'total_mv']
+        for col in numeric_columns:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        logger.info("[Referee] Running audit...")
+        result = self.referee.run_audit(df)
+        
+        report_path = self.generate_v142_report(result, year)
+        
+        result['year'] = year
+        result['custom_report_path'] = report_path
+        
+        return result
+    
+    def generate_v142_report(self, result: dict, year: int) -> str:
+        """生成 V142 年度审计报告"""
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        report_path = self.output_dir / f"v142_audit_{year}_{timestamp}.md"
+        
+        t1_ic = result.get('t1_ic', {})
+        ic_decay = result.get('ic_decay', {})
+        backtest_result = result.get('backtest_result', {})
+        passed = result.get('passed', False)
+        
+        factor_ics_v142 = self.alpha_module.get_factor_ics()
+        selected_factors = self.alpha_module.get_selected_factors()
+        recalled_factors = self.alpha_module.get_recalled_factors()
+        distilled_features = self.alpha_module.get_distilled_features()
+        residual_analysis = self.alpha_module.get_residual_analysis()
+        regime_weights = self.alpha_module.get_regime_weights()
+        current_regime = self.alpha_module.get_current_regime()
+        
+        v140_ic = 0.0425
+        v141_ic = 0.0381
+        
+        recalled_info = ""
+        for factor, scores in residual_analysis.items():
+            recalled_info += f"| {factor} | {scores['overall_ic']:.4f} | {scores['failure_ic']:.4f} | {scores['recall_score']:.4f} |\n"
+        
+        distilled_info = ""
+        for name, details in list(distilled_features.items())[:5]:
+            distilled_info += f"| {name} | {details['core_factor']} × {details['recall_factor']} |\n"
+        
+        factor_ic_info = ""
+        if factor_ics_v142:
+            for factor_name, ic in sorted(factor_ics_v142.items(), key=lambda x: abs(x[1]), reverse=True)[:12]:
+                selected = "✓" if factor_name in selected_factors else ""
+                factor_ic_info += f"| {factor_name} | {ic:.4f} | {selected} |\n"
+        
+        report_content = f"""# V142 Alpha Audit Report
+
+**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**Year**: {year}
+**Architecture**: Referee-Player (裁判 - 选手)
+**Version**: V142 特征提纯与 IC 强度修复
+
+---
+
+## 1. Executive Summary (执行摘要)
+
+| Metric | Value | Threshold | Status |
+|--------|-------|-----------|--------|
+| T+1 Rank IC | {t1_ic.get('mean_ic', 0):.4f} | > 0.045 | {'✓ PASSED' if t1_ic.get('mean_ic', 0) > 0.045 else '✗ FAILED'} |
+| IC IR | {t1_ic.get('ic_ir', 0):.2f} | > 0.6 | {'✓ PASSED' if t1_ic.get('ic_ir', 0) > 0.6 else '✗ FAILED'} |
+| IC Decay | {'Monotonic' if ic_decay.get('is_monotonic', False) else 'Non-monotonic'} | Monotonic | {'✓ PASSED' if ic_decay.get('is_monotonic', False) else '✗ FAILED'} |
+| Distilled Features | {len(distilled_features)} | >= 2 | {'✓' if len(distilled_features) >= 2 else '✗'} |
+
+**Overall Assessment**: **{'PASSED ✓' if passed else 'FAILED ✗'}**
+
+---
+
+## 2. V142 Core Features (V142 核心特性)
+
+### 2.1 Feature Distillation (特征提纯)
+
+| Component | Formula | Purpose |
+|-----------|---------|---------|
+| Residual Scaling | Factor_Recall - β × Factor_Core | Remove redundancy |
+| Sigmoid Gating | Sigmoid(Rank(A)) × Rank(B) | Confidence switch (0~1) |
+
+### 2.2 Distilled Features
+
+| Feature | Core × Recall | Type |
+|---------|---------------|------|
+{distilled_info if distilled_info else "*No distilled features*"}
+
+### 2.3 Residual-Based Recall
+
+| Recalled Factor | Overall IC | Failure IC | Recall Score |
+|-----------------|------------|------------|--------------|
+{recalled_info if recalled_info else "*No factors recalled*"}
+
+### 2.4 Top Selected Factors
+
+| Factor | IC | Selected |
+|--------|-----|----------|
+{factor_ic_info if factor_ic_info else "*No factor data*"}
+
+### 2.5 Regime-Aware Weighting
+
+| Component | Value |
+|-----------|-------|
+| Current Regime | {'High Volatility' if current_regime == 1 else 'Low Volatility'} |
+| Regime Strategy | {'Distilled ×1.5, Linear ×0.7' if current_regime == 1 else 'Linear ×1.2, Distilled ×0.8'} |
+
+---
+
+## 3. V142 vs V141 vs V140 Comparison (IC 提升对比)
+
+| Metric | V140 | V141 | V142 | Improvement |
+|--------|------|------|------|-------------|
+| T+1 IC | {v140_ic:.4f} | {v141_ic:.4f} | {t1_ic.get('mean_ic', 0):.4f} | {t1_ic.get('mean_ic', 0) - v140_ic:+.4f} |
+| Distilled Features | 0 | 0 | {len(distilled_features)} | +{len(distilled_features)} |
+
+**IC vs V140**: {t1_ic.get('mean_ic', 0) - v140_ic:+.4f} ({'✓' if t1_ic.get('mean_ic', 0) > v140_ic else '✗'})
+**IC vs V141**: {t1_ic.get('mean_ic', 0) - v141_ic:+.4f} ({'✓' if t1_ic.get('mean_ic', 0) > v141_ic else '✗'})
+
+---
+
+## 4. Why V142 is More Effective (为什么 V142 比 V141 更有效)
+
+| Aspect | V141 (Failed) | V142 (Fixed) |
+|--------|---------------|--------------|
+| Interaction | Rank(A) × Rank(B) | Sigmoid(Rank(A)) × Scaled_Residual(B) |
+| Information | Redundant | Purified (residual scaling) |
+| Economic Logic | None | Conditional trigger (gate mechanism) |
+| Weight Boost | None | Distilled factors ×2.0 |
+
+**Key Insight**: V141 的简单乘法丢失了因子原始信息，V142 通过残差缩放剔除冗余，通过 Sigmoid 门控实现"条件触发"逻辑。
+
+---
+
+## 5. IC Decay Analysis (IC 衰减分析)
+
+| Horizon | IC | Pattern |
+|---------|-----|---------|
+| T+1 | {ic_decay.get('t1_ic', 0):.4f} | Baseline |
+| T+3 | {ic_decay.get('t3_ic', 0):.4f} | {'✓ Monotonic' if ic_decay.get('t1_ic', 0) >= ic_decay.get('t3_ic', 0) else '✗ Non-monotonic'} |
+| T+5 | {ic_decay.get('t5_ic', 0):.4f} | {'✓ Monotonic' if ic_decay.get('t3_ic', 0) >= ic_decay.get('t5_ic', 0) else '✗ Non-monotonic'} |
+
+**Decay Pattern**: {ic_decay.get('decay_pattern', 'N/A')}
+
+---
+
+## 6. Backtest Performance (回测表现)
+
+| Metric | Value |
+|--------|-------|
+| Initial Capital | {self.referee.INITIAL_CAPITAL:,.0f} |
+| Final Value | {backtest_result.get('final_value', 0):,.2f} |
+| Total Return | {backtest_result.get('total_return', 0):.2%} |
+| Annual Return | {backtest_result.get('annual_return', 0):.2%} |
+| Sharpe Ratio | {backtest_result.get('sharpe_ratio', 0):.2f} |
+| Max Drawdown | {backtest_result.get('max_drawdown', 0):.2%} |
+
+---
+
+## 7. Conclusion (结论)
+
+| Metric | Target | Actual | Status |
+|--------|--------|--------|--------|
+| T+1 Rank IC | > 0.045 | {t1_ic.get('mean_ic', 0):.4f} | {'✓' if t1_ic.get('mean_ic', 0) > 0.045 else '✗'} |
+| IC IR | > 0.6 | {t1_ic.get('ic_ir', 0):.2f} | {'✓' if t1_ic.get('ic_ir', 0) > 0.6 else '✗'} |
+| IC Decay | Monotonic | {ic_decay.get('decay_pattern', 'N/A')} | {'✓' if ic_decay.get('is_monotonic', False) else '✗'} |
+| Distilled Features | >= 2 | {len(distilled_features)} | {'✓' if len(distilled_features) >= 2 else '✗'} |
+| IC > V140 | Yes | {'Yes' if t1_ic.get('mean_ic', 0) > v140_ic else 'No'} | {'✓' if t1_ic.get('mean_ic', 0) > v140_ic else '✗'} |
+
+**{'PASSED ✓' if passed else 'FAILED ✗'}**
+
+---
+
+*Report generated by V142 Unified Main Entry (Feature Distillation + Residual-Based Recall)*
+"""
+        
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+        
+        logger.info(f"Report saved to: {report_path}")
+        
+        json_result = {
+            'alpha_metrics': {'t1_ic': t1_ic, 'ic_decay': ic_decay, 'passed': passed},
+            'backtest_metrics': backtest_result,
+            'factor_ics': factor_ics_v142,
+            'selected_factors': selected_factors,
+            'recalled_factors': recalled_factors,
+            'distilled_features': distilled_features,
+            'residual_analysis': residual_analysis,
+            'regime_weights': regime_weights,
+            'current_regime': current_regime,
+            'v140_comparison': {
+                'v140_ic': v140_ic,
+                'v141_ic': v141_ic,
+                'ic_improvement': t1_ic.get('mean_ic', 0) - v140_ic,
+            },
+            'config': {'year': year, 'initial_capital': self.referee.INITIAL_CAPITAL},
+        }
+        
+        json_path = self.output_dir / f"v142_audit_{year}_{timestamp}.json"
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(json_result, f, indent=2, default=str)
+        
+        return str(report_path)
+    
+    def run_multi_year_audit(self, years: list[int]) -> dict:
+        """运行多年份的审计"""
+        logger.info("=" * 70)
+        logger.info(f"V142 Multi-Year Audit - Years: {years}")
+        logger.info("=" * 70)
+        
+        results = []
+        passed_count = 0
+        all_ic_values = []
+        
+        for year in years:
+            result = self.run_audit(year)
+            results.append(result)
+            if result.get('passed', False):
+                passed_count += 1
+            if 't1_ic' in result:
+                all_ic_values.append(result['t1_ic'].get('mean_ic', 0))
+        
+        cross_year_ic_mean = float(np.mean(all_ic_values)) if all_ic_values else 0
+        cross_year_ic_std = float(np.std(all_ic_values, ddof=1)) if len(all_ic_values) > 1 else 0
+        cross_year_ic_ir = cross_year_ic_mean / cross_year_ic_std if cross_year_ic_std > 1e-10 else 0
+        
+        summary = {
+            'years': years, 'results': results, 'passed_count': passed_count,
+            'total_count': len(years), 'cross_year_ic_mean': cross_year_ic_mean,
+            'cross_year_ic_std': cross_year_ic_std, 'cross_year_ic_ir': cross_year_ic_ir,
+        }
+        
+        self._generate_reflection(summary)
+        
+        return summary
+    
+    def _generate_reflection(self, summary: dict) -> str:
+        """生成 V142 反思报告"""
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        reflection_path = self.output_dir / f"v142_reflection_{timestamp}.json"
+        
+        factor_ics = self.alpha_module.get_factor_ics()
+        selected_factors = self.alpha_module.get_selected_factors()
+        recalled_factors = self.alpha_module.get_recalled_factors()
+        distilled_features = self.alpha_module.get_distilled_features()
+        residual_analysis = self.alpha_module.get_residual_analysis()
+        
+        reflection = {
+            'timestamp': datetime.now().isoformat(),
+            'version': 'V142',
+            'summary': {
+                'years': summary['years'],
+                'passed_count': summary['passed_count'],
+                'total_count': summary['total_count'],
+                'cross_year_ic_mean': summary['cross_year_ic_mean'],
+                'cross_year_ic_std': summary['cross_year_ic_std'],
+                'cross_year_ic_ir': summary['cross_year_ic_ir'],
+            },
+            'recalled_factors': recalled_factors,
+            'residual_analysis': residual_analysis,
+            'distilled_features': list(distilled_features.keys()),
+            'selected_factors': selected_factors,
+            'factor_ics': factor_ics,
+            'v140_comparison': {
+                'v140_ic': 0.0425,
+                'v141_ic': 0.0381,
+                'v142_ic': summary['cross_year_ic_mean'],
+                'improvement_vs_v140': summary['cross_year_ic_mean'] - 0.0425,
+                'improvement_vs_v141': summary['cross_year_ic_mean'] - 0.0381,
+            },
+            'effectiveness': {
+                'feature_distillation': len(distilled_features) >= 2,
+                'residual_recall': len(recalled_factors) >= 2,
+                'regime_aware_weighting': summary['cross_year_ic_ir'] > 0.6,
+            },
+            'conclusion': {
+                'ic_target': 0.045,
+                'ic_actual': summary['cross_year_ic_mean'],
+                'ir_target': 0.6,
+                'ir_actual': summary['cross_year_ic_ir'],
+                'ic_vs_v140': summary['cross_year_ic_mean'] > 0.0425,
+                'passed': summary['cross_year_ic_mean'] > 0.045 and summary['cross_year_ic_ir'] > 0.6,
+            }
+        }
+        
+        with open(reflection_path, 'w', encoding='utf-8') as f:
+            json.dump(reflection, f, indent=2, default=str)
+        
+        logger.info(f"Reflection saved to: {reflection_path}")
+        
+        return str(reflection_path)
 
 
 class V141Runner:
@@ -5041,8 +5459,8 @@ def main():
         '--version',
         type=int,
         default=139,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141],
-        help='Version to run (108-141, default: 140)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142],
+        help='Version to run (108-142, default: 140)'
     )
     parser.add_argument(
         '--parquet',
@@ -5790,6 +6208,54 @@ def main():
             logger.info(f"  Year: {args.year}")
             logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
             logger.info(f"  Report: {result.get('report_path', 'N/A')}")
+            logger.info("=" * 70)
+            
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 142:
+        logger.info("=" * 70)
+        logger.info("V142 Unified Main Entry - Feature Distillation & IC Intensity Recovery")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV142: 选手 (FeatureDistillation + ResidualBasedRecall + RegimeAwareWeighting)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - Standardized Residual Scaling: Residual = Factor_Recall - β × Factor_Core")
+        logger.info("  - Sigmoid-Gating: Gated = Sigmoid(Rank(A)) × Rank(B)")
+        logger.info("  - 重点组合：volume_price_contradiction × reversion_5")
+        logger.info("  - 目标指标：T+1 Rank IC > 0.045, IC Decay 单调递减")
+        logger.info("=" * 70)
+        
+        runner = V142Runner(
+            parquet_path=args.parquet,
+            output_dir=args.output,
+        )
+        
+        if args.all:
+            years = [2019, 2021, 2024]
+            logger.info(f"Running V142 audit for all years: {years}")
+            summary = runner.run_multi_year_audit(years)
+            
+            logger.info("=" * 70)
+            logger.info("V142 Multi-Year Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Passed: {summary['passed_count']}/{summary['total_count']}")
+            logger.info(f"  Cross-Year IC: {summary['cross_year_ic_mean']:.4f} ± {summary['cross_year_ic_std']:.4f}")
+            logger.info(f"  Cross-Year IC IR: {summary['cross_year_ic_ir']:.2f}")
+            logger.info("=" * 70)
+            
+        elif args.year:
+            logger.info(f"Running V142 audit for year: {args.year}")
+            result = runner.run_audit(args.year)
+            
+            logger.info("=" * 70)
+            logger.info("V142 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
             logger.info("=" * 70)
             
         else:
