@@ -443,7 +443,19 @@ class BacktestReferee:
     
     def calculate_ic_decay(self, df: pd.DataFrame, score_column: str = 'score') -> dict[str, Any]:
         """
-        计算 IC Decay (T+1 to T+5)。
+        计算 IC Decay (T+1 to T+5) - V141 修复版.
+        
+        【问题根因】
+        之前的逻辑使用累计回报（t3_return = shift(-3)/shift(0)-1），导致：
+        - T+3 回报包含了 T+1 的回报（累计 3 天）
+        - T+5 回报包含了 T+1 的回报（累计 5 天）
+        - 短期因子与累计回报高度相关，导致 IC 不降反升
+        
+        【V141 修复】
+        使用单期回报计算 IC Decay：
+        - T+1 IC = corr(score, return_t+1)  # 第 1 天的单期回报
+        - T+3 IC = corr(score, return_t+3)  # 第 3 天的单期回报（非累计）
+        - T+5 IC = corr(score, return_t+5)  # 第 5 天的单期回报（非累计）
         
         【验收指标】
         IC 应该单调递减，如果 T+3 IC > T+1 IC，说明存在未来函数泄露
@@ -457,11 +469,25 @@ class BacktestReferee:
         """
         ic_decay = {}
         
+        # V141 修复：优先使用单期回报列
+        single_period_cols = {
+            1: 't1_return_period',
+            3: 't3_return_period', 
+            5: 't5_return_period'
+        }
+        
         for n in [1, 3, 5]:
-            return_col = f't{n}_return'
-            if return_col in df.columns:
+            # 优先使用单期回报列
+            return_col = single_period_cols.get(n)
+            if return_col and return_col in df.columns:
                 ic = self.calculate_tn_ic(df, score_column, return_col)
                 ic_decay[f't{n}_ic'] = ic
+            # 回退到累计回报列
+            else:
+                return_col = f't{n}_return'
+                if return_col in df.columns:
+                    ic = self.calculate_tn_ic(df, score_column, return_col)
+                    ic_decay[f't{n}_ic'] = ic
         
         # 检查单调性
         t1_ic = ic_decay.get('t1_ic', 0)

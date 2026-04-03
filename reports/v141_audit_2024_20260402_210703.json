@@ -1,0 +1,187 @@
+{
+  "alpha_metrics": {
+    "t1_ic": {
+      "mean_ic": 0.038428342550333464,
+      "ic_std": 0.10829037479660168,
+      "ic_ir": 0.354863879846313,
+      "num_days": 242,
+      "min_ic": -0.2697673791788886,
+      "max_ic": 0.44434732215693584
+    },
+    "ic_decay": {
+      "t1_ic": 0.038428342550333464,
+      "t3_ic": 0.04662937612875597,
+      "t5_ic": 0.04876317143047826,
+      "is_monotonic": false,
+      "decay_pattern": "T+1(0.0384) -> T+3(0.0466) -> T+5(0.0488)"
+    },
+    "passed": false
+  },
+  "backtest_metrics": {
+    "portfolio_df": "     trade_date  portfolio_value  daily_return  num_positions  transaction_cost  cumulative_return\n0    2024-01-02    -5.356362e+06           0.0           2726      4.361600e+03                0.0\n1    2024-01-03    -1.839561e+07           0.0           2601     -3.516559e+05                0.0\n2    2024-01-04     1.034194e+07           0.0           2676     -1.144133e+06                0.0\n3    2024-01-05     1.752458e+07           0.0           2638      6.772315e+05                0.0\n4    2024-01-08     8.420351e+08           0.0            281      1.598172e+06                0.0\n..          ...              ...           ...            ...               ...                ...\n237  2024-12-25     8.572249e+08           0.0             53      2.240750e+06                0.0\n238  2024-12-26     7.004831e+08           0.0             62      2.441377e+06                0.0\n239  2024-12-27     7.684383e+08           0.0             57      2.093043e+06                0.0\n240  2024-12-30     7.969228e+08           0.0             55      2.253061e+06                0.0\n241  2024-12-31     7.468314e+08           0.0             58      2.276012e+06                0.0\n\n[242 rows x 6 columns]",
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "volatility": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_transaction_cost": 1970454832.2839656,
+    "num_trading_days": 242,
+    "final_value": 746831433.9821116
+  },
+  "factor_ics": {
+    "momentum_20": 0.04586085919679368,
+    "volatility_10": 0.0447057453590719,
+    "volume_price_contradiction": 0.02673120342325527,
+    "liquidity_alpha": 0.027955194499779196,
+    "reversion_5": 0.01872795684108052,
+    "momentum_5": -0.01872795684108052,
+    "volume_rank": 0.022519707492197956,
+    "momentum_20_x_reversion_5": 0.0028833788044518925,
+    "momentum_20_x_momentum_5": 0.03731212352131358,
+    "momentum_20_x_volume_rank": 0.03665424343354258,
+    "volatility_10_x_reversion_5": -0.007964969906457495,
+    "volatility_10_x_momentum_5": 0.0411004078544942,
+    "volatility_10_x_volume_rank": 0.044495007056525315,
+    "volume_price_contradiction_x_reversion_5": 0.03583193996385114,
+    "volume_price_contradiction_x_momentum_5": 0.002569064637377956,
+    "volume_price_contradiction_x_volume_rank": -0.0042250238017550465,
+    "liquidity_alpha_x_reversion_5": 0.03843735368826856,
+    "liquidity_alpha_x_momentum_5": 0.008331726091712156,
+    "liquidity_alpha_x_volume_rank": -0.0006323043772341353,
+    "momentum_20_x_volatility_10": 0.06326295970474803
+  },
+  "selected_factors": [
+    "liquidity_alpha_x_reversion_5",
+    "volume_price_contradiction",
+    "momentum_20_x_volatility_10",
+    "volume_rank",
+    "liquidity_alpha"
+  ],
+  "recalled_factors": [
+    "reversion_5",
+    "momentum_5",
+    "volume_rank"
+  ],
+  "residual_analysis": {
+    "reversion_5": {
+      "overall_ic": 0.01872795684108052,
+      "failure_ic": 0.01872795684108052,
+      "recall_score": 0.0,
+      "composite_score": 0.007491182736432209,
+      "max_mi": 0.1428057012504668
+    },
+    "momentum_5": {
+      "overall_ic": -0.01872795684108052,
+      "failure_ic": -0.01872795684108052,
+      "recall_score": 0.0,
+      "composite_score": -0.007491182736432209,
+      "max_mi": 0.14280423836947895
+    },
+    "volume_rank": {
+      "overall_ic": -0.022519707492197956,
+      "failure_ic": -0.022519707492197956,
+      "recall_score": 0.0,
+      "composite_score": -0.009007882996879183,
+      "max_mi": 0.060944202172429865
+    }
+  },
+  "interaction_features": {
+    "momentum_20_x_reversion_5": {
+      "factor_a": "momentum_20",
+      "factor_b": "reversion_5",
+      "type": "multiplicative_interaction"
+    },
+    "momentum_20_x_momentum_5": {
+      "factor_a": "momentum_20",
+      "factor_b": "momentum_5",
+      "type": "multiplicative_interaction"
+    },
+    "momentum_20_x_volume_rank": {
+      "factor_a": "momentum_20",
+      "factor_b": "volume_rank",
+      "type": "multiplicative_interaction"
+    },
+    "volatility_10_x_reversion_5": {
+      "factor_a": "volatility_10",
+      "factor_b": "reversion_5",
+      "type": "multiplicative_interaction"
+    },
+    "volatility_10_x_momentum_5": {
+      "factor_a": "volatility_10",
+      "factor_b": "momentum_5",
+      "type": "multiplicative_interaction"
+    },
+    "volatility_10_x_volume_rank": {
+      "factor_a": "volatility_10",
+      "factor_b": "volume_rank",
+      "type": "multiplicative_interaction"
+    },
+    "volume_price_contradiction_x_reversion_5": {
+      "factor_a": "volume_price_contradiction",
+      "factor_b": "reversion_5",
+      "type": "multiplicative_interaction"
+    },
+    "volume_price_contradiction_x_momentum_5": {
+      "factor_a": "volume_price_contradiction",
+      "factor_b": "momentum_5",
+      "type": "multiplicative_interaction"
+    },
+    "volume_price_contradiction_x_volume_rank": {
+      "factor_a": "volume_price_contradiction",
+      "factor_b": "volume_rank",
+      "type": "multiplicative_interaction"
+    },
+    "liquidity_alpha_x_reversion_5": {
+      "factor_a": "liquidity_alpha",
+      "factor_b": "reversion_5",
+      "type": "multiplicative_interaction"
+    },
+    "liquidity_alpha_x_momentum_5": {
+      "factor_a": "liquidity_alpha",
+      "factor_b": "momentum_5",
+      "type": "multiplicative_interaction"
+    },
+    "liquidity_alpha_x_volume_rank": {
+      "factor_a": "liquidity_alpha",
+      "factor_b": "volume_rank",
+      "type": "multiplicative_interaction"
+    },
+    "momentum_20_x_volatility_10": {
+      "factor_a": "momentum_20",
+      "factor_b": "volatility_10",
+      "type": "multiplicative_interaction"
+    }
+  },
+  "regime_weights": {
+    "liquidity_alpha_x_reversion_5": 0.24410512676409776,
+    "volume_price_contradiction": 0.14816362632272193,
+    "momentum_20_x_volatility_10": 0.16773934367395138,
+    "volume_rank": 0.21811969858672575,
+    "liquidity_alpha": 0.22187220465250315
+  },
+  "current_regime": 0,
+  "orthogonalization_stats": {
+    "method": "gram_schmidt_with_mi",
+    "correlation_threshold": 0.2,
+    "mi_threshold": 0.1,
+    "input_features": 9,
+    "output_features": 3,
+    "removed_features": [
+      "momentum_20",
+      "volatility_10",
+      "volatility_10_x_volume_rank",
+      "volatility_10_x_momentum_5",
+      "momentum_20_x_momentum_5",
+      "momentum_20_x_volume_rank"
+    ]
+  },
+  "v140_comparison": {
+    "v140_ic": 0.0425,
+    "v140_factors": 5,
+    "ic_improvement": -0.0040716574496665395
+  },
+  "config": {
+    "year": 2024,
+    "initial_capital": 100000.0
+  }
+}
