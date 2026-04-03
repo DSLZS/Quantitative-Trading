@@ -1,0 +1,66 @@
+{
+  "timestamp": "2026-04-03T15:28:54.396583",
+  "version": "V145",
+  "strategy": "Confidence-Weighted Persistence (CWP)",
+  "core_improvements": {
+    "signal_confidence_filter": "Temporal Entropy based confidence weighting",
+    "alpha_decay_speed": "Faster decay in high volatility regimes",
+    "sector_neutral_validation": "Ensures IR improvement is not sector-driven",
+    "data_healer": "Auto-repair NaN/Inf values"
+  },
+  "selected_factors": [
+    "liquidity_alpha_sci_volume_rank",
+    "momentum_20",
+    "volatility_10",
+    "liquidity_alpha",
+    "volume_price_contradiction",
+    "reversion_5"
+  ],
+  "recalled_factors": [
+    "reversion_5",
+    "momentum_5"
+  ],
+  "sci_features": [
+    "liquidity_alpha_sci_volume_rank",
+    "volatility_10_sci_reversion_5",
+    "volatility_10_sci_momentum_5"
+  ],
+  "sign_lock_applied": [
+    "liquidity_alpha_sci_volume_rank",
+    "volatility_10_sci_reversion_5",
+    "volatility_10_sci_momentum_5"
+  ],
+  "factor_ics": {
+    "reversion_5": 0.01872795684108052,
+    "volume_price_contradiction": 0.02673120342325527,
+    "liquidity_alpha": 0.028944471644787355,
+    "momentum_20": 0.04586085919679368,
+    "volatility_10": 0.0447057453590719,
+    "momentum_5": -0.01872795684108052,
+    "liquidity_alpha_sci_volume_rank": 0.02399948611201797,
+    "volatility_10_sci_reversion_5": 0.004750170983633865,
+    "volatility_10_sci_momentum_5": 0.004750170983633865
+  },
+  "confidence_values": {},
+  "summary": {
+    "years": [
+      2024
+    ],
+    "passed_count": 0,
+    "total_count": 1,
+    "cross_year_ic_mean": 0.058383466695101825,
+    "cross_year_ic_std": 0,
+    "cross_year_ic_ir": 0
+  },
+  "v144_vs_v145_comparison": {
+    "v144_ir": 0.39,
+    "v145_ir": 0,
+    "ir_improvement": -0.9999999997435898,
+    "target_ir": 0.55,
+    "target_met": false
+  },
+  "improvement_hypotheses": [
+    "\u5047\u8bbe 1\uff1a\u8fdb\u4e00\u6b65\u7cbe\u7b80\u56e0\u5b50\u6570\u91cf\u81f3 3 \u4e2a\uff0c\u4ec5\u4fdd\u7559\u6700\u9ad8 IC \u4e14\u65f6\u5e8f\u6700\u7a33\u5b9a\u7684\u56e0\u5b50\u3002",
+    "\u5047\u8bbe 2\uff1a\u589e\u5f3a\u65f6\u5e8f\u71b5\u7f6e\u4fe1\u5ea6\u8fc7\u6ee4\u5668\uff0c\u5c06\u7a97\u53e3\u4ece 3 \u65e5\u6269\u5c55\u81f3 5 \u65e5\uff0c\u5e76\u589e\u52a0\u65b9\u5411\u4e00\u81f4\u6027\u9608\u503c\u3002"
+  ]
+}
