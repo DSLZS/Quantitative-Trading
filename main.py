@@ -63,6 +63,7 @@ from alpha_research_v139 import AlphaResearchV139, get_alpha_research as get_alp
 from alpha_research_v140 import AlphaResearchV140, get_alpha_research as get_alpha_research_v140
 from alpha_research_v141 import AlphaResearchV141, get_alpha_research as get_alpha_research_v141
 from alpha_research_v142 import AlphaResearchV142, get_alpha_research as get_alpha_research_v142
+from alpha_research_v143 import AlphaResearchV143, get_alpha_research as get_alpha_research_v143
 
 # V140 全局常量
 MAX_FACTORS = 12  # V140: 仅保留前 12 个正交因子
