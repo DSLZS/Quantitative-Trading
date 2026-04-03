@@ -68,6 +68,7 @@ from alpha_research_v144 import AlphaResearchV144, get_alpha_research as get_alp
 from alpha_research_v145 import AlphaResearchV145, get_alpha_research as get_alpha_research_v145
 from alpha_research_v146 import AlphaResearchV146, get_alpha_research as get_alpha_research_v146
 from alpha_research_v147 import AlphaResearchV147, get_alpha_research as get_alpha_research_v147
+from alpha_research_v148 import AlphaResearchV148, get_alpha_research as get_alpha_research_v148
 
 # V140 全局常量
 MAX_FACTORS = 12  # V140: 仅保留前 12 个正交因子
@@ -5464,8 +5465,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147],
-        help='Version to run (108-147, default: 147)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148],
+        help='Version to run (108-148, default: 148)'
     )
     parser.add_argument(
         '--parquet',
@@ -7071,6 +7072,229 @@ def main():
             logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
             logger.info("=" * 70)
             
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 148:
+        logger.info("=" * 70)
+        logger.info("V148 Unified Main Entry - TCPO (Temporal Consistency & Physical Orthogonalization)")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV148: 选手 (GSO + SIK + VPR + ICC)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - Gram-Schmidt Orthogonalization: 每日截面因子正交化")
+        logger.info("  - Signal Inertia Kernel: 信号惯性核，降低换手率")
+        logger.info("  - Volume-Price Reversion: 新增 VPR 因子")
+        logger.info("  - Industry Consistency Constraint: 行业一致性约束")
+        logger.info("  - 目标指标：T+1 Rank IC > 0.055, IC_IR > 0.55, 日度信号换手率降低 10%+")
+        logger.info("=" * 70)
+        
+        from src.alpha_research_v148 import get_alpha_research as get_alpha_research_v148
+        
+        db_url = os.getenv("DATABASE_URL")
+        alpha_module = get_alpha_research_v148(
+            ic_threshold=0.0001,
+            n_factors=8,
+            n_bins=10,
+            enable_ensemble=True,
+            enable_sci=True,
+            enable_gso=True,
+            enable_sik=True,
+            enable_vpr=True,
+            enable_icc=True,
+            enable_sector_neutral=True,
+            auto_heal=True,
+            db_url=db_url,
+            max_recall_factors=2,
+            inertia_base=0.3
+        )
+        
+        referee = get_backtest_referee(alpha_module, output_dir=args.output)
+        referee.VERSION = "V148"
+        
+        def load_v148_data(year: int) -> pd.DataFrame:
+            parquet_path = args.parquet or "data/parquet/stock_data_2024_2026.parquet"
+            if Path(parquet_path).exists():
+                logger.info(f"Loading V148 data from Parquet: {parquet_path}")
+                df = pd.read_parquet(parquet_path)
+                if 'trade_date' in df.columns:
+                    df['trade_date'] = pd.to_datetime(df['trade_date'])
+                    df = df[df['trade_date'].dt.year == year]
+                    df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+                logger.info(f"Loaded {len(df)} rows for year {year}")
+                return df
+            try:
+                from sqlalchemy import create_engine, text
+                db_url = os.getenv("DATABASE_URL")
+                if not db_url:
+                    raise ValueError("DATABASE_URL not configured")
+                engine = create_engine(db_url)
+                query = text("""
+                    SELECT symbol, trade_date, open, high, low, close, pre_close,
+                           `change`, pct_chg, volume, amount
+                    FROM stock_daily
+                    WHERE trade_date BETWEEN :start_date AND :end_date
+                    ORDER BY symbol, trade_date
+                """)
+                df = pd.read_sql_query(query, engine, params={
+                    'start_date': f"{year}0101",
+                    'end_date': f"{year}1231",
+                })
+                logger.info(f"Loaded {len(df)} rows for year {year}")
+                return df
+            except Exception as e:
+                logger.error(f"Failed to load data: {e}")
+                return pd.DataFrame()
+        
+        if args.all:
+            years = [2021, 2024]
+            logger.info(f"Running V148 audit for years: {years}")
+            results = []
+            passed_count = 0
+            all_ic_values = []
+            all_turnover_values = []
+            for year in years:
+                df = load_v148_data(year)
+                if df.empty:
+                    logger.warning(f"No data for year {year}")
+                    continue
+                if 'trade_date' in df.columns:
+                    if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                        df['trade_date'] = pd.to_datetime(df['trade_date'])
+                    df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+                for col in ['open', 'high', 'low', 'close', 'volume', 'amount']:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                result = referee.run_audit(df)
+                result['year'] = year
+                results.append(result)
+                if result.get('passed', False):
+                    passed_count += 1
+                if 't1_ic' in result:
+                    all_ic_values.append(result['t1_ic'].get('mean_ic', 0))
+            
+            cross_year_ic_mean = float(np.mean(all_ic_values)) if all_ic_values else 0
+            cross_year_ic_std = float(np.std(all_ic_values, ddof=1)) if len(all_ic_values) > 1 else 0
+            cross_year_ic_ir = cross_year_ic_mean / cross_year_ic_std if cross_year_ic_std > 1e-10 else 0
+            
+            v147_ir = 0.40
+            ir_improvement = (cross_year_ic_ir - v147_ir) / (abs(v147_ir) + 1e-10)
+            target_met = cross_year_ic_ir >= 0.55
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            reflection_path = Path(args.output) / f"v148_tcpo_stability_{timestamp}.json"
+            reflection = {
+                'timestamp': datetime.now().isoformat(),
+                'version': 'V148',
+                'strategy': 'TCPO (Temporal Consistency & Physical Orthogonalization)',
+                'core_improvements': {
+                    'gram_schmidt_orthogonalization': 'Daily cross-sectional factor orthogonalization',
+                    'signal_inertia_kernel': f'Score_t = (1 - α) * Raw_Score_t + α * Score_{{t-1}}, α={0.3}',
+                    'volume_price_reversion': 'VPR = Rank(Low_Price_Volume / Total_Volume) - Rank(Return)',
+                    'industry_consistency_constraint': 'Shrink signals when >70% stocks in sector agree',
+                },
+                'selected_factors': alpha_module.get_selected_factors(),
+                'factor_ics': alpha_module.get_factor_ics(),
+                'sik_stats': alpha_module.get_sik_stats(),
+                'icc_stats': alpha_module.get_icc_stats(),
+                'audit_log': alpha_module.get_audit_log()[-10:],
+                'summary': {
+                    'years': years,
+                    'passed_count': passed_count,
+                    'total_count': len(years),
+                    'cross_year_ic_mean': cross_year_ic_mean,
+                    'cross_year_ic_std': cross_year_ic_std,
+                    'cross_year_ic_ir': cross_year_ic_ir,
+                },
+                'v147_vs_v148_comparison': {
+                    'v147_ir': v147_ir,
+                    'v148_ir': cross_year_ic_ir,
+                    'ir_improvement': ir_improvement,
+                    'target_ir': 0.55,
+                    'target_met': target_met,
+                },
+                'improvement_hypotheses': [] if target_met else [
+                    '假设 1：调整 SIK 惯性系数从 0.3 至 0.4，增强信号稳定性。',
+                    '假设 2：降低 ICC 一致性阈值从 0.70 至 0.65，增强行业收缩力度。',
+                ],
+            }
+            with open(reflection_path, 'w', encoding='utf-8') as f:
+                json.dump(reflection, f, indent=2, default=str)
+            logger.info(f"TCPO Stability Analysis saved to: {reflection_path}")
+            logger.info("=" * 70)
+            logger.info("V148 Multi-Year Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Passed: {passed_count}/{len(years)}")
+            logger.info(f"  Cross-Year IC: {cross_year_ic_mean:.4f} ± {cross_year_ic_std:.4f}")
+            logger.info(f"  Cross-Year IC IR: {cross_year_ic_ir:.2f} (V147: {v147_ir:.2f})")
+            logger.info(f"  IR Improvement: {ir_improvement:.2%}")
+            logger.info(f"  Target (IR >= 0.55): {'MET ✓' if target_met else 'NOT MET ✗'}")
+            if not target_met:
+                logger.info("  Improvement Hypotheses:")
+                for h in reflection['improvement_hypotheses']:
+                    logger.info(f"    {h}")
+            logger.info("=" * 70)
+        elif args.year:
+            logger.info(f"Running V148 audit for year: {args.year}")
+            df = load_v148_data(args.year)
+            if df.empty:
+                logger.warning(f"No data loaded for year {args.year}")
+                sys.exit(1)
+            if 'trade_date' in df.columns:
+                if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                    df['trade_date'] = pd.to_datetime(df['trade_date'])
+                df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+            for col in ['open', 'high', 'low', 'close', 'volume', 'amount']:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+            result = referee.run_audit(df)
+            v147_ir = 0.40
+            t1_ic = result.get('t1_ic', {})
+            v148_ir = t1_ic.get('ic_ir', 0)
+            ir_improvement = (v148_ir - v147_ir) / (abs(v147_ir) + 1e-10)
+            target_met = v148_ir >= 0.55
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            reflection_path = Path(args.output) / f"v148_tcpo_stability_{timestamp}.json"
+            reflection = {
+                'timestamp': datetime.now().isoformat(),
+                'version': 'V148',
+                'strategy': 'TCPO (Temporal Consistency & Physical Orthogonalization)',
+                'selected_factors': alpha_module.get_selected_factors(),
+                'factor_ics': alpha_module.get_factor_ics(),
+                'sik_stats': alpha_module.get_sik_stats(),
+                'icc_stats': alpha_module.get_icc_stats(),
+                'year': args.year,
+                'v147_vs_v148_comparison': {
+                    'v147_ir': v147_ir,
+                    'v148_ir': v148_ir,
+                    'ir_improvement': ir_improvement,
+                    'target_ir': 0.55,
+                    'target_met': target_met,
+                },
+                'improvement_hypotheses': [] if target_met else [
+                    '假设 1：调整 SIK 惯性系数从 0.3 至 0.4，增强信号稳定性。',
+                    '假设 2：降低 ICC 一致性阈值从 0.70 至 0.65，增强行业收缩力度。',
+                ],
+            }
+            with open(reflection_path, 'w', encoding='utf-8') as f:
+                json.dump(reflection, f, indent=2, default=str)
+            logger.info(f"TCPO Stability Analysis saved to: {reflection_path}")
+            logger.info("=" * 70)
+            logger.info("V148 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  T+1 IC: {t1_ic.get('mean_ic', 0):.4f}")
+            logger.info(f"  IC IR: {v148_ir:.2f} (V147: {v147_ir:.2f}, Target: 0.55)")
+            logger.info(f"  IR Improvement: {ir_improvement:.2%}")
+            logger.info(f"  Target (IR >= 0.55): {'MET ✓' if target_met else 'NOT MET ✗'}")
+            if not target_met:
+                logger.info("  Improvement Hypotheses:")
+                for h in reflection['improvement_hypotheses']:
+                    logger.info(f"    {h}")
+            logger.info("=" * 70)
         else:
             parser.print_help()
             logger.warning("Please specify --year or --all")
