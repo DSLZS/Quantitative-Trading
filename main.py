@@ -64,6 +64,7 @@ from alpha_research_v140 import AlphaResearchV140, get_alpha_research as get_alp
 from alpha_research_v141 import AlphaResearchV141, get_alpha_research as get_alpha_research_v141
 from alpha_research_v142 import AlphaResearchV142, get_alpha_research as get_alpha_research_v142
 from alpha_research_v143 import AlphaResearchV143, get_alpha_research as get_alpha_research_v143
+from alpha_research_v144 import AlphaResearchV144, get_alpha_research as get_alpha_research_v144
 
 # V140 全局常量
 MAX_FACTORS = 12  # V140: 仅保留前 12 个正交因子
@@ -5459,9 +5460,9 @@ def main():
     parser.add_argument(
         '--version',
         type=int,
-        default=139,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142],
-        help='Version to run (108-142, default: 140)'
+        default=None,
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144],
+        help='Version to run (108-144, default: 144)'
     )
     parser.add_argument(
         '--parquet',
@@ -6350,6 +6351,55 @@ def main():
             
             logger.info("=" * 70)
             logger.info("V140 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
+            logger.info("=" * 70)
+            
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 144:
+        logger.info("=" * 70)
+        logger.info("V144 Unified Main Entry - Sign-Consistency Interaction + Time-Decay + Smoothing")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV144: 选手 (SCI + Time-Decay + Smoothing)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - Sign-Lock: Sign = sign(Rank(Core) - 0.5)")
+        logger.info("  - Linear Residual: Residual = Factor - β × Core")
+        logger.info("  - Time-Decay Kernel: lambda = IC_Std / IC_Mean")
+        logger.info("  - Volatility-Adaptive Smoothing: Window = Base × (1 + Vol_ZScore)")
+        logger.info("  - 目标指标：T+1 Rank IC > 0.055, IC IR > 0.70, Turnover ↓15%+")
+        logger.info("=" * 70)
+        
+        runner = V144Runner(
+            parquet_path=args.parquet,
+            output_dir=args.output,
+        )
+        
+        if args.all:
+            years = [2024]
+            logger.info(f"Running V144 audit for year: {years}")
+            summary = runner.run_multi_year_audit(years)
+            
+            logger.info("=" * 70)
+            logger.info("V144 Multi-Year Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Passed: {summary['passed_count']}/{summary['total_count']}")
+            logger.info(f"  Cross-Year IC: {summary['cross_year_ic_mean']:.4f} ± {summary['cross_year_ic_std']:.4f}")
+            logger.info(f"  Cross-Year IC IR: {summary['cross_year_ic_ir']:.2f}")
+            logger.info("=" * 70)
+            
+        elif args.year:
+            logger.info(f"Running V144 audit for year: {args.year}")
+            result = runner.run_audit(args.year)
+            
+            logger.info("=" * 70)
+            logger.info("V144 Audit Complete!")
             logger.info(f"  Year: {args.year}")
             logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
             logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")

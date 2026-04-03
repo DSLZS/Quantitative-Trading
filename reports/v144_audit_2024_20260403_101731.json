@@ -1,0 +1,340 @@
+{
+  "alpha_metrics": {
+    "t1_ic": {
+      "mean_ic": 0.02749475151365204,
+      "ic_std": 0.14699355562084088,
+      "ic_ir": 0.1870473259696686,
+      "num_days": 242,
+      "min_ic": -0.6422417595066603,
+      "max_ic": 0.6520774420355364
+    },
+    "ic_decay": {
+      "t1_ic": 0.02749475151365204,
+      "t3_ic": 0.023377691471530643,
+      "t5_ic": 0.026251846795985717,
+      "is_monotonic": false,
+      "decay_pattern": "T+1(0.0275) -> T+3(0.0234) -> T+5(0.0263)"
+    },
+    "passed": false
+  },
+  "backtest_metrics": {
+    "portfolio_df": "     trade_date  portfolio_value  daily_return  num_positions  transaction_cost  cumulative_return\n0    2024-01-02       -80.000000             0             50         80.000000                  0\n1    2024-01-03       -79.975040             0             50         -0.024960                  0\n2    2024-01-04       -79.962564             0             50         -0.012476                  0\n3    2024-01-05       -79.950090             0             50         -0.012474                  0\n4    2024-01-08       -79.858627             0             50         -0.091463                  0\n..          ...              ...           ...            ...               ...                ...\n237  2024-12-25       -61.143993             0             50         -0.057284                  0\n238  2024-12-26       -61.096300             0             50         -0.047692                  0\n239  2024-12-27       -61.051822             0             50         -0.044478                  0\n240  2024-12-30       -61.010551             0             50         -0.041271                  0\n241  2024-12-31       -60.959790             0             50         -0.050761                  0\n\n[242 rows x 6 columns]",
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "volatility": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_transaction_cost": 61.79982244837612,
+    "num_trading_days": 242,
+    "final_value": -60.95979036804735
+  },
+  "factor_ics": {
+    "reversion_5": 0.01872795684108052,
+    "volume_price_contradiction": 0.02673120342325527,
+    "liquidity_alpha": -0.028944471644787355,
+    "momentum_20": -0.04586085919679368,
+    "volatility_10": -0.0447057453590719,
+    "momentum_5": -0.01872795684108052,
+    "volume_rank": -0.022519707492197956,
+    "volume_price_contradiction_sci_reversion_5": 0.0031927175507783117,
+    "reversion_5_sci_volume_price_contradiction": 0.004792213420889249,
+    "momentum_20_sci_reversion_5": 0.012787953524864558,
+    "momentum_20_sci_momentum_5": 0.012787953524864558,
+    "momentum_20_sci_volume_rank": 0.003653395616317847,
+    "volatility_10_sci_reversion_5": 0.012075490922017254,
+    "volatility_10_sci_momentum_5": 0.012075490922017254,
+    "volatility_10_sci_volume_rank": 0.006179367062041725,
+    "volume_price_contradiction_sci_momentum_5": 0.0031927175507783117,
+    "volume_price_contradiction_sci_volume_rank": 0.002068391852881881,
+    "liquidity_alpha_sci_reversion_5": 0.011084870158654626,
+    "liquidity_alpha_sci_momentum_5": 0.011084870158654626,
+    "liquidity_alpha_sci_volume_rank": 0.02007731320939909
+  },
+  "selected_factors": [
+    "liquidity_alpha_sci_volume_rank",
+    "momentum_20_sci_reversion_5",
+    "momentum_20_sci_momentum_5",
+    "volatility_10_sci_reversion_5",
+    "volatility_10_sci_momentum_5",
+    "liquidity_alpha_sci_reversion_5",
+    "liquidity_alpha_sci_momentum_5",
+    "volatility_10_sci_volume_rank",
+    "momentum_20_sci_volume_rank",
+    "volume_price_contradiction_sci_reversion_5",
+    "volume_price_contradiction_sci_momentum_5",
+    "volume_price_contradiction_sci_volume_rank"
+  ],
+  "recalled_factors": [
+    "reversion_5",
+    "momentum_5",
+    "volume_rank"
+  ],
+  "sci_features": {
+    "volume_price_contradiction_sci_reversion_5": {
+      "core_factor": "volume_price_contradiction",
+      "recall_factor": "reversion_5",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "reversion_5_sci_volume_price_contradiction": {
+      "core_factor": "reversion_5",
+      "recall_factor": "volume_price_contradiction",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "momentum_20_sci_reversion_5": {
+      "core_factor": "momentum_20",
+      "recall_factor": "reversion_5",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "momentum_20_sci_momentum_5": {
+      "core_factor": "momentum_20",
+      "recall_factor": "momentum_5",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "momentum_20_sci_volume_rank": {
+      "core_factor": "momentum_20",
+      "recall_factor": "volume_rank",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "volatility_10_sci_reversion_5": {
+      "core_factor": "volatility_10",
+      "recall_factor": "reversion_5",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "volatility_10_sci_momentum_5": {
+      "core_factor": "volatility_10",
+      "recall_factor": "momentum_5",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "volatility_10_sci_volume_rank": {
+      "core_factor": "volatility_10",
+      "recall_factor": "volume_rank",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "volume_price_contradiction_sci_momentum_5": {
+      "core_factor": "volume_price_contradiction",
+      "recall_factor": "momentum_5",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "volume_price_contradiction_sci_volume_rank": {
+      "core_factor": "volume_price_contradiction",
+      "recall_factor": "volume_rank",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "liquidity_alpha_sci_reversion_5": {
+      "core_factor": "liquidity_alpha",
+      "recall_factor": "reversion_5",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "liquidity_alpha_sci_momentum_5": {
+      "core_factor": "liquidity_alpha",
+      "recall_factor": "momentum_5",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    },
+    "liquidity_alpha_sci_volume_rank": {
+      "core_factor": "liquidity_alpha",
+      "recall_factor": "volume_rank",
+      "type": "sign_consistency_interaction",
+      "method": "sign_lock + linear_residual + regime_gate",
+      "enable_sign_lock": true,
+      "enable_smoothing": true
+    }
+  },
+  "sign_lock_applied": [
+    "volume_price_contradiction_sci_reversion_5",
+    "reversion_5_sci_volume_price_contradiction",
+    "momentum_20_sci_reversion_5",
+    "momentum_20_sci_momentum_5",
+    "momentum_20_sci_volume_rank",
+    "volatility_10_sci_reversion_5",
+    "volatility_10_sci_momentum_5",
+    "volatility_10_sci_volume_rank",
+    "volume_price_contradiction_sci_momentum_5",
+    "volume_price_contradiction_sci_volume_rank",
+    "liquidity_alpha_sci_reversion_5",
+    "liquidity_alpha_sci_momentum_5",
+    "liquidity_alpha_sci_volume_rank"
+  ],
+  "residual_analysis": {
+    "reversion_5": {
+      "overall_ic": 0.01872795684108052,
+      "failure_ic": 0.01872795684108052,
+      "recall_score": 0.0,
+      "composite_score": 0.007491182736432209,
+      "max_mi": 0.1428057012504668
+    },
+    "momentum_5": {
+      "overall_ic": -0.01872795684108052,
+      "failure_ic": -0.01872795684108052,
+      "recall_score": 0.0,
+      "composite_score": -0.007491182736432209,
+      "max_mi": 0.14280423836947895
+    },
+    "volume_rank": {
+      "overall_ic": -0.022519707492197956,
+      "failure_ic": -0.022519707492197956,
+      "recall_score": 0.0,
+      "composite_score": -0.009007882996879183,
+      "max_mi": 0.07935701549713679
+    }
+  },
+  "time_decay_stats": {
+    "liquidity_alpha_sci_volume_rank": {
+      "ic_mean": 0.030430794113524732,
+      "ic_std": 0.042396393296045595,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.02007731320939909,
+      "final_weight": 0.006023193962819727,
+      "num_samples": 19
+    },
+    "momentum_20_sci_reversion_5": {
+      "ic_mean": -0.016466404679208967,
+      "ic_std": 0.07477976497873115,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.012787953524864558,
+      "final_weight": 0.003836386057459367,
+      "num_samples": 19
+    },
+    "momentum_20_sci_momentum_5": {
+      "ic_mean": -0.016466404679208967,
+      "ic_std": 0.07477976497873115,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.012787953524864558,
+      "final_weight": 0.003836386057459367,
+      "num_samples": 19
+    },
+    "volatility_10_sci_reversion_5": {
+      "ic_mean": 0.005684768855997242,
+      "ic_std": 0.0875560326501334,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.012075490922017254,
+      "final_weight": 0.003622647276605176,
+      "num_samples": 19
+    },
+    "volatility_10_sci_momentum_5": {
+      "ic_mean": 0.005684768855997242,
+      "ic_std": 0.0875560326501334,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.012075490922017254,
+      "final_weight": 0.003622647276605176,
+      "num_samples": 19
+    },
+    "liquidity_alpha_sci_reversion_5": {
+      "ic_mean": 0.017729306960584584,
+      "ic_std": 0.05899111003518012,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.011084870158654626,
+      "final_weight": 0.003325461047596388,
+      "num_samples": 19
+    },
+    "liquidity_alpha_sci_momentum_5": {
+      "ic_mean": 0.017729306960584584,
+      "ic_std": 0.05899111003518012,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.011084870158654626,
+      "final_weight": 0.003325461047596388,
+      "num_samples": 19
+    },
+    "volatility_10_sci_volume_rank": {
+      "ic_mean": -0.011443211011950657,
+      "ic_std": 0.041313980762999414,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.006179367062041725,
+      "final_weight": 0.0018538101186125174,
+      "num_samples": 19
+    },
+    "momentum_20_sci_volume_rank": {
+      "ic_mean": 0.0022630935909524925,
+      "ic_std": 0.04123125817074438,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.003653395616317847,
+      "final_weight": 0.001096018684895354,
+      "num_samples": 19
+    },
+    "volume_price_contradiction_sci_reversion_5": {
+      "ic_mean": 0.01868185144462695,
+      "ic_std": 0.0765987235422682,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.0031927175507783117,
+      "final_weight": 0.0009578152652334935,
+      "num_samples": 19
+    },
+    "volume_price_contradiction_sci_momentum_5": {
+      "ic_mean": 0.01868185144462695,
+      "ic_std": 0.0765987235422682,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.0031927175507783117,
+      "final_weight": 0.0009578152652334935,
+      "num_samples": 19
+    },
+    "volume_price_contradiction_sci_volume_rank": {
+      "ic_mean": 0.008984971831821243,
+      "ic_std": 0.03156274735736055,
+      "lambda_decay": 0.5,
+      "avg_decay_weight": 0.3,
+      "base_weight": 0.002068391852881881,
+      "final_weight": 0.0006205175558645643,
+      "num_samples": 19
+    }
+  },
+  "market_regime": {
+    "current_regime": 0,
+    "regime_gate": 0.6321710262584339
+  },
+  "v143_comparison": {
+    "v143_ic": 0.0598,
+    "v143_ir": 0.6,
+    "ic_improvement": -0.03230524848634796,
+    "ir_improvement": -0.41295267403033137
+  },
+  "config": {
+    "year": 2024,
+    "initial_capital": 100000.0
+  }
+}
