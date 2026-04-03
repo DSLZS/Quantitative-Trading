@@ -67,6 +67,7 @@ from alpha_research_v143 import AlphaResearchV143, get_alpha_research as get_alp
 from alpha_research_v144 import AlphaResearchV144, get_alpha_research as get_alpha_research_v144
 from alpha_research_v145 import AlphaResearchV145, get_alpha_research as get_alpha_research_v145
 from alpha_research_v146 import AlphaResearchV146, get_alpha_research as get_alpha_research_v146
+from alpha_research_v147 import AlphaResearchV147, get_alpha_research as get_alpha_research_v147
 
 # V140 全局常量
 MAX_FACTORS = 12  # V140: 仅保留前 12 个正交因子
@@ -5463,8 +5464,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146],
-        help='Version to run (108-146, default: 146)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147],
+        help='Version to run (108-147, default: 147)'
     )
     parser.add_argument(
         '--parquet',
@@ -6358,6 +6359,229 @@ def main():
             logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
             logger.info("=" * 70)
             
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 147:
+        logger.info("=" * 70)
+        logger.info("V147 Unified Main Entry - Signal Stability IR Recovery (Multi-Resolution Entropy Fusion)")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV147: 选手 (MREF + DCSS + Skewness-Adaptive Huber)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - Multi-Resolution Entropy Fusion: 3/5/10 日信号一致性")
+        logger.info("  - Dynamic Cross-Sectional Shrinkage: 相关性>0.7 自动 PCA 收缩")
+        logger.info("  - Skewness-Adaptive Huber: Median + 1.5*IQR 自适应阈值")
+        logger.info("  - 因子池扩容：6-8 个正交因子，强制保留 volume_price_contradiction, liquidity_alpha")
+        logger.info("  - 目标指标：T+1 Rank IC > 0.055, IC_IR > 0.55, 日度 IC 波动率降低 15%+")
+        logger.info("=" * 70)
+        
+        from src.alpha_research_v147 import get_alpha_research as get_alpha_research_v147
+        
+        db_url = os.getenv("DATABASE_URL")
+        alpha_module = get_alpha_research_v147(
+            ic_threshold=0.0001,
+            n_factors=8,
+            n_bins=10,
+            enable_ensemble=True,
+            enable_sci=True,
+            enable_mref=True,
+            enable_dcss=True,
+            enable_orthogonalization=True,
+            enable_sector_neutral=True,
+            auto_heal=True,
+            db_url=db_url,
+            max_recall_factors=2
+        )
+        
+        referee = get_backtest_referee(alpha_module, output_dir=args.output)
+        referee.VERSION = "V147"
+        
+        def load_v147_data(year: int) -> pd.DataFrame:
+            parquet_path = args.parquet or "data/parquet/stock_data_2024_2026.parquet"
+            if Path(parquet_path).exists():
+                logger.info(f"Loading V147 data from Parquet: {parquet_path}")
+                df = pd.read_parquet(parquet_path)
+                if 'trade_date' in df.columns:
+                    df['trade_date'] = pd.to_datetime(df['trade_date'])
+                    df = df[df['trade_date'].dt.year == year]
+                    df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+                logger.info(f"Loaded {len(df)} rows for year {year}")
+                return df
+            try:
+                from sqlalchemy import create_engine, text
+                db_url = os.getenv("DATABASE_URL")
+                if not db_url:
+                    raise ValueError("DATABASE_URL not configured")
+                engine = create_engine(db_url)
+                query = text("""
+                    SELECT symbol, trade_date, open, high, low, close, pre_close,
+                           `change`, pct_chg, volume, amount
+                    FROM stock_daily
+                    WHERE trade_date BETWEEN :start_date AND :end_date
+                    ORDER BY symbol, trade_date
+                """)
+                df = pd.read_sql_query(query, engine, params={
+                    'start_date': f"{year}0101",
+                    'end_date': f"{year}1231",
+                })
+                logger.info(f"Loaded {len(df)} rows for year {year}")
+                return df
+            except Exception as e:
+                logger.error(f"Failed to load data: {e}")
+                return pd.DataFrame()
+        
+        if args.all:
+            years = [2021, 2024]
+            logger.info(f"Running V147 audit for years: {years}")
+            results = []
+            passed_count = 0
+            all_ic_values = []
+            for year in years:
+                df = load_v147_data(year)
+                if df.empty:
+                    logger.warning(f"No data for year {year}")
+                    continue
+                if 'trade_date' in df.columns:
+                    if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                        df['trade_date'] = pd.to_datetime(df['trade_date'])
+                    df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+                for col in ['open', 'high', 'low', 'close', 'volume', 'amount']:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                result = referee.run_audit(df)
+                result['year'] = year
+                results.append(result)
+                if result.get('passed', False):
+                    passed_count += 1
+                if 't1_ic' in result:
+                    all_ic_values.append(result['t1_ic'].get('mean_ic', 0))
+            cross_year_ic_mean = float(np.mean(all_ic_values)) if all_ic_values else 0
+            cross_year_ic_std = float(np.std(all_ic_values, ddof=1)) if len(all_ic_values) > 1 else 0
+            cross_year_ic_ir = cross_year_ic_mean / cross_year_ic_std if cross_year_ic_std > 1e-10 else 0
+            v146_ir = 0.39
+            ir_improvement = (cross_year_ic_ir - v146_ir) / (abs(v146_ir) + 1e-10)
+            target_met = cross_year_ic_ir >= 0.55
+            daily_vol_reduction = 0.0  # Will be calculated in report
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            reflection_path = Path(args.output) / f"v147_mref_stability_{timestamp}.json"
+            reflection = {
+                'timestamp': datetime.now().isoformat(),
+                'version': 'V147',
+                'strategy': 'Multi-Resolution Entropy Fusion (MREF)',
+                'core_improvements': {
+                    'mref': '3/5/10 day multi-scale temporal entropy fusion',
+                    'dcss': 'Dynamic cross-sectional shrinkage (PCA when corr>0.7)',
+                    'skewness_adaptive_huber': 'Median + 1.5*IQR adaptive threshold',
+                    'factor_pool_expansion': '6-8 orthogonal factors',
+                },
+                'selected_factors': alpha_module.get_selected_factors(),
+                'recalled_factors': alpha_module.get_recalled_factors(),
+                'sci_features': list(alpha_module.get_sci_features().keys()),
+                'sign_lock_applied': alpha_module.get_sign_lock_applied(),
+                'factor_ics': alpha_module.get_factor_ics(),
+                'mref_stats': alpha_module.get_mref_stats(),
+                'dcss_stats': alpha_module.get_dcss_stats(),
+                'summary': {
+                    'years': years,
+                    'passed_count': passed_count,
+                    'total_count': len(years),
+                    'cross_year_ic_mean': cross_year_ic_mean,
+                    'cross_year_ic_std': cross_year_ic_std,
+                    'cross_year_ic_ir': cross_year_ic_ir,
+                },
+                'v146_vs_v147_comparison': {
+                    'v146_ir': v146_ir,
+                    'v147_ir': cross_year_ic_ir,
+                    'ir_improvement': ir_improvement,
+                    'target_ir': 0.55,
+                    'target_met': target_met,
+                },
+                'improvement_hypotheses': [] if target_met else [
+                    '假设 1：进一步调优 MREF 权重，增加短期熵权重（3 日→0.6, 5 日→0.25, 10 日→0.15）。',
+                    '假设 2：降低 PCA 收缩阈值从 0.7 至 0.6，增强因子去冗余效果。',
+                ],
+            }
+            with open(reflection_path, 'w', encoding='utf-8') as f:
+                json.dump(reflection, f, indent=2, default=str)
+            logger.info(f"IR Stability Analysis saved to: {reflection_path}")
+            logger.info("=" * 70)
+            logger.info("V147 Multi-Year Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Passed: {passed_count}/{len(years)}")
+            logger.info(f"  Cross-Year IC: {cross_year_ic_mean:.4f} ± {cross_year_ic_std:.4f}")
+            logger.info(f"  Cross-Year IC IR: {cross_year_ic_ir:.2f} (V146: {v146_ir:.2f})")
+            logger.info(f"  IR Improvement: {ir_improvement:.2%}")
+            logger.info(f"  Target (IR >= 0.55): {'MET ✓' if target_met else 'NOT MET ✗'}")
+            if not target_met:
+                logger.info("  Improvement Hypotheses:")
+                for h in reflection['improvement_hypotheses']:
+                    logger.info(f"    {h}")
+            logger.info("=" * 70)
+        elif args.year:
+            logger.info(f"Running V147 audit for year: {args.year}")
+            df = load_v147_data(args.year)
+            if df.empty:
+                logger.warning(f"No data loaded for year {args.year}")
+                sys.exit(1)
+            if 'trade_date' in df.columns:
+                if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                    df['trade_date'] = pd.to_datetime(df['trade_date'])
+                df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+            for col in ['open', 'high', 'low', 'close', 'volume', 'amount']:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+            result = referee.run_audit(df)
+            v146_ir = 0.39
+            t1_ic = result.get('t1_ic', {})
+            v147_ir = t1_ic.get('ic_ir', 0)
+            ir_improvement = (v147_ir - v146_ir) / (abs(v146_ir) + 1e-10)
+            target_met = v147_ir >= 0.55
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            reflection_path = Path(args.output) / f"v147_mref_stability_{timestamp}.json"
+            reflection = {
+                'timestamp': datetime.now().isoformat(),
+                'version': 'V147',
+                'strategy': 'Multi-Resolution Entropy Fusion (MREF)',
+                'selected_factors': alpha_module.get_selected_factors(),
+                'recalled_factors': alpha_module.get_recalled_factors(),
+                'sci_features': list(alpha_module.get_sci_features().keys()),
+                'sign_lock_applied': alpha_module.get_sign_lock_applied(),
+                'factor_ics': alpha_module.get_factor_ics(),
+                'mref_stats': alpha_module.get_mref_stats(),
+                'dcss_stats': alpha_module.get_dcss_stats(),
+                'year': args.year,
+                'v146_vs_v147_comparison': {
+                    'v146_ir': v146_ir,
+                    'v147_ir': v147_ir,
+                    'ir_improvement': ir_improvement,
+                    'target_ir': 0.55,
+                    'target_met': target_met,
+                },
+                'improvement_hypotheses': [] if target_met else [
+                    '假设 1：进一步调优 MREF 权重，增加短期熵权重（3 日→0.6, 5 日→0.25, 10 日→0.15）。',
+                    '假设 2：降低 PCA 收缩阈值从 0.7 至 0.6，增强因子去冗余效果。',
+                ],
+            }
+            with open(reflection_path, 'w', encoding='utf-8') as f:
+                json.dump(reflection, f, indent=2, default=str)
+            logger.info(f"IR Stability Analysis saved to: {reflection_path}")
+            logger.info("=" * 70)
+            logger.info("V147 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  T+1 IC: {t1_ic.get('mean_ic', 0):.4f}")
+            logger.info(f"  IC IR: {v147_ir:.2f} (V146: {v146_ir:.2f}, Target: 0.55)")
+            logger.info(f"  IR Improvement: {ir_improvement:.2%}")
+            logger.info(f"  Target (IR >= 0.55): {'MET ✓' if target_met else 'NOT MET ✗'}")
+            if not target_met:
+                logger.info("  Improvement Hypotheses:")
+                for h in reflection['improvement_hypotheses']:
+                    logger.info(f"    {h}")
+            logger.info("=" * 70)
         else:
             parser.print_help()
             logger.warning("Please specify --year or --all")
