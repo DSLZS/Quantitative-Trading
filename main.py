@@ -71,6 +71,7 @@ from alpha_research_v147 import AlphaResearchV147, get_alpha_research as get_alp
 from alpha_research_v148 import AlphaResearchV148, get_alpha_research as get_alpha_research_v148
 from alpha_research_v149 import AlphaResearchV149, get_alpha_research as get_alpha_research_v149
 from alpha_research_v150 import AlphaResearchV150, get_alpha_research as get_alpha_research_v150
+from alpha_research_v151 import AlphaResearchV151, get_alpha_research as get_alpha_research_v151
 
 # V140 全局常量
 MAX_FACTORS = 12  # V140: 仅保留前 12 个正交因子
@@ -5467,8 +5468,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150],
-        help='Version to run (108-150, default: 150)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151],
+        help='Version to run (108-151, default: 151)'
     )
     parser.add_argument(
         '--parquet',
@@ -7319,6 +7320,259 @@ def main():
             logger.info(f"  IC IR: {v150_ir:.2f} (V149: {v149_ir:.2f}, Target: 0.50)")
             logger.info(f"  IR Improvement: {ir_improvement:.2%}")
             logger.info(f"  Target (IR >= 0.50): {'MET ✓' if target_met else 'NOT MET ✗'}")
+            if not target_met:
+                logger.info("  Improvement Hypotheses:")
+                for h in reflection['improvement_hypotheses']:
+                    logger.info(f"    {h}")
+            logger.info("=" * 70)
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 151:
+        logger.info("=" * 70)
+        logger.info("V151 Unified Main Entry - LCA (Latency-Corrected Alpha)")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV151: 选手 (LCA + Rolling_IC_Sign PAC + Volatility-Standardized IC)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - Latency-Corrected Alpha: EMA alpha=0.8 (V150: 0.4), 更快信号响应")
+        logger.info("  - Lead-Signal: volume_price_contradiction 一阶差分 (Change of Alpha)")
+        logger.info("  - Rolling_IC_Sign PAC: window=20 滚动窗口 (禁止偷看未来)")
+        logger.info("  - Volatility-Standardized IC: 除以其过去 20 天 Rank IC 标准差")
+        logger.info("  - DataHealer: 缺失列/NaN/Inf 主动补全 (ffill/中位数)")
+        logger.info("  - 400 Error Fix: 日志截断，禁止 Dump 超过 50 行")
+        logger.info("  - 目标指标：T+1 Rank IC > 0.055, IC_IR > 0.55, IC 衰减单调递减")
+        logger.info("=" * 70)
+        
+        from src.alpha_research_v151 import get_alpha_research as get_alpha_research_v151
+        
+        db_url = os.getenv("DATABASE_URL")
+        alpha_module = get_alpha_research_v151(
+            ic_threshold=0.0001,
+            n_factors=8,
+            n_bins=10,
+            enable_ensemble=True,
+            enable_pac=True,
+            enable_pin=True,
+            enable_ema=True,
+            enable_lead_signal=True,
+            enable_volatility_weighting=True,
+            enable_sector_neutral=True,
+            auto_heal=True,
+            db_url=db_url,
+        )
+        
+        referee = get_backtest_referee(alpha_module, output_dir=args.output)
+        referee.VERSION = "V151"
+        
+        def load_v151_data(year: int) -> pd.DataFrame:
+            parquet_path = args.parquet or "data/parquet/stock_data_2024_2026.parquet"
+            if Path(parquet_path).exists():
+                logger.info(f"Loading V151 data from Parquet: {parquet_path}")
+                df = pd.read_parquet(parquet_path)
+                if 'trade_date' in df.columns:
+                    df['trade_date'] = pd.to_datetime(df['trade_date'])
+                    df = df[df['trade_date'].dt.year == year]
+                    df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+                logger.info(f"Loaded {len(df)} rows for year {year}")
+                return df
+            try:
+                from sqlalchemy import create_engine, text
+                db_url = os.getenv("DATABASE_URL")
+                if not db_url:
+                    raise ValueError("DATABASE_URL not configured")
+                engine = create_engine(db_url)
+                query = text("""
+                    SELECT symbol, trade_date, open, high, low, close, pre_close,
+                           `change`, pct_chg, volume, amount
+                    FROM stock_daily
+                    WHERE trade_date BETWEEN :start_date AND :end_date
+                    ORDER BY symbol, trade_date
+                """)
+                df = pd.read_sql_query(query, engine, params={
+                    'start_date': f"{year}0101",
+                    'end_date': f"{year}1231",
+                })
+                logger.info(f"Loaded {len(df)} rows for year {year}")
+                return df
+            except Exception as e:
+                logger.error(f"Failed to load data: {e}")
+                return pd.DataFrame()
+        
+        if args.all:
+            years = [2021, 2024]
+            logger.info(f"Running V151 audit for years: {years}")
+            results = []
+            passed_count = 0
+            all_ic_values = []
+            for year in years:
+                df = load_v151_data(year)
+                if df.empty:
+                    logger.warning(f"No data for year {year}")
+                    continue
+                if 'trade_date' in df.columns:
+                    if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                        df['trade_date'] = pd.to_datetime(df['trade_date'])
+                    df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+                for col in ['open', 'high', 'low', 'close', 'volume', 'amount']:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                result = referee.run_audit(df)
+                result['year'] = year
+                results.append(result)
+                if result.get('passed', False):
+                    passed_count += 1
+                if 't1_ic' in result:
+                    all_ic_values.append(result['t1_ic'].get('mean_ic', 0))
+            
+            cross_year_ic_mean = float(np.mean(all_ic_values)) if all_ic_values else 0
+            cross_year_ic_std = float(np.std(all_ic_values, ddof=1)) if len(all_ic_values) > 1 else 0
+            cross_year_ic_ir = cross_year_ic_mean / cross_year_ic_std if cross_year_ic_std > 1e-10 else 0
+            
+            v150_ir = 0.50
+            ir_improvement = (cross_year_ic_ir - v150_ir) / (abs(v150_ir) + 1e-10)
+            target_met = cross_year_ic_ir >= 0.55
+            
+            ic_decay_analysis = {}
+            for r in results:
+                if 'ic_decay' in r:
+                    ic_decay_analysis[r.get('year', 'N/A')] = r['ic_decay']
+            
+            factor_ics = alpha_module.get_factor_ics()
+            factor_directions = alpha_module.factor_directions
+            selected_factors = alpha_module.get_selected_factors()
+            lca_stats = alpha_module.get_ema_stats()
+            pac_stats = {'rolling_window': 20, 'method': 'rolling_ic_sign'}
+            vsi_stats = {'method': 'volatility_standardized_ic', 'window': 20}
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            reflection_path = Path(args.output) / f"v151_lca_audit_{timestamp}.json"
+            reflection = {
+                'timestamp': datetime.now().isoformat(),
+                'version': 'V151',
+                'strategy': 'LCA (Latency-Corrected Alpha)',
+                'core_improvements': {
+                    'latency_corrected_alpha': 'EMA alpha=0.8 (V150: 0.4), faster signal response',
+                    'lead_signal': 'volume_price_contradiction first-order differential',
+                    'rolling_ic_sign_pac': 'window=20 rolling window, no look-ahead bias',
+                    'volatility_standardized_ic': 'Divide by past 20-day Rank IC std',
+                    'data_healer': 'Auto-heal missing columns/NaN/Inf (ffill/median)',
+                },
+                'selected_factors': selected_factors,
+                'factor_ics': factor_ics,
+                'factor_directions': factor_directions,
+                'lca_stats': lca_stats,
+                'pac_stats': pac_stats,
+                'vsi_stats': vsi_stats,
+                'audit_log': alpha_module.get_audit_log()[-10:],
+                'ic_decay_analysis': ic_decay_analysis,
+                'summary': {
+                    'years': years,
+                    'passed_count': passed_count,
+                    'total_count': len(years),
+                    'cross_year_ic_mean': cross_year_ic_mean,
+                    'cross_year_ic_std': cross_year_ic_std,
+                    'cross_year_ic_ir': cross_year_ic_ir,
+                },
+                'v150_vs_v151_comparison': {
+                    'v150_ir': v150_ir,
+                    'v151_ir': cross_year_ic_ir,
+                    'ir_improvement': ir_improvement,
+                    'target_ir': 0.55,
+                    'target_met': target_met,
+                },
+                'improvement_hypotheses': [] if target_met else [
+                    '假设 1：进一步提高 EMA alpha 从 0.8 至 0.9，甚至取消 EMA 观察原始信号。',
+                    '假设 2：调整 Rolling_IC_Sign PAC window 从 20 至 15，更快响应 IC 变化。',
+                    '假设 3：增强 Lead-Signal 权重，对 volume_price_contradiction 差分信号×1.5。',
+                ],
+            }
+            with open(reflection_path, 'w', encoding='utf-8') as f:
+                json.dump(reflection, f, indent=2, default=str)
+            logger.info(f"LCA Audit saved to: {reflection_path}")
+            logger.info("=" * 70)
+            logger.info("V151 Multi-Year Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Passed: {passed_count}/{len(years)}")
+            logger.info(f"  Cross-Year IC: {cross_year_ic_mean:.4f} +/- {cross_year_ic_std:.4f}")
+            logger.info(f"  Cross-Year IC IR: {cross_year_ic_ir:.2f} (V150: {v150_ir:.2f})")
+            logger.info(f"  IR Improvement: {ir_improvement:.2%}")
+            logger.info(f"  Target (IR >= 0.55): {'MET' if target_met else 'NOT MET'}")
+            if not target_met:
+                logger.info("  Improvement Hypotheses:")
+                for h in reflection['improvement_hypotheses']:
+                    logger.info(f"    {h}")
+            logger.info("=" * 70)
+        elif args.year:
+            logger.info(f"Running V151 audit for year: {args.year}")
+            df = load_v151_data(args.year)
+            if df.empty:
+                logger.warning(f"No data loaded for year {args.year}")
+                sys.exit(1)
+            if 'trade_date' in df.columns:
+                if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                    df['trade_date'] = pd.to_datetime(df['trade_date'])
+                df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+            for col in ['open', 'high', 'low', 'close', 'volume', 'amount']:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+            result = referee.run_audit(df)
+            v150_ir = 0.50
+            t1_ic = result.get('t1_ic', {})
+            v151_ir = t1_ic.get('ic_ir', 0)
+            ir_improvement = (v151_ir - v150_ir) / (abs(v150_ir) + 1e-10)
+            target_met = v151_ir >= 0.55
+            
+            ic_decay = result.get('ic_decay', {})
+            factor_ics = alpha_module.get_factor_ics()
+            factor_directions = alpha_module.factor_directions
+            selected_factors = alpha_module.get_selected_factors()
+            lca_stats = alpha_module.get_lca_stats()
+            pac_stats = alpha_module.get_pac_stats()
+            vsi_stats = alpha_module.get_vsi_stats()
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            reflection_path = Path(args.output) / f"v151_lca_audit_{timestamp}.json"
+            reflection = {
+                'timestamp': datetime.now().isoformat(),
+                'version': 'V151',
+                'strategy': 'LCA (Latency-Corrected Alpha)',
+                'selected_factors': selected_factors,
+                'factor_ics': factor_ics,
+                'factor_directions': factor_directions,
+                'lca_stats': lca_stats,
+                'pac_stats': pac_stats,
+                'vsi_stats': vsi_stats,
+                'ic_decay': ic_decay,
+                'year': args.year,
+                'v150_vs_v151_comparison': {
+                    'v150_ir': v150_ir,
+                    'v151_ir': v151_ir,
+                    'ir_improvement': ir_improvement,
+                    'target_ir': 0.55,
+                    'target_met': target_met,
+                },
+                'improvement_hypotheses': [] if target_met else [
+                    '假设 1：进一步提高 EMA alpha 从 0.8 至 0.9，甚至取消 EMA 观察原始信号。',
+                    '假设 2：调整 Rolling_IC_Sign PAC window 从 20 至 15，更快响应 IC 变化。',
+                    '假设 3：增强 Lead-Signal 权重，对 volume_price_contradiction 差分信号×1.5。',
+                ],
+            }
+            with open(reflection_path, 'w', encoding='utf-8') as f:
+                json.dump(reflection, f, indent=2, default=str)
+            logger.info(f"LCA Audit saved to: {reflection_path}")
+            logger.info("=" * 70)
+            logger.info("V151 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED' if result.get('passed', False) else 'FAILED'}")
+            logger.info(f"  T+1 IC: {t1_ic.get('mean_ic', 0):.4f}")
+            logger.info(f"  IC IR: {v151_ir:.2f} (V150: {v150_ir:.2f}, Target: 0.55)")
+            logger.info(f"  IR Improvement: {ir_improvement:.2%}")
+            logger.info(f"  Target (IR >= 0.55): {'MET' if target_met else 'NOT MET'}")
+            logger.info(f"  IC Decay: T+1({ic_decay.get('t1_ic', 0):.4f}) -> T+3({ic_decay.get('t3_ic', 0):.4f}) -> T+5({ic_decay.get('t5_ic', 0):.4f})")
             if not target_met:
                 logger.info("  Improvement Hypotheses:")
                 for h in reflection['improvement_hypotheses']:
