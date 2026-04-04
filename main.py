@@ -54,7 +54,7 @@ import numpy as np
 
 # V108 核心模块导入
 from engine.backtest_referee import BacktestReferee, get_backtest_referee
-from alpha_research_v108 import AlphaResearchV108, get_alpha_research as get_alpha_research_v108, AutoEnvHealer
+from alpha_research_v108 import AlphaResearchV108, get_alpha_research as get_alpha_research_v108, AutoEnvHealer, get_alpha_research
 from alpha_research_v109 import AlphaResearchV109, get_alpha_research as get_alpha_research_v109
 from alpha_research_v136 import AlphaResearchV136, get_alpha_research as get_alpha_research_v136, run_v136_backtest
 from alpha_research_v137 import AlphaResearchV137, get_alpha_research as get_alpha_research_v137
@@ -70,6 +70,7 @@ from alpha_research_v146 import AlphaResearchV146, get_alpha_research as get_alp
 from alpha_research_v147 import AlphaResearchV147, get_alpha_research as get_alpha_research_v147
 from alpha_research_v148 import AlphaResearchV148, get_alpha_research as get_alpha_research_v148
 from alpha_research_v149 import AlphaResearchV149, get_alpha_research as get_alpha_research_v149
+from alpha_research_v150 import AlphaResearchV150, get_alpha_research as get_alpha_research_v150
 
 # V140 全局常量
 MAX_FACTORS = 12  # V140: 仅保留前 12 个正交因子
@@ -5466,8 +5467,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149],
-        help='Version to run (108-149, default: 149)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150],
+        help='Version to run (108-150, default: 150)'
     )
     parser.add_argument(
         '--parquet',
@@ -7078,6 +7079,256 @@ def main():
             logger.warning("Please specify --year or --all")
             sys.exit(1)
 
+    elif version == 150:
+        logger.info("=" * 70)
+        logger.info("V150 Unified Main Entry - PCE (Polarity-Corrected-Ensemble)")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV150: 选手 (PAC + PIN + EMA)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - Polarity Auto-Correction: 因子极性自动校正 (IC<0 则翻转)")
+        logger.info("  - Partial Industry Neutralization: 0.3 软中性化 (保留 70% 信号)")
+        logger.info("  - EMA Signal Smoothing: α=0.4 指数平滑 (40% 新 +60% 旧)")
+        logger.info("  - 回归 V147 核心：volume_price_contradiction + liquidity_alpha")
+        logger.info("  - 400 Error Fix: 日志截断，禁止 Dump 超过 50 行")
+        logger.info("  - 目标指标：T+1 Rank IC > 0.05, IC_IR > 0.50")
+        logger.info("=" * 70)
+        
+        from src.alpha_research_v150 import get_alpha_research as get_alpha_research_v150
+        
+        db_url = os.getenv("DATABASE_URL")
+        alpha_module = get_alpha_research_v150(
+            ic_threshold=0.0001,
+            n_factors=8,
+            n_bins=10,
+            enable_ensemble=True,
+            enable_pac=True,
+            enable_pin=True,
+            enable_ema=True,
+            enable_sector_neutral=True,
+            auto_heal=True,
+            db_url=db_url,
+        )
+        
+        referee = get_backtest_referee(alpha_module, output_dir=args.output)
+        referee.VERSION = "V150"
+        
+        def load_v150_data(year: int) -> pd.DataFrame:
+            parquet_path = args.parquet or "data/parquet/stock_data_2024_2026.parquet"
+            if Path(parquet_path).exists():
+                logger.info(f"Loading V150 data from Parquet: {parquet_path}")
+                df = pd.read_parquet(parquet_path)
+                if 'trade_date' in df.columns:
+                    df['trade_date'] = pd.to_datetime(df['trade_date'])
+                    df = df[df['trade_date'].dt.year == year]
+                    df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+                logger.info(f"Loaded {len(df)} rows for year {year}")
+                return df
+            try:
+                from sqlalchemy import create_engine, text
+                db_url = os.getenv("DATABASE_URL")
+                if not db_url:
+                    raise ValueError("DATABASE_URL not configured")
+                engine = create_engine(db_url)
+                query = text("""
+                    SELECT symbol, trade_date, open, high, low, close, pre_close,
+                           `change`, pct_chg, volume, amount
+                    FROM stock_daily
+                    WHERE trade_date BETWEEN :start_date AND :end_date
+                    ORDER BY symbol, trade_date
+                """)
+                df = pd.read_sql_query(query, engine, params={
+                    'start_date': f"{year}0101",
+                    'end_date': f"{year}1231",
+                })
+                logger.info(f"Loaded {len(df)} rows for year {year}")
+                return df
+            except Exception as e:
+                logger.error(f"Failed to load data: {e}")
+                return pd.DataFrame()
+        
+        if args.all:
+            years = [2021, 2024]
+            logger.info(f"Running V150 audit for years: {years}")
+            results = []
+            passed_count = 0
+            all_ic_values = []
+            for year in years:
+                df = load_v150_data(year)
+                if df.empty:
+                    logger.warning(f"No data for year {year}")
+                    continue
+                if 'trade_date' in df.columns:
+                    if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                        df['trade_date'] = pd.to_datetime(df['trade_date'])
+                    df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+                for col in ['open', 'high', 'low', 'close', 'volume', 'amount']:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                result = referee.run_audit(df)
+                result['year'] = year
+                results.append(result)
+                if result.get('passed', False):
+                    passed_count += 1
+                if 't1_ic' in result:
+                    all_ic_values.append(result['t1_ic'].get('mean_ic', 0))
+            
+            cross_year_ic_mean = float(np.mean(all_ic_values)) if all_ic_values else 0
+            cross_year_ic_std = float(np.std(all_ic_values, ddof=1)) if len(all_ic_values) > 1 else 0
+            cross_year_ic_ir = cross_year_ic_mean / cross_year_ic_std if cross_year_ic_std > 1e-10 else 0
+            
+            v149_ir = 0.40
+            ir_improvement = (cross_year_ic_ir - v149_ir) / (abs(v149_ir) + 1e-10)
+            target_met = cross_year_ic_ir >= 0.50
+            
+            # 因子贡献度分析
+            factor_ics = alpha_module.get_factor_ics()
+            factor_directions = alpha_module.factor_directions
+            selected_factors = alpha_module.get_selected_factors()
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            reflection_path = Path(args.output) / f"v150_pce_audit_{timestamp}.json"
+            reflection = {
+                'timestamp': datetime.now().isoformat(),
+                'version': 'V150',
+                'strategy': 'PCE (Polarity-Corrected-Ensemble)',
+                'core_improvements': {
+                    'polarity_auto_correction': 'IC<0 → Score = -Rank(Factor)',
+                    'partial_industry_neutralization': 'λ=0.3, Retain 70% signal',
+                    'ema_smoothing': 'α=0.4, 40% new + 60% old',
+                    'v147_core_factors': 'volume_price_contradiction + liquidity_alpha',
+                },
+                'selected_factors': selected_factors,
+                'factor_ics': factor_ics,
+                'factor_directions': factor_directions,
+                'pin_stats': alpha_module.get_pin_stats(),
+                'ema_stats': alpha_module.get_ema_stats(),
+                'audit_log': alpha_module.get_audit_log()[-10:],
+                'summary': {
+                    'years': years,
+                    'passed_count': passed_count,
+                    'total_count': len(years),
+                    'cross_year_ic_mean': cross_year_ic_mean,
+                    'cross_year_ic_std': cross_year_ic_std,
+                    'cross_year_ic_ir': cross_year_ic_ir,
+                },
+                'v149_vs_v150_comparison': {
+                    'v149_ir': v149_ir,
+                    'v150_ir': cross_year_ic_ir,
+                    'ir_improvement': ir_improvement,
+                    'target_ir': 0.50,
+                    'target_met': target_met,
+                },
+                'factor_contribution_analysis': {
+                    factor: {
+                        'ic': factor_ics.get(factor, 0),
+                        'direction': factor_directions.get(factor, 1),
+                        'corrected': 'Yes' if factor_directions.get(factor, 1) < 0 else 'No',
+                    }
+                    for factor in selected_factors
+                },
+                'improvement_hypotheses': [] if target_met else [
+                    '假设 1：调整 PAC 阈值，对 IC 接近 0 的因子进行更严格筛选。',
+                    '假设 2：调整 PIN λ从 0.3 至 0.2，保留更多行业信号。',
+                    '假设 3：调整 EMA α从 0.4 至 0.5，增强新信号响应。',
+                ],
+            }
+            with open(reflection_path, 'w', encoding='utf-8') as f:
+                json.dump(reflection, f, indent=2, default=str)
+            logger.info(f"PCE Audit saved to: {reflection_path}")
+            logger.info("=" * 70)
+            logger.info("V150 Multi-Year Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Passed: {passed_count}/{len(years)}")
+            logger.info(f"  Cross-Year IC: {cross_year_ic_mean:.4f} ± {cross_year_ic_std:.4f}")
+            logger.info(f"  Cross-Year IC IR: {cross_year_ic_ir:.2f} (V149: {v149_ir:.2f})")
+            logger.info(f"  IR Improvement: {ir_improvement:.2%}")
+            logger.info(f"  Target (IR >= 0.50): {'MET ✓' if target_met else 'NOT MET ✗'}")
+            if not target_met:
+                logger.info("  Improvement Hypotheses:")
+                for h in reflection['improvement_hypotheses']:
+                    logger.info(f"    {h}")
+            logger.info("=" * 70)
+        elif args.year:
+            logger.info(f"Running V150 audit for year: {args.year}")
+            df = load_v150_data(args.year)
+            if df.empty:
+                logger.warning(f"No data loaded for year {args.year}")
+                sys.exit(1)
+            if 'trade_date' in df.columns:
+                if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                    df['trade_date'] = pd.to_datetime(df['trade_date'])
+                df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+            for col in ['open', 'high', 'low', 'close', 'volume', 'amount']:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+            result = referee.run_audit(df)
+            v149_ir = 0.40
+            t1_ic = result.get('t1_ic', {})
+            v150_ir = t1_ic.get('ic_ir', 0)
+            ir_improvement = (v150_ir - v149_ir) / (abs(v149_ir) + 1e-10)
+            target_met = v150_ir >= 0.50
+            
+            # 因子贡献度分析
+            factor_ics = alpha_module.get_factor_ics()
+            factor_directions = alpha_module.factor_directions
+            selected_factors = alpha_module.get_selected_factors()
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            reflection_path = Path(args.output) / f"v150_pce_audit_{timestamp}.json"
+            reflection = {
+                'timestamp': datetime.now().isoformat(),
+                'version': 'V150',
+                'strategy': 'PCE (Polarity-Corrected-Ensemble)',
+                'selected_factors': selected_factors,
+                'factor_ics': factor_ics,
+                'factor_directions': factor_directions,
+                'pin_stats': alpha_module.get_pin_stats(),
+                'ema_stats': alpha_module.get_ema_stats(),
+                'year': args.year,
+                'v149_vs_v150_comparison': {
+                    'v149_ir': v149_ir,
+                    'v150_ir': v150_ir,
+                    'ir_improvement': ir_improvement,
+                    'target_ir': 0.50,
+                    'target_met': target_met,
+                },
+                'factor_contribution_analysis': {
+                    factor: {
+                        'ic': factor_ics.get(factor, 0),
+                        'direction': factor_directions.get(factor, 1),
+                        'corrected': 'Yes' if factor_directions.get(factor, 1) < 0 else 'No',
+                    }
+                    for factor in selected_factors
+                },
+                'improvement_hypotheses': [] if target_met else [
+                    '假设 1：调整 PAC 阈值，对 IC 接近 0 的因子进行更严格筛选。',
+                    '假设 2：调整 PIN λ从 0.3 至 0.2，保留更多行业信号。',
+                    '假设 3：调整 EMA α从 0.4 至 0.5，增强新信号响应。',
+                ],
+            }
+            with open(reflection_path, 'w', encoding='utf-8') as f:
+                json.dump(reflection, f, indent=2, default=str)
+            logger.info(f"PCE Audit saved to: {reflection_path}")
+            logger.info("=" * 70)
+            logger.info("V150 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  T+1 IC: {t1_ic.get('mean_ic', 0):.4f}")
+            logger.info(f"  IC IR: {v150_ir:.2f} (V149: {v149_ir:.2f}, Target: 0.50)")
+            logger.info(f"  IR Improvement: {ir_improvement:.2%}")
+            logger.info(f"  Target (IR >= 0.50): {'MET ✓' if target_met else 'NOT MET ✗'}")
+            if not target_met:
+                logger.info("  Improvement Hypotheses:")
+                for h in reflection['improvement_hypotheses']:
+                    logger.info(f"    {h}")
+            logger.info("=" * 70)
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
     elif version == 149:
         logger.info("=" * 70)
         logger.info("V149 Unified Main Entry - SIE (Spectral-Inertia-Enhancement)")
@@ -7086,7 +7337,7 @@ def main():
         logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
         logger.info("  - AlphaResearchV149: 选手 (DSIK + EGSO + SIN)")
         logger.info("  - 废弃所有 run_vXXX.py 脚本")
-        logger.info("  - Dynamic Signal Inertia Kernel: α 根据自相关性动态调整")
+        logger.info("  - Dynamic Signal Inertia Kernel: α根据自相关性动态调整")
         logger.info("  - Enhanced Gram-Schmidt: 每日截面因子正交化 + 互信息验证")
         logger.info("  - Strict Industry Neutralization: 行业均值减法")
         logger.info("  - 400 Error Fix: 日志截断，禁止 Dump 全量数据")
