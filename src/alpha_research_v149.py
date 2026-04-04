@@ -692,11 +692,18 @@ class VolumePriceReversion:
         
         【公式】
         VPR = Rank(Low_Price_Volume / Total_Volume) - Rank(Return)
+        
+        【修复】
+        - 将中间结果添加到 DataFrame 中，避免 groupby[key] 报错
         """
         result = df.copy()
         
         if 'low' not in result.columns or 'high' not in result.columns:
             self._log_vpr("MissingData", "Missing low/high columns, returning 0")
+            return pd.Series(0, index=df.index)
+        
+        if 'volume' not in result.columns:
+            self._log_vpr("MissingData", "Missing volume column, returning 0")
             return pd.Series(0, index=df.index)
         
         # 1. 计算 lookback 窗口内的最低/最高价
@@ -711,22 +718,19 @@ class VolumePriceReversion:
         price_range = high_prices - low_prices + 1e-10
         price_position = (result['low'] - low_prices) / price_range
         
-        # 3. 计算低价区成交量
+        # 3. 计算低价区成交量权重
         volume_weight = 1 - price_position
-        low_price_volume = result['volume'] * volume_weight
         
-        # 4. 计算低价区成交量占比
+        # 4. 计算低价区成交量占比（简化版）
+        low_price_volume = result['volume'] * volume_weight
         total_volume = result.groupby('symbol')['volume'].transform(
             lambda x: x.rolling(self.lookback_window, min_periods=5).sum()
         )
-        low_price_volume_sum = result.groupby('symbol').apply(
-            lambda x: (x['volume'] * (1 - (x['low'] - x['low'].rolling(self.lookback_window, min_periods=5).min()) / 
-                         (x['high'].rolling(self.lookback_window, min_periods=5).max() - 
-                          x['low'].rolling(self.lookback_window, min_periods=5).min() + 1e-10))
-                       ).rolling(self.lookback_window, min_periods=5).sum()
-        ).reset_index(level=0, drop=True)
+        lpv_sum = result.groupby('symbol')['volume'].transform(
+            lambda x: (x * volume_weight.loc[x.index]).rolling(self.lookback_window, min_periods=5).sum()
+        )
         
-        lpv_ratio = low_price_volume_sum / (total_volume + 1e-10)
+        lpv_ratio = lpv_sum / (total_volume + 1e-10)
         
         # 5. 计算近期收益
         if 'close' in result.columns:
@@ -736,12 +740,16 @@ class VolumePriceReversion:
         else:
             returns = pd.Series(0, index=df.index)
         
-        # 6. 排名计算
-        lpv_rank = result.groupby('trade_date')[lpv_ratio].transform(
+        # 6. 将中间结果添加到 DataFrame 中进行排名
+        result['_lpv_ratio'] = lpv_ratio.fillna(0.5)
+        result['_returns'] = returns.fillna(0)
+        
+        # 排名计算（使用列名而非 Series）
+        lpv_rank = result.groupby('trade_date')['_lpv_ratio'].transform(
             lambda x: x.rank(method='average', pct=True)
         ).fillna(0.5)
         
-        ret_rank = result.groupby('trade_date')[returns].transform(
+        ret_rank = result.groupby('trade_date')['_returns'].transform(
             lambda x: x.rank(method='average', pct=True)
         ).fillna(0.5)
         
@@ -752,6 +760,9 @@ class VolumePriceReversion:
         vpr = vpr.groupby(result['trade_date']).transform(
             lambda x: (x - x.mean()) / (x.std() + 1e-10)
         ).fillna(0)
+        
+        # 清理临时列
+        result = result.drop(columns=['_lpv_ratio', '_returns'])
         
         self._log_vpr(
             "Computed",
@@ -1366,8 +1377,27 @@ class AlphaResearchV149:
         
         return result[output_cols]
     
-    def get_factor_ics(self) -> Dict[str, float]:
-        """获取因子 IC"""
+    def get_factor_ics(self, df: Optional[pd.DataFrame] = None) -> Dict[str, float]:
+        """
+        获取因子 IC.
+        
+        【兼容性修复】
+        - 接受可选 df 参数（与 backtest_referee 兼容）
+        - 如果传入 df，基于 df 重新计算 IC
+        """
+        # 如果传入 df，基于 df 重新计算 IC
+        if df is not None and not df.empty:
+            ics = {}
+            for factor in self.selected_factors:
+                if factor in df.columns:
+                    ic = self._calc_factor_ic(df, factor)
+                    direction = self.factor_directions.get(factor, 1)
+                    ics[factor] = ic * direction
+                else:
+                    ics[factor] = self.factor_ics.get(factor, 0.0) * self.factor_directions.get(factor, 1)
+            return ics
+        
+        # 否则返回缓存的 IC
         adjusted = {}
         for f, ic in self.factor_ics.items():
             direction = self.factor_directions.get(f, 1)

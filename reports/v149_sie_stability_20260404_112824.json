@@ -1,0 +1,108 @@
+{
+  "timestamp": "2026-04-04T11:28:24.661046",
+  "version": "V149",
+  "strategy": "SIE (Spectral-Inertia-Enhancement)",
+  "core_improvements": {
+    "dynamic_signal_inertia_kernel": "\u03b1 = base_\u03b1 * autocorr(signal_{t-5:t}, lag=1)",
+    "enhanced_gram_schmidt": "Daily cross-sectional factor orthogonalization + MI verification",
+    "strict_industry_neutralization": "Score_final = Score_raw - mean(Score | industry)",
+    "400_error_fix": "Log truncation, no full DataFrame dump"
+  },
+  "selected_factors": [
+    "momentum_20",
+    "volatility_5",
+    "volatility_10",
+    "momentum_10",
+    "reversion_10",
+    "volume_price_reversion",
+    "momentum_60",
+    "liquidity_alpha"
+  ],
+  "factor_ics": {
+    "volume_rank": 0.022519707492197956,
+    "momentum_20": 0.04586085919679368,
+    "volatility_10": 0.0447057453590719,
+    "volume_price_contradiction": 0.02673120342325527,
+    "liquidity_alpha": 0.028944471644787355,
+    "volatility_reversion": 0.012265003561985871,
+    "reversion_5": 0.01872795684108052,
+    "volume_price_reversion": 0.03258542946597479,
+    "momentum_5": 0.01872795684108052,
+    "momentum_10": 0.039623980748142044,
+    "momentum_60": 0.02958084586684976,
+    "reversion_10": 0.039623980748142044,
+    "volatility_5": 0.04562325573686083
+  },
+  "sik_stats": {
+    "mean_alpha": 0.3291443173171967,
+    "min_alpha": 0.1,
+    "max_alpha": 0.6,
+    "autocorr_window": 5
+  },
+  "icc_stats": {},
+  "sin_stats": {},
+  "audit_log": [
+    {
+      "action": "ComputeScore",
+      "details": "Starting with 1438846 rows"
+    },
+    {
+      "action": "FactorGeneration",
+      "details": "Generated base factors including V149 VPR"
+    },
+    {
+      "action": "FactorCandidatePool",
+      "details": "Built candidate pool with 13 factors"
+    },
+    {
+      "action": "FactorSelection",
+      "details": "Final selected 8 factors: ['momentum_20', 'volatility_5', 'volatility_10', 'momentum_10', 'reversion_10', 'volume_price_reversion', 'momentum_60', 'liquidity_alpha']"
+    },
+    {
+      "action": "GSO",
+      "details": "Applying Gram-Schmidt Orthogonalization..."
+    },
+    {
+      "action": "GSOApplied",
+      "details": "Orthogonalized 8 factors, kept 7"
+    },
+    {
+      "action": "DSIK",
+      "details": "Applying Dynamic Signal Inertia Kernel..."
+    },
+    {
+      "action": "ICC",
+      "details": "Applying Industry Consistency Constraint..."
+    },
+    {
+      "action": "SIN",
+      "details": "Applying Strict Industry Neutralization..."
+    },
+    {
+      "action": "Complete",
+      "details": "Final score with 8 factors (SIE)"
+    }
+  ],
+  "summary": {
+    "years": [
+      2021,
+      2024
+    ],
+    "passed_count": 0,
+    "total_count": 2,
+    "cross_year_ic_mean": -0.024515026301017838,
+    "cross_year_ic_std": 0.021291115694952657,
+    "cross_year_ic_ir": -1.151420463457885
+  },
+  "v148_vs_v149_comparison": {
+    "v148_ir": 0.4,
+    "v149_ir": -1.151420463457885,
+    "ir_improvement": -3.878551157675075,
+    "target_ir": 0.55,
+    "target_met": false
+  },
+  "improvement_hypotheses": [
+    "\u5047\u8bbe 1\uff1a\u8c03\u6574 SIK \u60ef\u6027\u7cfb\u6570\u4ece 0.3 \u81f3 0.4\uff0c\u589e\u5f3a\u4fe1\u53f7\u7a33\u5b9a\u6027\u3002",
+    "\u5047\u8bbe 2\uff1a\u964d\u4f4e ICC \u4e00\u81f4\u6027\u9608\u503c\u4ece 0.70 \u81f3 0.65\uff0c\u589e\u5f3a\u884c\u4e1a\u6536\u7f29\u529b\u5ea6\u3002"
+  ]
+}
