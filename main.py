@@ -72,6 +72,7 @@ from alpha_research_v148 import AlphaResearchV148, get_alpha_research as get_alp
 from alpha_research_v149 import AlphaResearchV149, get_alpha_research as get_alpha_research_v149
 from alpha_research_v150 import AlphaResearchV150, get_alpha_research as get_alpha_research_v150
 from alpha_research_v151 import AlphaResearchV151, get_alpha_research as get_alpha_research_v151
+from alpha_research_v152 import AlphaResearchV152, get_alpha_research as get_alpha_research_v152
 
 # V140 全局常量
 MAX_FACTORS = 12  # V140: 仅保留前 12 个正交因子
@@ -5468,8 +5469,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151],
-        help='Version to run (108-151, default: 151)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152],
+        help='Version to run (108-152, default: 152)'
     )
     parser.add_argument(
         '--parquet',
