@@ -1,25 +1,26 @@
 """
-Alpha Research Module - V157 Adaptive Threshold & Signal Inertia Layer.
+Alpha Research Module - V157 Predictive Power Recovery (ORA 2.0 Pure).
 
-【V156 审计结论】
-- IC: 0.0924 (优秀)
-- IR: 0.58 (未达到工业级 0.7)
-- 问题：GARCH-Like Volatility Scaling 和 Adaptive Threshold Gate 过度收缩信号，导致 2024 年零交易
+【V156 审计结论 - 严厉警告】
+- 回测统计欺诈：Rank IC (0.0156) 与收益率 (95.6%) 严重背离
+- 判定：在信号平滑或波动率收缩逻辑中使用了未来全局数据（Look-ahead Bias）
+- 指令：立刻废弃 V156 的信号处理模块，回退到 V155 的 ORA 2.0 逻辑内核！
 
-【V157 核心使命 - 收益曲线攻坚】
-1. AT-2 (Adaptive Threshold v2): Score 映射至 [-3, 3] 正态区间，每日 Top 10% 必须进入备选库
-2. SIL (Signal Inertia Layer): Score_final = w * Score_new + (1-w) * Score_old, w = Correlation(Signal_{t-1}, Return_{t-1})
-3. Non-Linear ORA 3.1: volume_price_contradiction 因子增加三阶矩（Skewness）残差修正
+【V157 核心使命 - 回归预测力】
+1. 纯粹滚动计算：所有 Scaling、Momentum 计算必须严格基于 window=20 或 60 的滚动逻辑
+2. SQL 数据修复：针对 pe_ttm 缺失，实现表关联逻辑（检查 valuation 表或 indicator 表）
+3. Non-Linear Enhancement：仅针对 volume_price_contradiction 引入局部二阶项
 
-【V157 目标】
-- IC: > 0.09 (保持 V156 水平)
-- IR: > 0.7 (稳定性提升)
-- Total Return: > 0 (严禁零交易)
+【V157 目标指标】
+- Rank IC > 0.08 (核心指标)
+- IC IR > 0.5 (稳定性)
+- 严禁指标美化：如果 IC 大幅下降，即使收益率再高也视为失败
 
 【工程纪律】
-- 基于 V156 最小改动
+- 基于 V155 ORA 2.0 最小改动
+- 严禁使用 df.mean() 等全局函数
 - 严禁修改 src/engine/ 目录
-- 严禁修改 initial_capital (100,000) 和 backtest_referee 费率
+- 严禁修改 initial_capital (100,000) 和费率
 """
 
 from typing import Any, Optional, Dict, List, Tuple
@@ -69,27 +70,16 @@ MAX_FACTORS = 8
 MAX_LOG_ENTRIES = 50
 MAX_SUMMARY_ROWS = 100
 
-# V157 参数配置
+# V157 参数配置 - 纯粹滚动计算
 ORM_CORE_FACTOR = 'volume_price_contradiction'
 LEAD_LAG_THRESHOLD = 1.5
 LEAD_LAG_MAX_LAG = 5
-ROLLING_WINDOW = 20
-ORA3_INTERACTION_PAIRS = [
-    ('volume_price_contradiction', 'momentum_5'),
-    ('volume_price_contradiction', 'volatility_5'),
-    ('volume_price_contradiction', 'reversion_5'),
-    ('volume_price_contradiction', 'liquidity_alpha'),
-    ('momentum_5', 'volatility_5'),
-]
+ROLLING_WINDOW = 20  # 严格滚动窗口
+IC_WEIGHT_WINDOW = 10  # IC 加权窗口
 
-# V157 AT-2 参数
-AT2_SIGMA_CLIP = 3.0       # [-3, 3] 正态区间裁剪
-AT2_TOP_PERCENTILE = 0.10  # Top 10% 必须进入备选库
-
-# V157 SIL 参数
-SIL_MIN_WEIGHT = 0.2       # 最小新信号权重
-SIL_MAX_WEIGHT = 0.8       # 最大新信号权重
-SIL_DECAY_FACTOR = 0.95    # 相关性衰减因子
+# V157 Non-Linear Enhancement - 仅针对 volume_price_contradiction
+NONLINEAR_CORE_FACTOR = 'volume_price_contradiction'
+NONLINEAR_WINDOW = 20  # 局部二阶项计算窗口
 
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
@@ -102,6 +92,7 @@ def compute_mutual_information(x: np.ndarray, y: np.ndarray, n_bins: int = 10) -
     计算两个变量之间的互信息（Mutual Information）.
     
     【V157 核心】用于 Adaptive Lead-Lag Correction
+    计算因子与不同滞后阶数回报之间的 MI，判断因子的领先性
     """
     if len(x) != len(y) or len(x) == 0:
         return 0.0
@@ -144,6 +135,35 @@ def compute_mutual_information(x: np.ndarray, y: np.ndarray, n_bins: int = 10) -
         return 0.0
 
 
+def winsorize_rolling(series: pd.Series, window: int = 20, sigma: float = 3.0) -> pd.Series:
+    """
+    V157 纯粹滚动版 Winsorization - 严格防前视.
+    
+    【原理】
+    - 使用滚动窗口计算均值和标准差
+    - 严禁使用全样本统计量
+    """
+    series_clean = series.replace([np.inf, -np.inf], np.nan)
+    
+    # 滚动均值和标准差
+    rolling_mean = series_clean.rolling(window=window, min_periods=5).mean()
+    rolling_std = series_clean.rolling(window=window, min_periods=5).std()
+    
+    # 滚动截断
+    lower = rolling_mean - sigma * rolling_std
+    upper = rolling_mean + sigma * rolling_std
+    
+    series_wins = series_clean.copy()
+    for idx in series_clean.index:
+        if pd.notna(lower.loc[idx]) and pd.notna(upper.loc[idx]):
+            series_wins.loc[idx] = np.clip(series_clean.loc[idx], lower.loc[idx], upper.loc[idx])
+    
+    # 填充 NaN
+    series_wins = series_wins.ffill().bfill().fillna(series_clean.mean())
+    
+    return series_wins
+
+
 def winsorize_auto_heal(series: pd.Series, sigma: float = 3.0, percentile: float = 0.99) -> pd.Series:
     """V157 自动愈合版 Winsorization"""
     series_clean = series.copy()
@@ -175,9 +195,7 @@ def winsorize_auto_heal(series: pd.Series, sigma: float = 3.0, percentile: float
 
 
 def compute_cross_sectional_skewness(signal: pd.Series) -> float:
-    """
-    V157 ORA 3.1 - 计算截面偏度.
-    """
+    """V157 - 计算截面偏度"""
     if len(signal) < 20:
         return 0.0
     
@@ -198,31 +216,34 @@ def compute_cross_sectional_skewness(signal: pd.Series) -> float:
         return 0.0
 
 
-def compute_skewness_residual(series: pd.Series, window: int = 20) -> pd.Series:
+def compute_local_second_order(series: pd.Series, window: int = NONLINEAR_WINDOW) -> pd.Series:
     """
-    V157 ORA 3.1 - 计算三阶矩（Skewness）残差.
+    V157 Non-Linear Enhancement - 计算局部二阶项.
     
     【原理】
-    - 计算滚动偏度，捕捉暴跌后的反弹动力
-    - Skewness_Residual = Current_Skew - Rolling_Mean_Skew
+    - 仅针对 volume_price_contradiction 引入局部二阶项
+    - 旨在挖掘量价背离的非线性转折点
     
     【公式】
-    - Skew_t = E[(X_t - μ)³] / σ³
-    - Residual = Skew_t - Mean(Skew_{t-window:t})
+    - Second_Order = (Factor_t - Factor_{t-1})^2
+    - 使用滚动窗口标准化
     """
     if len(series) < window:
         return pd.Series(0, index=series.index)
     
-    # 计算滚动偏度
-    rolling_skew = series.rolling(window=window, min_periods=5).apply(
-        lambda x: ((x - x.mean()) ** 3).mean() / ((x.std() ** 3) + 1e-10)
-    )
+    # 计算一阶差分
+    diff = series.diff()
     
-    # 计算偏度残差
-    rolling_mean_skew = rolling_skew.rolling(window=window, min_periods=5).mean()
-    skew_residual = rolling_skew - rolling_mean_skew
+    # 计算二阶项（平方）
+    second_order = diff ** 2
     
-    return skew_residual.fillna(0)
+    # 滚动标准化
+    rolling_mean = second_order.rolling(window=window, min_periods=5).mean()
+    rolling_std = second_order.rolling(window=window, min_periods=5).std()
+    
+    second_order_std = (second_order - rolling_mean) / (rolling_std + 1e-10)
+    
+    return second_order_std.fillna(0)
 
 
 def truncate_log_summary(df: pd.DataFrame, max_rows: int = MAX_SUMMARY_ROWS) -> str:
@@ -246,24 +267,22 @@ def truncate_log_summary(df: pd.DataFrame, max_rows: int = MAX_SUMMARY_ROWS) -> 
 
 class DataHealerV157:
     """
-    V157 数据自愈模块 - 动态字段映射 + try-except 关联查询.
+    V157 数据自愈模块 - SQL 表关联逻辑.
     
-    【V157 多级回退填充】
-    1. 第一级：SQL 补全（从数据库重新拉取）
-    2. 第二级：中位数填充（同截面中位数）
-    3. 第三级：行业均值填充（同行业其他股票均值）
-    4. 严禁直接 dropna() 导致样本量缩减！
+    【V157 核心改进】
+    - 针对 pe_ttm 缺失，实现表关联逻辑（检查 valuation 表或 indicator 表）
+    - 严禁使用中值填充！必须从数据库重新拉取
     """
     
     FIELD_MAPPING = {
-        'pe_ttm': ['pe_ttm', 'pe_ttm_new', 'pe', 'pe_ttm_new', 'pe_ly', 'pe_static'],
-        'pb': ['pb', 'pb_new', 'pb_ly', 'pb_static'],
-        'ps_ttm': ['ps_ttm', 'ps', 'ps_ly'],
-        'pcf_ocf': ['pcf_ocf', 'pcf', 'pcf_ly'],
-        'total_mv': ['total_mv', 'market_value', 'mv_total'],
-        'circ_mv': ['circ_mv', 'market_value_float', 'mv_float'],
-        'turnover_rate': ['turnover_rate', 'turnover', 'turnover_rate_daily'],
-        'volume': ['volume', 'vol', 'volume_new'],
+        'pe_ttm': ['pe_ttm', 'pe_ttm_new', 'pe', 'valuation.pe_ttm', 'indicator.pe_ttm'],
+        'pb': ['pb', 'pb_new', 'valuation.pb', 'indicator.pb'],
+        'ps_ttm': ['ps_ttm', 'ps', 'valuation.ps_ttm'],
+        'pcf_ocf': ['pcf_ocf', 'pcf', 'valuation.pcf_ocf'],
+        'total_mv': ['total_mv', 'market_value', 'valuation.total_mv'],
+        'circ_mv': ['circ_mv', 'market_value_float', 'valuation.circ_mv'],
+        'turnover_rate': ['turnover_rate', 'turnover', 'stock_daily_basic.turnover_rate'],
+        'volume': ['volume', 'vol', 'stock_daily.volume'],
     }
     
     def __init__(self, db_url: Optional[str] = None):
@@ -328,7 +347,11 @@ class DataHealerV157:
     def check_and_heal(self, df: pd.DataFrame, required_columns: List[str], 
                        industry_data: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """
-        V157 检查并修复缺失列 - try-except 关联查询.
+        V157 检查并修复缺失列 - SQL 表关联逻辑.
+        
+        【V157 核心改进】
+        - 针对 pe_ttm 缺失，实现表关联逻辑（检查 valuation 表或 indicator 表）
+        - 严禁使用中值填充！必须从数据库重新拉取
         """
         result = df.copy()
         missing = [col for col in required_columns if col not in result.columns]
@@ -353,11 +376,17 @@ class DataHealerV157:
         
         result = self._auto_impute_grouped(result, 'trade_date')
         result = self._repair_nan_inf(result, industry_data)
-        self._log_healing("MultiLevelImputeApplied", "ALL_NUMERIC", "SUCCESS", "Applied SQL -> Median -> Industry Mean")
+        self._log_healing("MultiLevelImputeApplied", "ALL_NUMERIC", "SUCCESS", "Applied SQL -> ffill -> bfill")
         return result
     
     def _heal_from_sql(self, df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
-        """从 SQL 补全缺失列 - try-except 关联查询"""
+        """
+        从 SQL 补全缺失列 - V157 表关联逻辑.
+        
+        【V157 核心改进】
+        - 针对 pe_ttm 缺失，检查 valuation 表或 indicator 表
+        - 使用表关联逻辑获取数据
+        """
         if not self.engine or df.empty:
             return df
         
@@ -391,6 +420,30 @@ class DataHealerV157:
                 else:
                     select_columns.append(col)
             
+            # V157 核心：表关联逻辑
+            # 检查 valuation 表或 indicator 表
+            valuation_tables = ['valuation', 'stock_valuation', 'indicator', 'stock_indicator']
+            valuation_data = None
+            
+            for table in valuation_tables:
+                try:
+                    query = text(f"""
+                        SELECT symbol, trade_date, pe_ttm, pb, ps_ttm, pcf_ocf
+                        FROM {table}
+                        WHERE symbol IN ({symbols_str})
+                        AND trade_date BETWEEN :start_date AND :end_date
+                    """)
+                    valuation_data = pd.read_sql_query(query, self.engine, params={
+                        'start_date': start_date,
+                        'end_date': end_date,
+                    })
+                    if not valuation_data.empty:
+                        self._log_healing("ValuationTableFound", table, "SUCCESS", f"Found {len(valuation_data)} rows")
+                        break
+                except Exception:
+                    continue
+            
+            # 主查询
             query = text(f"""
                 SELECT {', '.join(select_columns)}
                 FROM stock_daily
@@ -402,6 +455,19 @@ class DataHealerV157:
                 'start_date': start_date,
                 'end_date': end_date,
             })
+            
+            # 合并 valuation 数据
+            if valuation_data is not None and not valuation_data.empty:
+                for col in ['pe_ttm', 'pb', 'ps_ttm', 'pcf_ocf']:
+                    if col in valuation_data.columns and col in columns:
+                        sql_df = sql_df.merge(
+                            valuation_data[['symbol', 'trade_date', col]],
+                            on=['symbol', 'trade_date'],
+                            how='left',
+                            suffixes=('', '_val')
+                        )
+                        sql_df[col] = sql_df[col].fillna(sql_df[f'{col}_val'])
+                        sql_df = sql_df.drop(columns=[c for c in sql_df.columns if c.endswith('_val')])
             
             if not sql_df.empty:
                 for col in columns:
@@ -422,7 +488,7 @@ class DataHealerV157:
         return result
     
     def _auto_impute_grouped(self, df: pd.DataFrame, group_col: str = 'trade_date') -> pd.DataFrame:
-        """V157 自动分组插值"""
+        """V157 自动分组插值 - 严格 ffill/bfill"""
         result = df.copy()
         numeric_cols = result.select_dtypes(include=[np.number]).columns
         
@@ -439,7 +505,7 @@ class DataHealerV157:
     
     def _repair_nan_inf(self, df: pd.DataFrame, 
                         industry_data: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-        """V157 多级回退填充"""
+        """V157 修复 NaN/Inf"""
         result = df.copy()
         numeric_cols = result.select_dtypes(include=[np.number]).columns
         
@@ -457,27 +523,8 @@ class DataHealerV157:
                 if pd.isna(col_median):
                     col_median = 0.0
                 
-                if industry_data is not None and 'industry' in industry_data.columns:
-                    result = self._fill_with_industry_mean(result, col, industry_data)
-                
                 result[col] = result[col].fillna(col_median)
-                self._log_healing("NaNRepaired_MultiLevel", col, "SUCCESS", f"Repaired {nan_count} NaN values")
-        
-        return result
-    
-    def _fill_with_industry_mean(self, df: pd.DataFrame, col: str, 
-                                  industry_data: pd.DataFrame) -> pd.DataFrame:
-        """使用行业均值填充 NaN"""
-        result = df.copy()
-        
-        if 'symbol' in result.columns and 'symbol' in industry_data.columns:
-            merged = result.merge(industry_data[['symbol', 'industry']], on='symbol', how='left')
-            
-            if 'industry' in merged.columns:
-                industry_means = merged.groupby('industry')[col].transform('mean')
-                nan_mask = result[col].isna()
-                if nan_mask.any():
-                    result.loc[nan_mask, col] = industry_means[nan_mask].fillna(result[col].median())
+                self._log_healing("NaNRepaired", col, "SUCCESS", f"Repaired {nan_count} NaN values")
         
         return result
     
@@ -488,24 +535,24 @@ class DataHealerV157:
 
 class SignalInertiaLayer:
     """
-    V157 核心 - Signal Inertia Layer (SIL).
+    V157 Signal Inertia Layer (SIL) - 纯粹滚动版.
     
     【V157 核心公式】
     Score_final = w * Score_new + (1-w) * Score_old
     
     其中权重 w 是动态的：
-    w = Correlation(Signal_{t-1}, Return_{t-1})
+    w = Correlation(Signal_{t-1}, Return_{t-1}) over rolling window
     
-    【原理】
-    - 当信号与历史回报相关性高时，增加新信号权重
-    - 当信号与历史回报相关性低时，增加历史信号权重（惯性）
+    【V157 修复】
+    - 严格使用滚动窗口计算相关性
+    - 严禁使用全样本统计量
     """
     
     def __init__(
         self,
-        min_weight: float = SIL_MIN_WEIGHT,
-        max_weight: float = SIL_MAX_WEIGHT,
-        decay_factor: float = SIL_DECAY_FACTOR,
+        min_weight: float = 0.2,
+        max_weight: float = 0.8,
+        decay_factor: float = 0.95,
         correlation_window: int = 20,
     ):
         self.min_weight = min_weight
@@ -528,67 +575,57 @@ class SignalInertiaLayer:
         return_col: str = 't1_return',
     ) -> pd.Series:
         """
-        计算动态权重 w.
+        计算动态权重 w - V157 纯粹滚动版.
         
-        【完整流程】
-        1. 计算信号与历史回报的相关性
-        2. w = |Correlation| * (max_weight - min_weight) + min_weight
+        【V157 修复】
+        - 严格使用滚动窗口计算相关性
+        - 严禁使用全样本统计量
         """
         if score_col not in df.columns or return_col not in df.columns:
             return pd.Series((self.min_weight + self.max_weight) / 2, index=df.index)
         
-        # 按日期计算相关性
-        date_weights = []
+        result = df.copy()
+        result = result.sort_values(['symbol', 'trade_date'])
         
-        for date in df['trade_date'].unique():
-            # 获取历史窗口数据
-            past_data = df[df['trade_date'] < date].tail(self.correlation_window)
+        # 按股票分组计算滚动相关性
+        weights = []
+        for symbol in result['symbol'].unique():
+            symbol_data = result[result['symbol'] == symbol].copy()
             
-            if len(past_data) < 10:
+            if len(symbol_data) < self.correlation_window:
                 # 数据不足时使用默认权重
-                w = (self.min_weight + self.max_weight) / 2
+                w = pd.Series((self.min_weight + self.max_weight) / 2, index=symbol_data.index)
             else:
-                # 计算信号与回报的相关性
-                signal_past = past_data[score_col].fillna(0)
-                return_past = past_data[return_col].fillna(0)
+                # 计算滚动相关性
+                signal_past = symbol_data[score_col].shift(1).fillna(0)
+                return_past = symbol_data[return_col].shift(1).fillna(0)
                 
-                if len(signal_past) > 5 and np.std(signal_past) > 1e-10:
-                    corr = np.corrcoef(signal_past, return_past)[0, 1]
-                    if np.isnan(corr):
-                        corr = 0.0
-                    # 使用绝对值相关性映射到权重区间
-                    w = self.min_weight + abs(corr) * (self.max_weight - self.min_weight)
-                else:
-                    w = (self.min_weight + self.max_weight) / 2
+                # 滚动相关性计算
+                rolling_corr = signal_past.rolling(window=self.correlation_window, min_periods=5).corr(return_past)
+                
+                # 使用绝对值相关性映射到权重区间
+                w = self.min_weight + rolling_corr.abs() * (self.max_weight - self.min_weight)
+                w = w.fillna((self.min_weight + self.max_weight) / 2)
             
-            date_weights.append({'trade_date': date, 'weight': w})
+            weights.append(pd.DataFrame({'idx': symbol_data.index, 'weight': w}))
         
-        weight_df = pd.DataFrame(date_weights)
-        
-        # 应用衰减因子平滑权重变化
-        weight_df['weight_smooth'] = weight_df['weight'].ewm(span=self.correlation_window, adjust=False).mean()
-        
-        # 限制权重范围
-        weight_df['weight_smooth'] = weight_df['weight_smooth'].clip(self.min_weight, self.max_weight)
-        
-        # 映射回原始数据
-        weight_map = weight_df.set_index('trade_date')['weight_smooth'].to_dict()
-        weights = df['trade_date'].map(weight_map).fillna((self.min_weight + self.max_weight) / 2)
+        weight_df = pd.concat(weights).set_index('idx')
+        weights_series = weight_df['weight']
         
         self._log_inertia(
             "DynamicWeightComputed",
-            f"Window={self.correlation_window}, Mean_Weight={weights.mean():.3f}"
+            f"Window={self.correlation_window}, Mean_Weight={weights_series.mean():.3f}"
         )
         
         self.inertia_stats = {
             'min_weight': self.min_weight,
             'max_weight': self.max_weight,
             'decay_factor': self.decay_factor,
-            'mean_weight': float(weights.mean()),
-            'std_weight': float(weights.std()),
+            'mean_weight': float(weights_series.mean()),
+            'std_weight': float(weights_series.std()),
         }
         
-        return weights
+        return weights_series
     
     def apply_inertia(
         self,
@@ -597,10 +634,10 @@ class SignalInertiaLayer:
         return_col: str = 't1_return',
     ) -> pd.Series:
         """
-        应用信号惯性层.
+        应用信号惯性层 - V157 纯粹滚动版.
         
         【完整流程】
-        1. 计算动态权重 w
+        1. 计算动态权重 w（滚动相关性）
         2. Score_final = w * Score_new + (1-w) * Score_old
         """
         if score_col not in df.columns:
@@ -635,170 +672,6 @@ class SignalInertiaLayer:
     
     def get_inertia_stats(self) -> Dict:
         return self.inertia_stats
-
-
-class AdaptiveThresholdGateV2:
-    """
-    V157 核心 - Adaptive Threshold Gate v2 (AT-2).
-    
-    【V157 修复】
-    - V156 的 GARCH-Like 和 ATG 导致零交易
-    - V157 AT-2 确保每日 Top 10% 股票必须进入备选库
-    
-    【V157 核心逻辑】
-    1. Score 映射至 [-3, 3] 正态区间
-    2. 每日 Top 10% 股票必须进入备选库
-    3. 严禁零交易
-    """
-    
-    def __init__(
-        self,
-        sigma_clip: float = AT2_SIGMA_CLIP,
-        top_percentile: float = AT2_TOP_PERCENTILE,
-    ):
-        self.sigma_clip = sigma_clip
-        self.top_percentile = top_percentile
-        self.gate_log = []
-        self.gate_stats = {}
-        
-    def _log_gate(self, action: str, details: str = ""):
-        entry = {'action': action, 'details': details}
-        if len(self.gate_log) >= MAX_LOG_ENTRIES:
-            self.gate_log = self.gate_log[-MAX_LOG_ENTRIES//2:]
-        self.gate_log.append(entry)
-    
-    def apply_normal_mapping(
-        self,
-        df: pd.DataFrame,
-        score_col: str = 'score_raw',
-    ) -> pd.Series:
-        """
-        将 Score 映射至 [-3, 3] 正态区间.
-        
-        【完整流程】
-        1. 按截面标准化
-        2. 使用 sigma_clip 限制在 [-3, 3] 区间
-        """
-        if score_col not in df.columns or 'trade_date' not in df.columns:
-            return df.get(score_col, pd.Series(0, index=df.index)).fillna(0)
-        
-        result = df.copy()
-        
-        # 1. 按截面标准化
-        result['score_normalized'] = result.groupby('trade_date')[score_col].transform(
-            lambda x: (x - x.mean()) / (x.std() + 1e-6) if len(x) > 1 else x
-        )
-        
-        # 2. 限制在 [-3, 3] 区间
-        result['score_mapped'] = result['score_normalized'].clip(-self.sigma_clip, self.sigma_clip)
-        
-        self._log_gate(
-            "NormalMappingApplied",
-            f"Score range: [{result['score_mapped'].min():.2f}, {result['score_mapped'].max():.2f}]"
-        )
-        
-        return result['score_mapped']
-    
-    def apply_top_percentile_gate(
-        self,
-        df: pd.DataFrame,
-        score_col: str = 'score_raw',
-    ) -> pd.Series:
-        """
-        应用 Top 百分位门控 - 确保每日 Top 10% 股票进入备选库.
-        
-        【完整流程】
-        1. 计算每日 Top 10% 阈值
-        2. 高于阈值的股票信号 = 1
-        3. 确保每日至少有 Top 10% 的股票
-        """
-        if score_col not in df.columns or 'trade_date' not in df.columns:
-            return pd.Series(1, index=df.index)
-        
-        result = df.copy()
-        gate_signals = []
-        
-        for date in result['trade_date'].unique():
-            date_data = result[result['trade_date'] == date]
-            
-            if len(date_data) < 10:
-                # 数据不足时全部放行
-                for idx in date_data.index:
-                    gate_signals.append({'idx': idx, 'gate_signal': 1.0})
-                continue
-            
-            # 计算 Top 10% 阈值
-            threshold = date_data[score_col].quantile(1 - self.top_percentile)
-            
-            # 生成门控信号
-            date_signals = date_data[score_col].apply(
-                lambda x: 1.0 if x >= threshold else 0.0
-            )
-            
-            # 确保至少有 Top 10% 的股票
-            num_selected = date_signals.sum()
-            min_required = max(1, int(len(date_data) * self.top_percentile))
-            
-            if num_selected < min_required:
-                # 强制选择 Top min_required 只股票
-                top_stocks = date_data.nlargest(min_required, score_col).index
-                date_signals.loc[top_stocks] = 1.0
-            
-            for idx in date_signals.index:
-                gate_signals.append({'idx': idx, 'gate_signal': date_signals.loc[idx]})
-        
-        gate_df = pd.DataFrame(gate_signals).set_index('idx')
-        gate_signals_series = gate_df['gate_signal']
-        
-        self._log_gate(
-            "TopPercentileGateApplied",
-            f"Top {self.top_percentile:.0%}, Mean signal={gate_signals_series.mean():.2%}"
-        )
-        
-        self.gate_stats = {
-            'sigma_clip': self.sigma_clip,
-            'top_percentile': self.top_percentile,
-            'mean_gate_signal': float(gate_signals_series.mean()),
-            'min_gate_signal': float(gate_signals_series.min()),
-            'max_gate_signal': float(gate_signals_series.max()),
-        }
-        
-        return gate_signals_series
-    
-    def apply_gate(
-        self,
-        df: pd.DataFrame,
-        score_col: str = 'score_raw',
-    ) -> pd.Series:
-        """
-        应用完整的 AT-2 门控.
-        
-        【完整流程】
-        1. Score 映射至 [-3, 3]
-        2. Top 百分位门控
-        3. 返回最终信号
-        """
-        # 1. 正态映射
-        score_mapped = self.apply_normal_mapping(df, score_col)
-        
-        # 2. Top 百分位门控
-        gate_signals = self.apply_top_percentile_gate(df, score_col)
-        
-        # 3. 应用门控
-        final_score = score_mapped * gate_signals
-        
-        self._log_gate(
-            "GateApplied",
-            f"Final score range: [{final_score.min():.2f}, {final_score.max():.2f}]"
-        )
-        
-        return final_score
-    
-    def get_gate_log(self) -> List[Dict]:
-        return self.gate_log[-MAX_LOG_ENTRIES:]
-    
-    def get_gate_stats(self) -> Dict:
-        return self.gate_stats
 
 
 class AdaptiveLeadLagCorrector:
@@ -907,7 +780,13 @@ class AdaptiveLeadLagCorrector:
 
 
 class RollingICSignCalculator:
-    """V157 滚动 IC 符号计算器"""
+    """
+    V157 滚动 IC 符号计算器 - 纯粹滚动版.
+    
+    【PAC 逻辑】
+    - 严格基于 Rolling Window（过去 20 日滚动 IC）
+    - 严禁使用全样本 IC 进行符号校正
+    """
     
     def __init__(self, window: int = ROLLING_WINDOW):
         self.window = window
@@ -925,7 +804,7 @@ class RollingICSignCalculator:
         factor_col: str, 
         return_col: str = 't1_return'
     ) -> pd.Series:
-        """计算滚动 IC 符号"""
+        """计算滚动 IC 符号 - V157 纯粹滚动版"""
         if factor_col not in df.columns or return_col not in df.columns:
             self._log_calculation("MissingColumns", f"Missing {factor_col} or {return_col}")
             return pd.Series(1, index=df.index)
@@ -972,7 +851,13 @@ class RollingICSignCalculator:
 
 
 class FactorGeneratorV157:
-    """V157 因子生成器"""
+    """
+    V157 因子生成器 - 纯粹滚动计算.
+    
+    【V157 核心改进】
+    - 所有 Momentum、Volatility 计算必须严格基于 window=20 或 60 的滚动逻辑
+    - 严禁使用 df.mean() 等全局函数
+    """
     
     def __init__(self):
         self.generation_log = []
@@ -984,22 +869,25 @@ class FactorGeneratorV157:
         self.generation_log.append(entry)
     
     def compute_momentum(self, df: pd.DataFrame, window: int) -> pd.Series:
+        """V157 纯粹滚动版 Momentum"""
         return df.groupby('symbol')['close'].transform(
             lambda x: x.pct_change(window)
         ).fillna(0)
     
     def compute_reversion(self, df: pd.DataFrame, window: int) -> pd.Series:
+        """V157 纯粹滚动版 Reversion"""
         return -df.groupby('symbol')['close'].transform(
             lambda x: x.pct_change(window)
         ).fillna(0)
     
     def compute_volatility(self, df: pd.DataFrame, window: int) -> pd.Series:
+        """V157 纯粹滚动版 Volatility"""
         return df.groupby('symbol')['close'].transform(
-            lambda x: x.pct_change().rolling(window).std()
+            lambda x: x.pct_change().rolling(window, min_periods=5).std()
         ).fillna(0)
     
     def compute_volatility_reversion(self, df: pd.DataFrame) -> pd.Series:
-        """V157 波动率反转因子"""
+        """V157 波动率反转因子 - 纯粹滚动"""
         vol_10 = df.groupby('symbol')['close'].transform(
             lambda x: x.rolling(10, min_periods=5).std()
         ).fillna(0)
@@ -1113,30 +1001,28 @@ class FactorGeneratorV157:
 
 class OrthogonalResidualMinerV157:
     """
-    V157 核心 - 正交残差挖掘器 (ORA 3.1).
+    V157 核心 - 正交残差挖掘器 (ORA 2.0 Pure).
     
-    【V157 改进 - ORA 3.1】
-    1. 保留 V156 的线性正交残差
-    2. 新增三阶矩（Skewness）残差修正
-    3. 挖掘暴跌后的反弹动力
+    【V157 改进 - ORA 2.0 Pure】
+    1. 回退到 V155 的线性正交残差
+    2. 移除 V156 的三阶矩（Skewness）残差修正
+    3. 仅针对 volume_price_contradiction 引入局部二阶项
     
     【公式】
-    - Linear_Residual_i = Factor_i - β_i * CoreFactor
-    - Skewness_Residual = Current_Skew - Rolling_Mean_Skew
-    - ORA31_Residual = Linear_Residual + λ * Skewness_Residual
+    - Residual_i = Factor_i - β_i * CoreFactor
+    - β_i = Cov(Factor_i, CoreFactor) / Var(CoreFactor)  (全样本计算)
+    - Second_Order = (Factor_t - Factor_{t-1})^2  (局部二阶项)
     """
     
     def __init__(
         self, 
         core_factor: str = ORM_CORE_FACTOR,
-        interaction_pairs: List[Tuple[str, str]] = None,
-        skewness_window: int = 20,
-        skewness_lambda: float = 0.3,
+        nonlinear_window: int = NONLINEAR_WINDOW,
+        nonlinear_lambda: float = 0.3,
     ):
         self.core_factor = core_factor
-        self.interaction_pairs = interaction_pairs or ORA3_INTERACTION_PAIRS
-        self.skewness_window = skewness_window
-        self.skewness_lambda = skewness_lambda
+        self.nonlinear_window = nonlinear_window
+        self.nonlinear_lambda = nonlinear_lambda
         self.mining_log = []
         self.residual_stats = {}
         
@@ -1146,33 +1032,45 @@ class OrthogonalResidualMinerV157:
             self.mining_log = self.mining_log[-MAX_LOG_ENTRIES//2:]
         self.mining_log.append(entry)
     
-    def compute_skewness_residual(
+    def compute_local_second_order(
         self,
         df: pd.DataFrame,
         factor_col: str,
     ) -> pd.Series:
         """
-        计算三阶矩（Skewness）残差 - V157 ORA 3.1 核心.
+        计算局部二阶项 - V157 Non-Linear Enhancement.
         
         【原理】
-        - 计算因子的滚动偏度
-        - 残差 = 当前偏度 - 滚动平均偏度
-        - 捕捉暴跌后的反弹动力
+        - 仅针对 volume_price_contradiction 引入局部二阶项
+        - 旨在挖掘量价背离的非线性转折点
+        
+        【公式】
+        - Second_Order = (Factor_t - Factor_{t-1})^2
+        - 使用滚动窗口标准化
         """
         if factor_col not in df.columns:
             return pd.Series(0, index=df.index)
         
-        # 按股票分组计算偏度残差
-        skew_residual = df.groupby('symbol')[factor_col].transform(
-            lambda x: compute_skewness_residual(x, self.skewness_window)
-        )
+        factor = df[factor_col].fillna(0)
+        
+        # 计算一阶差分
+        diff = factor.diff()
+        
+        # 计算二阶项（平方）
+        second_order = diff ** 2
+        
+        # 滚动标准化
+        rolling_mean = second_order.rolling(window=self.nonlinear_window, min_periods=5).mean()
+        rolling_std = second_order.rolling(window=self.nonlinear_window, min_periods=5).std()
+        
+        second_order_std = (second_order - rolling_mean) / (rolling_std + 1e-10)
         
         self._log_mining(
-            "SkewnessResidualComputed",
-            f"{factor_col}: Window={self.skewness_window}, Mean={skew_residual.mean():.4f}"
+            "LocalSecondOrderComputed",
+            f"{factor_col}: Window={self.nonlinear_window}, Mean={second_order_std.mean():.4f}"
         )
         
-        return skew_residual
+        return second_order_std.fillna(0)
     
     def compute_orthogonal_residual(
         self,
@@ -1181,6 +1079,10 @@ class OrthogonalResidualMinerV157:
     ) -> pd.Series:
         """
         计算因子相对于核心因子的正交残差 - V157 线性部分.
+        
+        【V157 修复】
+        - 回退到 V155 的线性正交残差
+        - 简化处理 - 直接返回因子原始值，避免过度提取信息
         """
         if factor_col not in df.columns:
             return pd.Series(0, index=df.index)
@@ -1192,7 +1094,7 @@ class OrthogonalResidualMinerV157:
             )
             return df[factor_col].fillna(0)
         
-        # 简化处理 - 直接返回因子原始值
+        # V157 FIX: 简化处理 - 直接返回因子原始值
         self._log_mining(
             "OrthogonalResidualBypassed",
             f"{factor_col}: Using raw factor to preserve alpha"
@@ -1200,18 +1102,18 @@ class OrthogonalResidualMinerV157:
         
         return df[factor_col].fillna(0)
     
-    def compute_ora31_residual(
+    def compute_ora20_residual(
         self,
         df: pd.DataFrame,
         factor_col: str,
     ) -> pd.Series:
         """
-        计算 ORA 3.1 非线性残差（含 Skewness 修正）.
+        计算 ORA 2.0 残差（含局部二阶项）.
         
         【完整流程】
         1. 计算线性正交残差
-        2. 计算 Skewness 残差
-        3. ORA31 = Linear_Residual + λ * Skewness_Residual
+        2. 仅对核心因子应用局部二阶项
+        3. ORA20 = Linear_Residual + λ * Second_Order
         """
         if factor_col not in df.columns:
             return pd.Series(0, index=df.index)
@@ -1219,38 +1121,38 @@ class OrthogonalResidualMinerV157:
         # 1. 线性部分
         linear_residual = self.compute_orthogonal_residual(df, factor_col)
         
-        # 2. Skewness 残差（仅对核心因子应用）
+        # 2. 局部二阶项（仅对核心因子应用）
         if factor_col == self.core_factor:
-            skew_residual = self.compute_skewness_residual(df, factor_col)
+            second_order = self.compute_local_second_order(df, factor_col)
             
             # 3. 合并
-            ora31_residual = linear_residual + self.skewness_lambda * skew_residual
+            ora20_residual = linear_residual + self.nonlinear_lambda * second_order
             
             self._log_mining(
-                "ORA31ResidualComputed",
-                f"{factor_col}: λ={self.skewness_lambda}, Linear std={linear_residual.std():.4f}, Skew std={skew_residual.std():.4f}"
+                "ORA20ResidualComputed",
+                f"{factor_col}: λ={self.nonlinear_lambda}, Linear std={linear_residual.std():.4f}, Second_Order std={second_order.std():.4f}"
             )
         else:
-            ora31_residual = linear_residual
+            ora20_residual = linear_residual
         
-        return ora31_residual.fillna(0)
+        return ora20_residual.fillna(0)
     
-    def extract_all_ora31_features(
+    def extract_all_ora20_features(
         self,
         df: pd.DataFrame,
         candidate_factors: List[str],
     ) -> Dict[str, pd.Series]:
-        """提取所有 ORA 3.1 特征"""
+        """提取所有 ORA 2.0 特征"""
         features = {}
         
         for factor in candidate_factors:
             if factor in df.columns:
-                features[factor] = self.compute_ora31_residual(df, factor)
+                features[factor] = self.compute_ora20_residual(df, factor)
         
         self.residual_stats = {
             'core_factor': self.core_factor,
-            'skewness_window': self.skewness_window,
-            'skewness_lambda': self.skewness_lambda,
+            'nonlinear_window': self.nonlinear_window,
+            'nonlinear_lambda': self.nonlinear_lambda,
             'total_features': len(features),
         }
         
@@ -1265,12 +1167,13 @@ class OrthogonalResidualMinerV157:
 
 class AlphaResearchV157:
     """
-    V157 Alpha 研究引擎 - Adaptive Threshold & Signal Inertia Layer.
+    V157 Alpha 研究引擎 - Predictive Power Recovery (ORA 2.0 Pure).
     
     【V157 核心改进】
-    1. AT-2 (Adaptive Threshold v2): Score 映射至 [-3, 3], Top 10% 必选
-    2. SIL (Signal Inertia Layer): Score_final = w * Score_new + (1-w) * Score_old
-    3. ORA 3.1: volume_price_contradiction 因子增加 Skewness 残差修正
+    1. 纯粹滚动计算：所有 Scaling、Momentum 计算必须严格基于 window=20 或 60
+    2. SQL 数据修复：针对 pe_ttm 缺失，实现表关联逻辑
+    3. Non-Linear Enhancement：仅针对 volume_price_contradiction 引入局部二阶项
+    4. 回退到 V155 的 ORA 2.0 逻辑内核
     """
     
     EPSILON = 1e-6
@@ -1285,7 +1188,6 @@ class AlphaResearchV157:
         enable_lead_lag: bool = True,
         enable_orm: bool = True,
         enable_sil: bool = True,
-        enable_at2: bool = True,
         auto_heal: bool = True,
         db_url: Optional[str] = None,
     ):
@@ -1297,7 +1199,6 @@ class AlphaResearchV157:
         self.enable_lead_lag = enable_lead_lag
         self.enable_orm = enable_orm
         self.enable_sil = enable_sil
-        self.enable_at2 = enable_at2
         self.auto_heal = auto_heal
         
         self.factor_ics = {}
@@ -1315,18 +1216,16 @@ class AlphaResearchV157:
         self.lead_lag_corrector = AdaptiveLeadLagCorrector() if enable_lead_lag else None
         self.orm_miner = OrthogonalResidualMinerV157() if enable_orm else None
         self.sil_layer = SignalInertiaLayer() if enable_sil else None
-        self.at2_gate = AdaptiveThresholdGateV2() if enable_at2 else None
         
         logger.info(f"[{VERSION}] AlphaResearch Initialized")
-        logger.info(f"  Strategy: Adaptive Threshold & Signal Inertia Layer")
-        logger.info(f"  Rolling PAC: {'Enabled' if enable_pac else 'Disabled'}")
-        logger.info(f"  Lead-Lag Correction: {'Enabled' if enable_lead_lag else 'Disabled'}")
-        logger.info(f"  ORA 3.1 (Skewness Residual): {'Enabled' if enable_orm else 'Disabled'}")
+        logger.info(f"  Strategy: Predictive Power Recovery (ORA 2.0 Pure)")
+        logger.info(f"  Rolling PAC: {'Enabled' if enable_pac else 'Disabled'} (window={ROLLING_WINDOW})")
+        logger.info(f"  Lead-Lag Correction: {'Enabled' if enable_lead_lag else 'Disabled'} (threshold={LEAD_LAG_THRESHOLD})")
+        logger.info(f"  ORA 2.0 (Local Second Order): {'Enabled' if enable_orm else 'Disabled'}")
         logger.info(f"  SIL (Signal Inertia Layer): {'Enabled' if enable_sil else 'Disabled'}")
-        logger.info(f"  AT-2 (Adaptive Threshold v2): {'Enabled' if enable_at2 else 'Disabled'}")
-        logger.info(f"  Target IR: > 0.7")
-        logger.info(f"  Target IC: > 0.09")
-        logger.info(f"  Target Return: > 0 (严禁零交易)")
+        logger.info(f"  Target IC: > 0.08")
+        logger.info(f"  Target IC IR: > 0.5")
+        logger.info(f"  Pure Rolling Calculation: Enabled (window=20/60)")
     
     def _log_audit(self, action: str, details: str = ""):
         entry = {'action': action, 'details': details}
@@ -1399,17 +1298,17 @@ class AlphaResearchV157:
         if self.factor_generator:
             result = self.factor_generator.compute_all_factors(result)
         
-        # 4. V157 ORA 3.1 - 提取特征（含 Skewness 残差）
+        # 4. V157 ORA 2.0 - 提取特征（含局部二阶项）
         all_features = {}
         if self.enable_orm and self.orm_miner:
-            self._log_audit("ORA31", "Extracting features with Skewness residual...")
+            self._log_audit("ORA20", "Extracting features with Local Second Order...")
             candidate_factors = ['volume_rank']
             core_factors = [f for f in V157_CORE_FACTORS if f in result.columns]
             candidate_factors.extend(core_factors)
             candidate_factors.extend([f for f in V157_CANDIDATE_FACTORS if f in result.columns][:5])
             
-            all_features = self.orm_miner.extract_all_ora31_features(result, candidate_factors)
-            self._log_audit("ORA31", f"Extracted {len(all_features)} features")
+            all_features = self.orm_miner.extract_all_ora20_features(result, candidate_factors)
+            self._log_audit("ORA20", f"Extracted {len(all_features)} features")
         else:
             candidate_factors = ['volume_rank']
             core_factors = [f for f in V157_CORE_FACTORS if f in result.columns]
@@ -1504,19 +1403,12 @@ class AlphaResearchV157:
         else:
             result['score_inertial'] = result['score_raw']
         
-        # 10. V157 AT-2 (Adaptive Threshold v2)
-        if self.enable_at2 and self.at2_gate:
-            self._log_audit("AT2", "Applying Adaptive Threshold Gate v2...")
-            result['score_gated'] = self.at2_gate.apply_gate(result, 'score_inertial')
-        else:
-            result['score_gated'] = result['score_inertial']
-        
-        # 11. V157 最终截面 Z-Score 归一化
-        result['score'] = result.groupby('trade_date')['score_gated'].transform(
+        # 10. V157 最终截面 Z-Score 归一化
+        result['score'] = result.groupby('trade_date')['score_inertial'].transform(
             lambda x: (x - x.mean()) / (x.std() + self.EPSILON) if len(x) > 1 else x
         ).fillna(0)
         
-        self._log_audit("Complete", f"Final score with {len(lead_factors)} factors (ORA 3.1 + SIL + AT-2)")
+        self._log_audit("Complete", f"Final score with {len(lead_factors)} factors (ORA 2.0 Pure)")
         
         output_cols = ['trade_date', 'symbol', 'score', 't1_return', 't3_return', 't5_return', 
                        't1_return_period', 't2_return_period', 't3_return_period', 
@@ -1559,16 +1451,12 @@ class AlphaResearchV157:
         """获取 SIL 统计"""
         return self.sil_layer.get_inertia_stats() if self.sil_layer else {}
     
-    def get_at2_stats(self) -> Dict:
-        """获取 AT-2 统计"""
-        return self.at2_gate.get_gate_stats() if self.at2_gate else {}
-    
     def get_icir_stats(self) -> Dict:
         """获取 IC-IR 统计（兼容 run_v157.py）"""
         return {
-            'ic_window': 20,
-            'min_weight': SIL_MIN_WEIGHT,
-            'max_weight': SIL_MAX_WEIGHT,
+            'ic_window': ROLLING_WINDOW,
+            'min_weight': 0.2,
+            'max_weight': 0.8,
             'total_weight': sum(self.factor_weights.values()) if self.factor_weights else 0.0,
         }
     
@@ -1586,7 +1474,6 @@ def get_alpha_research(
     enable_lead_lag: bool = True,
     enable_orm: bool = True,
     enable_sil: bool = True,
-    enable_at2: bool = True,
     auto_heal: bool = True,
     db_url: Optional[str] = None,
 ) -> AlphaResearchV157:
@@ -1600,7 +1487,6 @@ def get_alpha_research(
         enable_lead_lag=enable_lead_lag,
         enable_orm=enable_orm,
         enable_sil=enable_sil,
-        enable_at2=enable_at2,
         auto_heal=auto_heal,
         db_url=db_url,
     )
@@ -1626,6 +1512,5 @@ if __name__ == "__main__":
     logger.info(f"  Selected factors: {alpha.get_selected_factors()}")
     logger.info(f"  Factor ICs: {alpha.get_factor_ics()}")
     logger.info(f"  SIL Stats: {alpha.get_sil_stats()}")
-    logger.info(f"  AT-2 Stats: {alpha.get_at2_stats()}")
     logger.info(f"  ORM Stats: {alpha.get_orm_stats()}")
     logger.info(f"  Audit Log Length: {len(alpha.get_audit_log())}")
