@@ -1,0 +1,77 @@
+{
+  "alpha_metrics": {
+    "t1_ic": {
+      "mean_ic": 0.0730217565040863,
+      "ic_std": 0.14543819488503112,
+      "ic_ir": 0.5020810149755364,
+      "num_days": 242,
+      "min_ic": -0.5936304693253115,
+      "max_ic": 0.5951411648523555
+    },
+    "ic_decay": {
+      "t1_ic": 0.0730217565040863,
+      "t3_ic": 0.021336442367143004,
+      "t5_ic": 0.009434189638540142,
+      "is_monotonic": true,
+      "decay_pattern": "T+1(0.0730) -> T+3(0.0213) -> T+5(0.0094)"
+    },
+    "passed": false
+  },
+  "backtest_metrics": {
+    "portfolio_df": "     trade_date  portfolio_value  daily_return  num_positions  transaction_cost  cumulative_return\n0    2024-01-02    -72137.600000             0             86        137.600000                  0\n1    2024-01-03   -123814.379686             0             50       -262.292314                  0\n2    2024-01-04   -118555.240095             0             52       -306.564404                  0\n3    2024-01-05   -122999.164715             0             50       -298.284984                  0\n4    2024-01-08   -122704.950713             0             50       -294.214002                  0\n..          ...              ...           ...            ...               ...                ...\n237  2024-12-25    -87603.762797             0             50       -223.784591                  0\n238  2024-12-26    -87375.993014             0             50       -227.769783                  0\n239  2024-12-27    -87162.446087             0             50       -213.546927                  0\n240  2024-12-30    -86940.356174             0             50       -222.089913                  0\n241  2024-12-31    -86714.311248             0             50       -226.044926                  0\n\n[242 rows x 6 columns]",
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "volatility": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_transaction_cost": -37014.3951679292,
+    "num_trading_days": 242,
+    "final_value": -86714.31124840844
+  },
+  "factor_ics": {},
+  "selected_factors": [],
+  "lead_lag_stats": {
+    "threshold": 1.5,
+    "lead_factors": [
+      "volume_rank",
+      "momentum_5",
+      "volatility_5",
+      "volume_price_contradiction",
+      "liquidity_alpha"
+    ],
+    "lead_scores": {
+      "volume_rank": 0.0,
+      "momentum_5": 0.0,
+      "volatility_5": 0.0,
+      "volume_price_contradiction": 0.0,
+      "liquidity_alpha": 0.0,
+      "reversion_5": 0.0,
+      "momentum_10": 0.0,
+      "momentum_60": 0.0,
+      "reversion_10": 0.0
+    }
+  },
+  "orm_stats": {
+    "core_factor": "volume_price_contradiction",
+    "factors_processed": [
+      "volume_rank",
+      "momentum_5",
+      "volatility_5",
+      "volume_price_contradiction",
+      "liquidity_alpha"
+    ]
+  },
+  "v151_comparison": {
+    "v151_ir": 0.5,
+    "v153_ir": 0.5020810149755364,
+    "ir_improvement": 0.004162029950240326,
+    "target_met": false
+  },
+  "config": {
+    "year": 2024,
+    "lead_lag_threshold": 1.5,
+    "orm_core_factor": "volume_price_contradiction",
+    "rolling_window": 20,
+    "ic_weight_window": 10
+  }
+}
