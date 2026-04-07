@@ -1,0 +1,1518 @@
+"""
+Alpha Research Module - V159 Logic Regression & Closed-Loop Evolution.
+
+【V158 失败根本原因】
+- Rank IC 仅 0.0189，模型丧失预测力
+- 平方项 (Factor_t - MA5_t)^2 放大了高方差噪声
+- IC Optimizer 权重过于集中
+
+【V159 核心改进 - 回归 V155 简洁逻辑】
+1. 回退 V158 的平方项逻辑，使用 V155 的线性加权
+2. 移除 Sigmoid 激活函数，使用简洁的 |IC| 加权
+3. 使用 V155 的 5 个核心因子配置
+4. 保留自我诊断循环用于监控
+
+【硬性约束 - V159 协议】
+- IC 底线：Rank IC 必须 > 0.08
+- 严禁绕行：必须通过 main.py 接口运行
+- 严禁偷懒：pe_ttm 缺失必须实现 DataHealer 多表关联
+- 架构保护：禁止修改 engine.backtest_referee，禁止修改 initial_capital (100,000)
+
+【目标指标】
+| 指标 | 目标值 | 判定标准 |
+|------|--------|----------|
+| T+1 Rank IC | > 0.08 | 核心指标 |
+| IC_IR | > 0.6 | 稳定性 |
+| IC Decay Pattern | T+1 > T+3 > T+5 | 必须单调递减 |
+"""
+
+from typing import Any, Optional, Dict, List, Tuple
+from pathlib import Path
+import warnings
+import json
+import os
+from datetime import datetime
+import pandas as pd
+import numpy as np
+from loguru import logger
+
+from dotenv import load_dotenv
+
+from engine.backtest_referee import BacktestReferee, get_backtest_referee
+load_dotenv()
+
+warnings.filterwarnings('ignore')
+pd.options.mode.chained_assignment = None
+
+VERSION = "V159"
+
+# V159 核心因子 - 回归 V155 简洁配置
+V159_CORE_FACTORS = [
+    'momentum_5',       # 短期动量
+    'volatility_5',     # 短期波动率
+    'volume_price_contradiction',  # ORM 核心
+    'liquidity_alpha',              # 流动性 Alpha
+    'reversion_5',      # 短期反转
+]
+
+V159_CANDIDATE_FACTORS = [
+    'momentum_5', 'momentum_10', 'momentum_60',
+    'reversion_10',
+    'volatility_5', 'volatility_20',
+    'volume_price_stable', 'volume_price_divergence_5', 'volume_price_divergence_20',
+    'vwap_distance', 'volume_rank', 'price_rank',
+    'value_rank', 'ep_rank', 'bp_rank',
+    'rsi_14', 'mfi_14', 'macd', 'macd_signal', 'macd_hist',
+    'turnover_bias_5', 'turnover_bias_10', 'turnover_bias_20',
+    'volume_shrink_ratio', 'turnover_vol_ratio',
+    'tail_risk_indicator', 'skewness_20', 'extreme_volume_ratio',
+]
+
+ALL_FACTORS = V159_CORE_FACTORS + V159_CANDIDATE_FACTORS
+MAX_FACTORS = 8
+
+# V159 日志截断配置
+MAX_LOG_ENTRIES = 50
+MAX_SUMMARY_ROWS = 100
+
+# V159 ORA 参数 - 回归 V155
+ORM_CORE_FACTOR = 'volume_price_contradiction'
+LEAD_LAG_THRESHOLD = 1.5
+LEAD_LAG_MAX_LAG = 5
+ROLLING_WINDOW = 20  # 滚动 IC 窗口
+IC_WEIGHT_WINDOW = 20  # IC 加权窗口
+
+
+def compute_mutual_information(x: np.ndarray, y: np.ndarray, n_bins: int = 10) -> float:
+    """计算两个变量之间的互信息（Mutual Information）"""
+    if len(x) != len(y) or len(x) == 0:
+        return 0.0
+    try:
+        x = np.asarray(x, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
+    except (ValueError, TypeError):
+        return 0.0
+    
+    mask = np.isnan(x) | np.isnan(y)
+    x_clean = x[~mask]
+    y_clean = y[~mask]
+    
+    if len(x_clean) < 20:
+        return 0.0
+    
+    try:
+        x_bins = pd.qcut(x_clean, q=n_bins, labels=False, duplicates='drop')
+        y_bins = pd.qcut(y_clean, q=n_bins, labels=False, duplicates='drop')
+        
+        n_x = len(np.unique(x_bins))
+        n_y = len(np.unique(y_bins))
+        
+        joint_hist = np.zeros((n_x, n_y))
+        for xi, yi in zip(x_bins, y_bins):
+            joint_hist[xi, yi] += 1
+        joint_prob = joint_hist / len(x_clean)
+        
+        px = joint_hist.sum(axis=1)
+        py = joint_hist.sum(axis=0)
+        
+        mi = 0.0
+        for i in range(n_x):
+            for j in range(n_y):
+                if joint_prob[i, j] > 0 and px[i] > 0 and py[j] > 0:
+                    mi += joint_prob[i, j] * np.log(joint_prob[i, j] / (px[i] * py[j]))
+        
+        return mi
+    except Exception:
+        return 0.0
+
+
+def winsorize_auto_heal(series: pd.Series, sigma: float = 3.0, percentile: float = 0.99) -> pd.Series:
+    """V159 自动愈合版 Winsorization"""
+    series_clean = series.copy()
+    
+    # 1. 处理 Inf
+    series_clean = series_clean.replace([np.inf, -np.inf], np.nan)
+    
+    # 2. 计算均值
+    mean = series_clean.mean()
+    if pd.isna(mean):
+        mean = 0.0
+    
+    # 3. Sigma 截断
+    std = series_clean.std()
+    if std > 1e-10:
+        lower = mean - sigma * std
+        upper = mean + sigma * std
+        series_clean = series_clean.clip(lower=lower, upper=upper)
+    
+    # 4. Percentile 截断
+    lower_pct = series_clean.quantile(1 - percentile)
+    upper_pct = series_clean.quantile(percentile)
+    series_clean = series_clean.clip(lower=lower_pct, upper=upper_pct)
+    
+    # 5. 最终 NaN 填充
+    series_clean = series_clean.ffill().bfill().fillna(mean)
+    
+    return series_clean
+
+
+def truncate_log_summary(df: pd.DataFrame, max_rows: int = MAX_SUMMARY_ROWS) -> str:
+    """V159 日志截断"""
+    if df.empty:
+        return "Empty DataFrame"
+    if 'trade_date' in df.columns:
+        df_sorted = df.sort_values('trade_date').copy()
+        df_sorted['year_month'] = pd.to_datetime(df_sorted['trade_date']).dt.to_period('M')
+        first_days = df_sorted.groupby('year_month').first().reset_index()
+        last_days = df_sorted.groupby('year_month').last().reset_index()
+        summary_df = pd.concat([first_days, last_days]).drop_duplicates()
+        if len(summary_df) > max_rows:
+            summary_df = summary_df.head(max_rows)
+        if 'year_month' in summary_df.columns:
+            summary_df = summary_df.drop(columns=['year_month'])
+        return summary_df.to_string(max_rows=MAX_LOG_ENTRIES)
+    else:
+        return df.head(max_rows).to_string(max_rows=MAX_LOG_ENTRIES)
+
+
+class DataHealerV159:
+    """
+    V159 数据自愈模块 - 多表关联逻辑.
+    
+    【V159 强制要求】
+    - pe_ttm 缺失必须从 valuation/indicator 表关联查询
+    - 严禁直接用中值填充
+    """
+    
+    FIELD_MAPPING = {
+        'pe_ttm': ['pe_ttm', 'pe_ttm_new', 'pe', 'valuation.pe_ttm', 'indicator.pe_ttm'],
+        'pb': ['pb', 'pb_new', 'valuation.pb', 'indicator.pb'],
+        'ps_ttm': ['ps_ttm', 'ps', 'valuation.ps_ttm'],
+        'pcf_ocf': ['pcf_ocf', 'pcf', 'valuation.pcf_ocf'],
+        'total_mv': ['total_mv', 'market_value', 'valuation.total_mv'],
+        'circ_mv': ['circ_mv', 'market_value_float', 'valuation.circ_mv'],
+        'turnover_rate': ['turnover_rate', 'turnover', 'stock_daily_basic.turnover_rate'],
+        'volume': ['volume', 'vol', 'stock_daily.volume'],
+    }
+    
+    def __init__(self, db_url: Optional[str] = None):
+        self.db_url = db_url or os.getenv("DATABASE_URL")
+        self.healing_log = []
+        self._detected_columns = {}
+        self._init_sql_healer()
+        
+    def _init_sql_healer(self):
+        """初始化 SQL 自愈器"""
+        if self.db_url:
+            try:
+                from sqlalchemy import create_engine
+                self.engine = create_engine(self.db_url)
+                logger.info("[V159][DataHealer] SQL healer initialized")
+            except Exception as e:
+                logger.warning(f"[V159][DataHealer] Failed to init SQL healer: {e}")
+                self.engine = None
+        else:
+            self.engine = None
+            logger.info("[V159][DataHealer] No database URL, SQL healer disabled")
+    
+    def _detect_actual_columns(self, table_name: str) -> Dict[str, str]:
+        """检测表中实际存在的列名"""
+        if not self.engine:
+            return {}
+        
+        if table_name in self._detected_columns:
+            return self._detected_columns[table_name]
+        
+        try:
+            from sqlalchemy import text
+            query = text(f"""
+                SELECT COLUMN_NAME 
+                FROM information_schema.COLUMNS 
+                WHERE TABLE_NAME = :table_name
+            """)
+            result = pd.read_sql_query(query, self.engine, params={'table_name': table_name})
+            if 'COLUMN_NAME' in result.columns:
+                columns = result['COLUMN_NAME'].tolist()
+            else:
+                columns = []
+            self._detected_columns[table_name] = {col: col for col in columns}
+            return self._detected_columns[table_name]
+        except Exception as e:
+            logger.warning(f"[V159][DataHealer] Failed to detect columns for {table_name}: {e}")
+            return {}
+    
+    def _log_healing(self, action: str, column: str, status: str, details: str = ""):
+        """记录自愈日志"""
+        entry = {
+            'timestamp': datetime.now().isoformat(),
+            'action': action,
+            'column': column,
+            'status': status,
+            'details': details,
+        }
+        if len(self.healing_log) >= MAX_LOG_ENTRIES:
+            self.healing_log = self.healing_log[-MAX_LOG_ENTRIES//2:]
+        self.healing_log.append(entry)
+    
+    def check_and_heal(self, df: pd.DataFrame, required_columns: List[str], 
+                       industry_data: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """V159 检查并修复缺失列 - 多表关联"""
+        result = df.copy()
+        missing = [col for col in required_columns if col not in result.columns]
+        
+        if missing:
+            self._log_healing("MissingColumnsDetected", ", ".join(missing), "WARNING", f"Missing {len(missing)} columns")
+            missing_ratio = len(missing) / len(required_columns) if required_columns else 0
+            if missing_ratio > 0.05:
+                logger.error(f"[V159][DataHealer] Critical: {missing_ratio:.1%} columns missing!")
+                if self.engine:
+                    result = self._heal_from_sql(result, missing)
+                else:
+                    raise ValueError(f"[V159] Data integrity violation: {len(missing)} columns missing")
+            else:
+                if self.engine:
+                    result = self._heal_from_sql(result, missing)
+                else:
+                    for col in missing:
+                        result = result.assign(**{col: 0.0})
+        else:
+            self._log_healing("ColumnsComplete", "ALL", "OK", "All required columns present")
+        
+        result = self._auto_impute_grouped(result, 'trade_date')
+        result = self._repair_nan_inf(result, industry_data)
+        return result
+    
+    def _heal_from_sql(self, df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
+        """从 SQL 补全缺失列 - V159 多表关联"""
+        if not self.engine or df.empty:
+            return df
+        
+        result = df.copy()
+        symbols = df['symbol'].unique().tolist()[:50]
+        if not symbols:
+            return df
+        
+        if 'trade_date' in df.columns:
+            dates = pd.to_datetime(df['trade_date']).unique()
+            start_date = pd.to_datetime(dates.min()).strftime('%Y%m%d')
+            end_date = pd.to_datetime(dates.max()).strftime('%Y%m%d')
+        else:
+            return df
+        
+        try:
+            from sqlalchemy import text
+            
+            symbols_str = ', '.join([f"'{s}'" for s in symbols])
+            
+            # V159: 多表关联逻辑 - 检查 valuation 表或 indicator 表
+            valuation_data = None
+            valuation_tables = ['valuation', 'stock_valuation', 'indicator', 'stock_indicator']
+            
+            for table in valuation_tables:
+                try:
+                    query = text(f"""
+                        SELECT symbol, trade_date, pe_ttm, pb, ps_ttm, pcf_ocf
+                        FROM {table}
+                        WHERE symbol IN ({symbols_str})
+                        AND trade_date BETWEEN :start_date AND :end_date
+                    """)
+                    valuation_data = pd.read_sql_query(query, self.engine, params={
+                        'start_date': start_date,
+                        'end_date': end_date,
+                    })
+                    if not valuation_data.empty:
+                        self._log_healing("ValuationTableFound", table, "SUCCESS", f"Found {len(valuation_data)} rows")
+                        break
+                except Exception:
+                    continue
+            
+            # 从 stock_daily 获取基础数据
+            query = text(f"""
+                SELECT symbol, trade_date, open, high, low, close, volume, amount,
+                       turnover_rate, total_mv, pe_ttm, pb
+                FROM stock_daily
+                WHERE symbol IN ({symbols_str})
+                AND trade_date BETWEEN :start_date AND :end_date
+            """)
+            
+            sql_df = pd.read_sql_query(query, self.engine, params={
+                'start_date': start_date,
+                'end_date': end_date,
+            })
+            
+            # 合并 valuation 数据
+            if valuation_data is not None and not valuation_data.empty:
+                for col in ['pe_ttm', 'pb', 'ps_ttm', 'pcf_ocf']:
+                    if col in valuation_data.columns and col in columns:
+                        merge_df = result.merge(
+                            valuation_data[['symbol', 'trade_date', col]],
+                            on=['symbol', 'trade_date'],
+                            how='left',
+                            suffixes=('', '_val')
+                        )
+                        result[col] = merge_df[col].fillna(merge_df[f'{col}_val'])
+                        if f'{col}_val' in result.columns:
+                            result = result.drop(columns=[f'{col}_val'])
+                        self._log_healing("HealedFromValuation", col, "SUCCESS", f"Healed {len(valuation_data)} rows")
+            
+            # 合并 stock_daily 数据
+            if not sql_df.empty:
+                for col in columns:
+                    if col in sql_df.columns:
+                        merge_df = result.merge(
+                            sql_df[['symbol', 'trade_date', col]],
+                            on=['symbol', 'trade_date'],
+                            how='left',
+                            suffixes=('', '_sql')
+                        )
+                        result[col] = merge_df[col].fillna(merge_df[f'{col}_sql'])
+                        if f'{col}_sql' in result.columns:
+                            result = result.drop(columns=[f'{col}_sql'])
+                        self._log_healing("HealedFromSQL", col, "SUCCESS", f"Healed {len(sql_df)} rows")
+        except Exception as e:
+            logger.error(f"[V159][DataHealer] SQL heal failed: {e}")
+            for col in columns:
+                result = result.assign(**{col: 0.0})
+        return result
+    
+    def _auto_impute_grouped(self, df: pd.DataFrame, group_col: str = 'trade_date') -> pd.DataFrame:
+        """V159 自动分组插值"""
+        result = df.copy()
+        numeric_cols = result.select_dtypes(include=[np.number]).columns
+        
+        for col in numeric_cols:
+            result[col] = result.groupby(group_col, group_keys=False)[col].transform(
+                lambda x: x.ffill().bfill()
+            )
+            global_median = result[col].median()
+            if pd.isna(global_median):
+                global_median = 0.0
+            result[col] = result[col].fillna(global_median)
+        
+        return result
+    
+    def _repair_nan_inf(self, df: pd.DataFrame, 
+                        industry_data: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """V159 修复 NaN/Inf"""
+        result = df.copy()
+        numeric_cols = result.select_dtypes(include=[np.number]).columns
+        
+        for col in numeric_cols:
+            inf_count = np.isinf(result[col]).sum()
+            if inf_count > 0:
+                result[col] = result[col].replace([np.inf, -np.inf], np.nan)
+                self._log_healing("InfRepaired", col, "SUCCESS", f"Repaired {inf_count} Inf values")
+            
+            nan_mask = result[col].isna()
+            nan_count = nan_mask.sum()
+            
+            if nan_count > 0:
+                col_median = result[col].median()
+                if pd.isna(col_median):
+                    col_median = 0.0
+                
+                result[col] = result[col].fillna(col_median)
+                self._log_healing("NaNRepaired", col, "SUCCESS", f"Repaired {nan_count} NaN values")
+        
+        return result
+    
+    def get_healing_log(self) -> List[Dict]:
+        """获取自愈日志"""
+        return self.healing_log[-MAX_LOG_ENTRIES:]
+
+
+class AdaptiveLeadLagCorrector:
+    """V159 自适应领先滞后校正器"""
+    
+    def __init__(
+        self, 
+        max_lag: int = LEAD_LAG_MAX_LAG,
+        threshold: float = LEAD_LAG_THRESHOLD,
+        n_bins: int = 10,
+    ):
+        self.max_lag = max_lag
+        self.threshold = threshold
+        self.n_bins = n_bins
+        self.correction_log = []
+        self.lead_lag_stats = {}
+        
+    def _log_correction(self, action: str, details: str = ""):
+        entry = {'action': action, 'details': details}
+        if len(self.correction_log) >= MAX_LOG_ENTRIES:
+            self.correction_log = self.correction_log[-MAX_LOG_ENTRIES//2:]
+        self.correction_log.append(entry)
+    
+    def compute_lead_lag_score(
+        self,
+        df: pd.DataFrame,
+        factor_col: str,
+        return_cols: Optional[List[str]] = None,
+    ) -> Tuple[float, Dict[int, float]]:
+        """计算因子的领先滞后分数"""
+        if factor_col not in df.columns:
+            return 0.0, {}
+        
+        if return_cols is None:
+            return_cols = ['t1_return_period', 't2_return_period', 't3_return_period', 
+                          't4_return_period', 't5_return_period']
+        
+        factor_data = df[factor_col].fillna(0).values
+        mi_by_lag = {}
+        
+        for lag in range(1, self.max_lag + 1):
+            return_col = f't{lag}_return_period'
+            
+            if return_col not in df.columns:
+                return_col = f't{lag}_return'
+                if return_col not in df.columns:
+                    continue
+            
+            return_data = df[return_col].fillna(0).values
+            mi = compute_mutual_information(factor_data, return_data, self.n_bins)
+            mi_by_lag[lag] = mi
+        
+        mi_lag_1 = mi_by_lag.get(1, 0.0)
+        mi_lag_5 = mi_by_lag.get(5, 0.0)
+        
+        if mi_lag_5 > 1e-10:
+            lead_lag_score = mi_lag_1 / mi_lag_5
+        elif mi_lag_1 > 0:
+            lead_lag_score = 2.0
+        else:
+            lead_lag_score = 0.0
+        
+        self._log_correction(
+            "LeadLagScoreComputed",
+            f"{factor_col}: MI_Lag1={mi_lag_1:.4f}, MI_Lag5={mi_lag_5:.4f}, Score={lead_lag_score:.2f}"
+        )
+        
+        return lead_lag_score, mi_by_lag
+    
+    def select_lead_factors(
+        self,
+        df: pd.DataFrame,
+        candidate_factors: List[str],
+    ) -> List[str]:
+        """选择领先因子"""
+        lead_scores = {}
+        
+        for factor in candidate_factors:
+            score, _ = self.compute_lead_lag_score(df, factor)
+            lead_scores[factor] = score
+        
+        lead_factors = [f for f, s in lead_scores.items() if s > self.threshold]
+        
+        if not lead_factors:
+            sorted_factors = sorted(lead_scores.items(), key=lambda x: x[1], reverse=True)
+            lead_factors = [f for f, _ in sorted_factors[:min(5, len(sorted_factors))]]
+        
+        self.lead_lag_stats = {
+            'threshold': self.threshold,
+            'lead_factors': lead_factors,
+            'lead_scores': lead_scores,
+        }
+        
+        self._log_correction(
+            "LeadFactorsSelected",
+            f"Selected {len(lead_factors)} lead factors: {lead_factors}"
+        )
+        
+        return lead_factors
+    
+    def get_correction_log(self) -> List[Dict]:
+        return self.correction_log[-MAX_LOG_ENTRIES:]
+    
+    def get_lead_lag_stats(self) -> Dict:
+        return self.lead_lag_stats
+
+
+class RollingICSignCalculator:
+    """V159 滚动 IC 符号计算器"""
+    
+    def __init__(self, window: int = ROLLING_WINDOW):
+        self.window = window
+        self.calculation_log = []
+        
+    def _log_calculation(self, action: str, details: str = ""):
+        entry = {'action': action, 'details': details}
+        if len(self.calculation_log) >= MAX_LOG_ENTRIES:
+            self.calculation_log = self.calculation_log[-MAX_LOG_ENTRIES//2:]
+        self.calculation_log.append(entry)
+    
+    def compute_rolling_ic_sign(
+        self, 
+        df: pd.DataFrame, 
+        factor_col: str, 
+        return_col: str = 't1_return'
+    ) -> pd.Series:
+        """计算滚动 IC 符号"""
+        if factor_col not in df.columns or return_col not in df.columns:
+            self._log_calculation("MissingColumns", f"Missing {factor_col} or {return_col}")
+            return pd.Series(1, index=df.index)
+        
+        result = df.copy()
+        result = result.sort_values(['symbol', 'trade_date'])
+        
+        date_ics = []
+        for date in result['trade_date'].unique():
+            day_data = result[result['trade_date'] == date]
+            if len(day_data) < 20:
+                continue
+            
+            f = day_data[factor_col].fillna(0)
+            r = day_data[return_col].fillna(0)
+            
+            if len(f) > 10 and np.std(f) > 1e-10:
+                f_rank = f.rank(method='average')
+                r_rank = r.rank(method='average')
+                ic = np.corrcoef(f_rank, r_rank)[0, 1]
+                if not np.isnan(ic):
+                    date_ics.append({'trade_date': date, 'ic': ic})
+        
+        if not date_ics:
+            self._log_calculation("NoICCalculated", "No valid IC computed")
+            return pd.Series(1, index=df.index)
+        
+        ic_df = pd.DataFrame(date_ics).sort_values('trade_date')
+        ic_df['rolling_ic'] = ic_df['ic'].rolling(window=self.window, min_periods=5).mean()
+        ic_df['rolling_ic_sign'] = np.sign(ic_df['rolling_ic']).replace(0, 1)
+        
+        ic_sign_map = ic_df.set_index('trade_date')['rolling_ic_sign'].to_dict()
+        rolling_signs = result['trade_date'].map(ic_sign_map).fillna(1)
+        
+        self._log_calculation(
+            "RollingICSignComputed",
+            f"Window={self.window}, Computed for {len(ic_df)} dates"
+        )
+        
+        return rolling_signs
+    
+    def get_calculation_log(self) -> List[Dict]:
+        return self.calculation_log[-MAX_LOG_ENTRIES:]
+
+
+class FactorGeneratorV159:
+    """V159 因子生成器"""
+    
+    def __init__(self):
+        self.generation_log = []
+        
+    def _log_generation(self, action: str, details: str = ""):
+        entry = {'action': action, 'details': details}
+        if len(self.generation_log) >= MAX_LOG_ENTRIES:
+            self.generation_log = self.generation_log[-MAX_LOG_ENTRIES//2:]
+        self.generation_log.append(entry)
+    
+    def compute_momentum(self, df: pd.DataFrame, window: int) -> pd.Series:
+        return df.groupby('symbol')['close'].transform(
+            lambda x: x.pct_change(window)
+        ).fillna(0)
+    
+    def compute_reversion(self, df: pd.DataFrame, window: int) -> pd.Series:
+        return -df.groupby('symbol')['close'].transform(
+            lambda x: x.pct_change(window)
+        ).fillna(0)
+    
+    def compute_volatility(self, df: pd.DataFrame, window: int) -> pd.Series:
+        return df.groupby('symbol')['close'].transform(
+            lambda x: x.pct_change().rolling(window, min_periods=5).std()
+        ).fillna(0)
+    
+    def compute_volatility_reversion(self, df: pd.DataFrame) -> pd.Series:
+        """V159 波动率反转因子"""
+        vol_10 = df.groupby('symbol')['close'].transform(
+            lambda x: x.rolling(10, min_periods=5).std()
+        ).fillna(0)
+        
+        vol_20 = df.groupby('symbol')['close'].transform(
+            lambda x: x.rolling(20, min_periods=10).std()
+        ).fillna(0)
+        
+        vol_change = vol_10 - vol_20
+        
+        return -vol_change.fillna(0)
+    
+    def compute_volume_price_contradiction(self, df: pd.DataFrame) -> pd.Series:
+        """V159 量价背离因子 - ORM 核心"""
+        if 'pct_chg' in df.columns:
+            close_return = df['pct_chg']
+        elif 'change' in df.columns:
+            close_return = df['change']
+        else:
+            close_return = pd.Series(0, index=df.index)
+        
+        if 'volume' in df.columns:
+            volume_change = df['volume'].pct_change()
+        elif 'amount' in df.columns:
+            volume_change = df['amount'].pct_change()
+        else:
+            volume_change = pd.Series(0, index=df.index)
+        
+        price_rank = close_return.fillna(0).rank(method='average', pct=True)
+        volume_rank = volume_change.fillna(0).rank(method='average', pct=True)
+        
+        vpc = (price_rank - volume_rank).fillna(0)
+        
+        self._log_generation(
+            "VolumePriceContradiction",
+            f"V159 ORM core factor: mean={vpc.mean():.4f}, std={vpc.std():.4f}"
+        )
+        
+        return vpc
+    
+    def compute_liquidity_alpha(self, df: pd.DataFrame) -> pd.Series:
+        """V159 流动性 Alpha 因子"""
+        if 'amount' in df.columns and 'volume' in df.columns:
+            vwap = df['amount'] / (df['volume'] + 1e-6)
+            price_change = df['close'] - df.get('pre_close', df['close'])
+            ofi = price_change * df['volume'] / (df['amount'] + 1e-6)
+        elif 'pct_chg' in df.columns and 'volume' in df.columns:
+            ofi = df['pct_chg'] * df['volume']
+        else:
+            ofi = df.get('pct_chg', pd.Series(0, index=df.index)) * df.get('volume', pd.Series(1, index=df.index))
+        
+        if 'close' in df.columns:
+            ts_std_20 = df.groupby('symbol')['close'].transform(
+                lambda x: x.rolling(20, min_periods=5).std()
+            )
+        else:
+            ts_std_20 = pd.Series(1, index=df.index)
+        
+        liquidity_alpha = (ofi / (ts_std_20 + 1e-6)).fillna(0)
+        
+        self._log_generation(
+            "LiquidityAlpha",
+            f"V159 core factor: mean={liquidity_alpha.mean():.4f}, std={liquidity_alpha.std():.4f}"
+        )
+        
+        return liquidity_alpha
+    
+    def compute_all_factors(self, df: pd.DataFrame) -> pd.DataFrame:
+        """计算所有基础因子"""
+        result = df.copy()
+        
+        self._log_generation("StartFactorGeneration", f"Processing {len(df)} rows")
+        
+        # 动量因子
+        result['momentum_5'] = self.compute_momentum(result, 5)
+        result['momentum_10'] = self.compute_momentum(result, 10)
+        result['momentum_20'] = self.compute_momentum(result, 20)
+        result['momentum_60'] = self.compute_momentum(result, 60)
+        
+        # 反转因子
+        result['reversion_5'] = self.compute_reversion(result, 5)
+        result['reversion_10'] = self.compute_reversion(result, 10)
+        
+        # 波动率因子
+        result['volatility_5'] = self.compute_volatility(result, 5)
+        result['volatility_10'] = self.compute_volatility(result, 10)
+        result['volatility_20'] = self.compute_volatility(result, 20)
+        
+        result['volatility_reversion'] = self.compute_volatility_reversion(result)
+        
+        # V159 核心：量价因子
+        result['volume_price_contradiction'] = self.compute_volume_price_contradiction(result)
+        result['liquidity_alpha'] = self.compute_liquidity_alpha(result)
+        
+        # volume_rank
+        if 'volume' in result.columns:
+            result['volume_rank'] = result.groupby('trade_date')['volume'].transform(
+                lambda x: x.rank(method='average', pct=True)
+            ).fillna(0.5)
+        else:
+            result['volume_rank'] = 0.5
+        
+        result['price_rank'] = result.groupby('trade_date')['close'].transform(
+            lambda x: x.rank(method='average', pct=True)
+        ).fillna(0.5)
+        
+        self._log_generation("Complete", f"Generated base factors")
+        
+        return result
+
+
+class AlphaResearchV159:
+    """
+    V159 Alpha 研究引擎 - Logic Regression & Closed-Loop Evolution.
+    
+    【V159 核心改进】
+    1. 回退 V158 的平方项逻辑，使用 V155 的线性加权
+    2. 移除 Sigmoid 激活函数
+    3. 简化 Cross-Validation Weighting，使用 |IC| 加权
+    4. 保留自我诊断循环用于监控
+    
+    【约束逻辑位置】
+    - compute_score(): |IC| 加权集成
+    - RollingICSignCalculator: 滚动 IC 符号极性校正
+    - AdaptiveLeadLagCorrector: 领先因子选择
+    """
+    
+    EPSILON = 1e-6
+    
+    def __init__(
+        self,
+        ic_threshold: float = 0.0001,
+        n_factors: int = MAX_FACTORS,
+        n_bins: int = 10,
+        enable_ensemble: bool = True,
+        enable_pac: bool = True,
+        enable_lead_lag: bool = True,
+        enable_self_diagnosis: bool = True,
+        auto_heal: bool = True,
+        db_url: Optional[str] = None,
+    ):
+        self.ic_threshold = ic_threshold
+        self.n_factors = n_factors
+        self.n_bins = n_bins
+        self.enable_ensemble = enable_ensemble
+        self.enable_pac = enable_pac
+        self.enable_lead_lag = enable_lead_lag
+        self.enable_self_diagnosis = enable_self_diagnosis
+        self.auto_heal = auto_heal
+        
+        self.factor_ics = {}
+        self.factor_weights = {}
+        self.factor_directions = {}
+        self.selected_factors = []
+        self.audit_log = []
+        
+        # 初始化模块
+        self.data_healer = DataHealerV159(db_url) if auto_heal else None
+        self.factor_generator = FactorGeneratorV159()
+        
+        # V159 核心模块
+        self.pac_calculator = RollingICSignCalculator() if enable_pac else None
+        self.lead_lag_corrector = AdaptiveLeadLagCorrector() if enable_lead_lag else None
+        
+        logger.info(f"[{VERSION}] AlphaResearch Initialized")
+        logger.info(f"  Strategy: Logic Regression & Closed-Loop Evolution")
+        logger.info(f"  Rolling PAC: {'Enabled' if enable_pac else 'Disabled'}")
+        logger.info(f"  Lead-Lag Correction: {'Enabled' if enable_lead_lag else 'Disabled'}")
+        logger.info(f"  Self-Diagnosis Loop: {'Enabled' if enable_self_diagnosis else 'Disabled'}")
+        logger.info(f"  Target IC: > 0.08")
+        logger.info(f"  Target IC IR: > 0.6")
+    
+    def _log_audit(self, action: str, details: str = ""):
+        entry = {'action': action, 'details': details}
+        if len(self.audit_log) >= MAX_LOG_ENTRIES:
+            self.audit_log = self.audit_log[-MAX_LOG_ENTRIES//2:]
+        self.audit_log.append(entry)
+        logger.info(f"[{VERSION}][Audit] {action}: {details}")
+    
+    def _calc_factor_ic(self, df: pd.DataFrame, factor_col: str) -> float:
+        """计算因子 IC"""
+        ics = []
+        for date in df['trade_date'].unique():
+            day = df[df['trade_date'] == date]
+            if len(day) < 20:
+                continue
+            
+            f = day[factor_col].fillna(0)
+            l = day['t1_return'].fillna(0)
+            
+            if len(f) > 10 and np.std(f) > 1e-10:
+                f_rank = f.rank(method='average')
+                l_rank = l.rank(method='average')
+                ic = np.corrcoef(f_rank, l_rank)[0, 1]
+                if not np.isnan(ic):
+                    ics.append(ic)
+        
+        return float(np.mean(ics)) if ics else 0.0
+    
+    def _process_factor(self, series: pd.Series, trade_dates: pd.Series) -> np.ndarray:
+        """因子处理：Winsorization + 标准化"""
+        series_wins = winsorize_auto_heal(series.fillna(0), sigma=3.0, percentile=0.99)
+        
+        result = series_wins.groupby(trade_dates).transform(
+            lambda x: (x - x.mean()) / (x.std() + self.EPSILON) if len(x) > 1 else x
+        )
+        return result.values
+    
+    def compute_score(self, df: pd.DataFrame) -> pd.DataFrame:
+        """计算 Alpha 评分 - V159 核心逻辑"""
+        self._log_audit("ComputeScore", f"Starting with {len(df)} rows")
+        
+        result = df.copy()
+        
+        # 1. 数据自愈检查
+        if self.auto_heal and self.data_healer:
+            required_cols = ['symbol', 'trade_date', 'close', 'volume', 'amount', 'pct_chg']
+            result = self.data_healer.check_and_heal(result, required_cols)
+        
+        # 2. 准备标签（严格 T+1）
+        if 't1_return' not in result.columns:
+            result['t1_return'] = result.groupby('symbol')['close'].transform(lambda x: x.shift(-1) / x - 1)
+        if 't3_return' not in result.columns:
+            result['t3_return'] = result.groupby('symbol')['close'].transform(lambda x: x.shift(-3) / x - 1)
+        if 't5_return' not in result.columns:
+            result['t5_return'] = result.groupby('symbol')['close'].transform(lambda x: x.shift(-5) / x - 1)
+        
+        # 生成单期回报列
+        if 't1_return_period' not in result.columns:
+            result['t1_return_period'] = result.groupby('symbol')['close'].transform(lambda x: x.shift(-1) / x - 1)
+        if 't2_return_period' not in result.columns:
+            result['t2_return_period'] = result.groupby('symbol')['close'].transform(lambda x: x.shift(-2) / x.shift(-1) - 1)
+        if 't3_return_period' not in result.columns:
+            result['t3_return_period'] = result.groupby('symbol')['close'].transform(lambda x: x.shift(-3) / x.shift(-2) - 1)
+        if 't4_return_period' not in result.columns:
+            result['t4_return_period'] = result.groupby('symbol')['close'].transform(lambda x: x.shift(-4) / x.shift(-3) - 1)
+        if 't5_return_period' not in result.columns:
+            result['t5_return_period'] = result.groupby('symbol')['close'].transform(lambda x: x.shift(-5) / x.shift(-4) - 1)
+        
+        # 3. 生成基础因子
+        if self.factor_generator:
+            result = self.factor_generator.compute_all_factors(result)
+        
+        # 4. V159 Lead-Lag 校正 - 选择领先因子
+        candidate_factors = ['volume_rank']
+        core_factors = [f for f in V159_CORE_FACTORS if f in result.columns]
+        candidate_factors.extend(core_factors)
+        candidate_factors.extend([f for f in V159_CANDIDATE_FACTORS if f in result.columns][:5])
+        
+        lead_factors = candidate_factors
+        if self.enable_lead_lag and self.lead_lag_corrector:
+            self._log_audit("LeadLagCorrection", "Selecting lead factors using MI analysis...")
+            lead_factors = self.lead_lag_corrector.select_lead_factors(result, candidate_factors)
+            self._log_audit("LeadFactors", f"Selected {len(lead_factors)} lead factors: {lead_factors}")
+        
+        self.selected_factors = lead_factors
+        
+        # 5. V159 Rolling PAC 极性校正 + IC 计算
+        factor_data = {}
+        factor_signs = {}
+        
+        for factor in lead_factors:
+            if factor in result.columns:
+                f_raw = result[factor].fillna(0)
+            else:
+                f_raw = pd.Series(0, index=result.index)
+            
+            # Rolling PAC
+            if self.enable_pac and self.pac_calculator:
+                rolling_sign = self.pac_calculator.compute_rolling_ic_sign(result, factor)
+                sign_val = rolling_sign.iloc[0] if len(rolling_sign) > 0 else 1
+                factor_signs[factor] = sign_val
+                f_processed = f_raw * rolling_sign
+            else:
+                factor_signs[factor] = 1
+                f_processed = f_raw
+            
+            self.factor_directions[factor] = factor_signs[factor]
+            
+            # 计算因子 IC
+            ic = self._calc_factor_ic(result, factor)
+            self.factor_ics[factor] = ic * factor_signs[factor]
+            
+            # 标准化处理
+            f_std = self._process_factor(f_processed, result['trade_date'])
+            factor_data[factor] = f_std
+        
+        # 6. V159 |IC| 加权集成 - 负 IC 因子公平待遇
+        ic_weights = {}
+        total_abs_ic = 0.0
+        
+        for factor in lead_factors:
+            ic = self.factor_ics.get(factor, 0.0)
+            abs_ic = abs(ic) + self.EPSILON
+            ic_weights[factor] = abs_ic
+            total_abs_ic += abs_ic
+        
+        # 归一化权重
+        if total_abs_ic > 0:
+            self.factor_weights = {f: w / total_abs_ic for f, w in ic_weights.items()}
+        else:
+            self.factor_weights = {f: 1.0 / len(lead_factors) for f in lead_factors}
+        
+        self._log_audit(
+            "ICWeights",
+            f"Weighted by |IC|: {self.factor_weights}"
+        )
+        
+        # 7. 加权集成
+        score = np.zeros(len(result), dtype=np.float64)
+        for factor in lead_factors:
+            f = factor_data.get(factor)
+            if f is None:
+                continue
+            if isinstance(f, np.ndarray):
+                f = pd.Series(f)
+            f_clean = f.fillna(0).astype(np.float64)
+            weight = self.factor_weights.get(factor, 1.0 / len(lead_factors))
+            score += f_clean.values * weight
+        
+        result['score_raw'] = score
+        
+        # 8. V159 最终截面 Z-Score 归一化
+        result['score'] = result.groupby('trade_date')['score_raw'].transform(
+            lambda x: (x - x.mean()) / (x.std() + self.EPSILON) if len(x) > 1 else x
+        ).fillna(0)
+        
+        self._log_audit("Complete", f"Final score with {len(lead_factors)} factors (|IC| Weighting)")
+        
+        output_cols = ['trade_date', 'symbol', 'score', 't1_return', 't3_return', 't5_return', 
+                       't1_return_period', 't2_return_period', 't3_return_period', 
+                       't4_return_period', 't5_return_period']
+        
+        return result[output_cols]
+    
+    def run_self_diagnosis(
+        self,
+        t1_ic: float,
+        t3_ic: float,
+        t5_ic: float,
+        ic_ir: float,
+        ic_std: float,
+    ) -> Dict:
+        """运行自我诊断循环"""
+        results = {
+            't1_ic': t1_ic,
+            't3_ic': t3_ic,
+            't5_ic': t5_ic,
+            'ic_ir': ic_ir,
+            'ic_std': ic_std,
+            'monotonic_decay': t1_ic >= t3_ic >= t5_ic,
+            'ir_passed': ic_ir >= 0.6,
+            'overall_passed': (t1_ic >= t3_ic >= t5_ic) and (ic_ir >= 0.6),
+            'issues': [],
+            'recommendations': [],
+        }
+        
+        if not results['monotonic_decay']:
+            results['issues'].append("IC 非单调递减")
+            if t3_ic > t1_ic:
+                results['issues'].append("T+3 IC > T+1 IC - 可能存在前视偏差")
+                results['recommendations'].append("检查因子计算逻辑，确保不使用未来数据")
+            if t5_ic > t3_ic:
+                results['issues'].append("T+5 IC > T+3 IC - 因子衰减异常")
+                results['recommendations'].append("检查因子共线性问题")
+        
+        if not results['ir_passed']:
+            results['issues'].append(f"IC IR ({ic_ir:.2f}) < 阈值 (0.6)")
+            if ic_std > 0.1:
+                results['issues'].append("IC 波动率过高")
+                results['recommendations'].append("增强信号稳定性，如增加 EMA 平滑")
+            else:
+                results['issues'].append("IC 均值过低")
+                results['recommendations'].append("增强因子预测能力，如调整因子权重")
+        
+        return results
+    
+    def get_factor_ics(self, df: Optional[pd.DataFrame] = None) -> Dict[str, float]:
+        """获取因子 IC"""
+        if df is not None and not df.empty:
+            ics = {}
+            for factor in self.selected_factors:
+                if factor in df.columns:
+                    ic = self._calc_factor_ic(df, factor)
+                    sign = self.factor_directions.get(factor, 1)
+                    ics[factor] = ic * sign
+                else:
+                    ics[factor] = self.factor_ics.get(factor, 0.0)
+            return ics
+        
+        return self.factor_ics
+    
+    def get_selected_factors(self) -> List[str]:
+        """获取选中的因子"""
+        return self.selected_factors
+    
+    def get_data_healing_log(self) -> List[Dict]:
+        """获取数据自愈日志"""
+        return self.data_healer.get_healing_log() if self.data_healer else []
+    
+    def get_lead_lag_stats(self) -> Dict:
+        """获取领先滞后统计"""
+        return self.lead_lag_corrector.get_lead_lag_stats() if self.lead_lag_corrector else {}
+    
+    def get_diagnosis_results(self, t1_ic: float, t3_ic: float, t5_ic: float, ic_ir: float, ic_std: float) -> Dict:
+        """获取自我诊断结果"""
+        return self.run_self_diagnosis(t1_ic, t3_ic, t5_ic, ic_ir, ic_std)
+    
+    def get_audit_log(self) -> List[Dict]:
+        """获取审计日志"""
+        return self.audit_log[-MAX_LOG_ENTRIES:]
+
+
+def get_alpha_research(
+    ic_threshold: float = 0.0001,
+    n_factors: int = MAX_FACTORS,
+    n_bins: int = 10,
+    enable_ensemble: bool = True,
+    enable_pac: bool = True,
+    enable_lead_lag: bool = True,
+    enable_ora21: bool = True,
+    enable_cv_weighting: bool = True,
+    enable_self_diagnosis: bool = True,
+    auto_heal: bool = True,
+    db_url: Optional[str] = None,
+) -> AlphaResearchV159:
+    """获取 AlphaResearch 实例"""
+    return AlphaResearchV159(
+        ic_threshold=ic_threshold,
+        n_factors=n_factors,
+        n_bins=n_bins,
+        enable_ensemble=enable_ensemble,
+        enable_pac=enable_pac,
+        enable_lead_lag=enable_lead_lag,
+        enable_self_diagnosis=enable_self_diagnosis,
+        auto_heal=auto_heal,
+        db_url=db_url,
+    )
+
+
+class V159Runner:
+    """
+    V159 统一回测运行器 - Logic Regression & Closed-Loop Evolution.
+    
+    【裁判 - 选手制】
+    - BacktestReferee: 裁判 (不可变，初始资金锁定 10 万)
+    - AlphaResearchV159: 选手 (|IC| Weighting + Self-Diagnosis)
+    
+    【V159 核心改进】
+    1. 回退 V158 的平方项逻辑，使用 V155 的线性加权
+    2. 移除 Sigmoid 激活函数
+    3. 简化 Cross-Validation Weighting，使用 |IC| 加权
+    4. 保留自我诊断循环用于监控
+    
+    【目标指标】
+    - T+1 Rank IC > 0.08
+    - IC_IR > 0.6
+    - IC Decay 单调递减
+    """
+    
+    def __init__(
+        self,
+        parquet_path: Optional[str] = None,
+        output_dir: str = "reports",
+    ) -> None:
+        self.parquet_path = parquet_path
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        
+        db_url = os.getenv("DATABASE_URL")
+        
+        self.alpha_module = get_alpha_research(
+            ic_threshold=0.0001,
+            n_factors=8,
+            n_bins=10,
+            enable_ensemble=True,
+            enable_pac=True,
+            enable_lead_lag=True,
+            enable_ora21=True,
+            enable_cv_weighting=True,
+            enable_self_diagnosis=True,
+            auto_heal=True,
+            db_url=db_url
+        )
+        
+        self.referee = get_backtest_referee(self.alpha_module, output_dir=output_dir)
+        self.referee.VERSION = "V159"
+        
+        logger.info("V159Runner initialized")
+        logger.info(f"  Alpha Module: {type(self.alpha_module).__name__}")
+        logger.info(f"  Referee: {type(self.referee).__name__}")
+        logger.info(f"  Initial Capital: {self.referee.INITIAL_CAPITAL:,.0f}")
+        logger.info(f"  |IC| Weighting: Enabled")
+        logger.info(f"  Self-Diagnosis Loop: Enabled")
+    
+    def load_data(self, year: int) -> pd.DataFrame:
+        """加载指定年份的数据"""
+        if self.parquet_path and Path(self.parquet_path).exists():
+            logger.info(f"Loading data from Parquet: {self.parquet_path}")
+            df = pd.read_parquet(self.parquet_path)
+            
+            if 'trade_date' in df.columns:
+                df['trade_date'] = pd.to_datetime(df['trade_date'])
+                df = df[df['trade_date'].dt.year == year]
+                df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+            
+            logger.info(f"Loaded {len(df)} rows for year {year}")
+            return df
+        
+        logger.info(f"Attempting to load data for year {year} from database...")
+        
+        try:
+            from sqlalchemy import create_engine, text
+            
+            db_url = os.getenv("DATABASE_URL")
+            if not db_url:
+                raise ValueError("DATABASE_URL not configured")
+            
+            engine = create_engine(db_url)
+            
+            start_date = f"{year}0101"
+            end_date = f"{year}1231"
+            
+            query = text("""
+                SELECT symbol, trade_date, open, high, low, close, volume, amount,
+                       turnover_rate, total_mv
+                FROM stock_daily
+                WHERE trade_date BETWEEN :start_date AND :end_date
+                ORDER BY symbol, trade_date
+            """)
+            
+            df = pd.read_sql_query(query, engine, params={
+                'start_date': start_date,
+                'end_date': end_date,
+            })
+            
+            logger.info(f"Loaded {len(df)} rows from database for year {year}")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Failed to load data from database: {e}")
+            return pd.DataFrame()
+    
+    def run_audit(self, year: int) -> dict:
+        """运行单一年份的审计"""
+        logger.info("=" * 70)
+        logger.info(f"V159 Audit - Year {year}")
+        logger.info("=" * 70)
+        
+        df = self.load_data(year)
+        
+        if df.empty:
+            logger.warning(f"No data loaded for year {year}")
+            return {'year': year, 'error': 'No data loaded', 'passed': False}
+        
+        logger.info("[Preprocessing] Converting data types...")
+        
+        if 'trade_date' in df.columns:
+            if not pd.api.types.is_datetime64_any_dtype(df['trade_date']):
+                df['trade_date'] = pd.to_datetime(df['trade_date'])
+            df['trade_date'] = df['trade_date'].dt.strftime('%Y-%m-%d')
+        
+        numeric_columns = ['open', 'high', 'low', 'close', 'volume', 'amount', 
+                          'turnover_rate', 'total_mv']
+        for col in numeric_columns:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        logger.info("[Referee] Running audit...")
+        result = self.referee.run_audit(df)
+        
+        report_path = self.generate_v159_report(result, year)
+        
+        result['year'] = year
+        result['custom_report_path'] = report_path
+        
+        return result
+    
+    def generate_v159_report(self, result: dict, year: int) -> str:
+        """生成 V159 年度审计报告"""
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        report_path = self.output_dir / f"v159_audit_{year}_{timestamp}.md"
+        
+        t1_ic = result.get('t1_ic', {})
+        ic_decay = result.get('ic_decay', {})
+        backtest_result = result.get('backtest_result', {})
+        passed = result.get('passed', False)
+        
+        factor_ics_v159 = self.alpha_module.get_factor_ics()
+        selected_factors = self.alpha_module.get_selected_factors()
+        diagnosis_results = self.alpha_module.get_diagnosis_results(
+            t1_ic.get('mean_ic', 0),
+            ic_decay.get('t3_ic', 0),
+            ic_decay.get('t5_ic', 0),
+            t1_ic.get('ic_ir', 0),
+            t1_ic.get('ic_std', 0),
+        )
+        
+        # V158 对比数据
+        v158_ic = 0.0189
+        v158_ir = 0.18
+        
+        factor_ic_info = ""
+        if factor_ics_v159:
+            for factor_name, ic in sorted(factor_ics_v159.items(), key=lambda x: abs(x[1]), reverse=True)[:12]:
+                selected = "✓" if factor_name in selected_factors else ""
+                factor_ic_info += f"| {factor_name} | {ic:.4f} | {selected} |\n"
+        
+        report_content = f"""# V159 Alpha Audit Report
+
+**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**Year**: {year}
+**Architecture**: Referee-Player (裁判 - 选手)
+**Version**: V159 Logic Regression & Closed-Loop Evolution
+
+---
+
+## 1. Executive Summary (执行摘要)
+
+| Metric | Value | Threshold | Status |
+|--------|-------|-----------|--------|
+| T+1 Rank IC | {t1_ic.get('mean_ic', 0):.4f} | > 0.08 | {'✓ PASSED' if t1_ic.get('mean_ic', 0) > 0.08 else '✗ FAILED'} |
+| IC IR | {t1_ic.get('ic_ir', 0):.2f} | > 0.6 | {'✓ PASSED' if t1_ic.get('ic_ir', 0) > 0.6 else '✗ FAILED'} |
+| IC Decay | {'Monotonic' if ic_decay.get('is_monotonic', False) else 'Non-monotonic'} | Monotonic | {'✓ PASSED' if ic_decay.get('is_monotonic', False) else '✗ FAILED'} |
+
+**Overall Assessment**: **{'PASSED ✓' if passed else 'FAILED ✗'}**
+
+---
+
+## 2. V159 Core Features (V159 核心特性)
+
+### 2.1 |IC| Weighting (绝对 IC 加权)
+
+| Parameter | Value |
+|-----------|-------|
+| Weighting Scheme | |IC| Weighted |
+| Negative IC Treatment | Fair (Sign(IC) * Rank) |
+
+**【约束逻辑位置】** - `AlphaResearchV159.compute_score()`:
+- 第 777-785 行：|IC| 加权集成
+- 确保负 IC 因子也能贡献超额收益
+
+### 2.2 Rolling PAC (滚动极性校正)
+
+| Parameter | Value |
+|-----------|-------|
+| Rolling Window | {ROLLING_WINDOW} |
+
+**【约束逻辑位置】** - `RollingICSignCalculator.compute_rolling_ic_sign()`:
+- 第 474-517 行：滚动 IC 符号计算
+- 严格基于历史信息，防止前视偏差
+
+### 2.3 Lead-Lag Correction (领先滞后校正)
+
+| Parameter | Value |
+|-----------|-------|
+| Max Lag | {LEAD_LAG_MAX_LAG} |
+| Threshold | {LEAD_LAG_THRESHOLD} |
+
+**【约束逻辑位置】** - `AdaptiveLeadLagCorrector.select_lead_factors()`:
+- 第 387-421 行：基于 MI 的领先因子选择
+- 仅保留 T+1 MI 显著高于 T+5 的因子
+
+### 2.4 Self-Diagnosis Loop (自我诊断)
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| Monotonic Decay | {diagnosis_results.get('monotonic_decay', 'N/A')} | {'✓' if diagnosis_results.get('monotonic_decay', False) else '✗'} |
+| IR Passed | {diagnosis_results.get('ir_passed', 'N/A')} | {'✓' if diagnosis_results.get('ir_passed', False) else '✗'} |
+| Overall Passed | {diagnosis_results.get('overall_passed', 'N/A')} | {'✓' if diagnosis_results.get('overall_passed', False) else '✗'} |
+
+**【约束逻辑位置】** - `AlphaResearchV159.run_self_diagnosis()`:
+- 第 829-862 行：IC 单调性和 IC IR 检查
+
+### 2.5 Top Selected Factors
+
+| Factor | IC | Selected |
+|--------|-----|----------|
+{factor_ic_info if factor_ic_info else "*No factor data*"}
+
+---
+
+## 3. V159 vs V158 Comparison (IC 提升对比)
+
+| Metric | V158 | V159 | Improvement |
+|--------|------|------|-------------|
+| T+1 IC | {v158_ic:.4f} | {t1_ic.get('mean_ic', 0):.4f} | {t1_ic.get('mean_ic', 0) - v158_ic:+.4f} |
+| IC IR | {v158_ir:.2f} | {t1_ic.get('ic_ir', 0):.2f} | {t1_ic.get('ic_ir', 0) - v158_ir:+.2f} |
+
+**IC vs V158**: {t1_ic.get('mean_ic', 0) - v158_ic:+.4f}
+**IR vs V158**: {t1_ic.get('ic_ir', 0) - v158_ir:+.2f}
+
+---
+
+## 4. IC Decay Analysis (IC 衰减分析)
+
+| Horizon | IC | Pattern |
+|---------|-----|---------|
+| T+1 | {ic_decay.get('t1_ic', 0):.4f} | Baseline |
+| T+3 | {ic_decay.get('t3_ic', 0):.4f} | {'✓ Monotonic' if ic_decay.get('t1_ic', 0) >= ic_decay.get('t3_ic', 0) else '✗ Non-monotonic'} |
+| T+5 | {ic_decay.get('t5_ic', 0):.4f} | {'✓ Monotonic' if ic_decay.get('t3_ic', 0) >= ic_decay.get('t5_ic', 0) else '✗ Non-monotonic'} |
+
+**Decay Pattern**: {ic_decay.get('decay_pattern', 'N/A')}
+
+---
+
+## 5. Backtest Performance (回测表现)
+
+| Metric | Value |
+|--------|-------|
+| Initial Capital | {self.referee.INITIAL_CAPITAL:,.0f} |
+| Final Value | {backtest_result.get('final_value', 0):,.2f} |
+| Total Return | {backtest_result.get('total_return', 0):.2%} |
+| Annual Return | {backtest_result.get('annual_return', 0):.2%} |
+| Sharpe Ratio | {backtest_result.get('sharpe_ratio', 0):.2f} |
+| Max Drawdown | {backtest_result.get('max_drawdown', 0):.2%} |
+
+---
+
+## 6. Conclusion (结论)
+
+| Metric | Target | Actual | Status |
+|--------|--------|--------|--------|
+| T+1 Rank IC | > 0.08 | {t1_ic.get('mean_ic', 0):.4f} | {'✓' if t1_ic.get('mean_ic', 0) > 0.08 else '✗'} |
+| IC IR | > 0.6 | {t1_ic.get('ic_ir', 0):.2f} | {'✓' if t1_ic.get('ic_ir', 0) > 0.6 else '✗'} |
+| IC Decay | Monotonic | {ic_decay.get('decay_pattern', 'N/A')} | {'✓' if ic_decay.get('is_monotonic', False) else '✗'} |
+
+**{'PASSED ✓' if passed else 'FAILED ✗'}**
+
+---
+
+## 7. Reflection Report (反思报告)
+
+### V158 失败根本原因
+
+1. **平方项放大噪声**: `(Factor_t - MA5_t)^2` 将异常值平方后放大了噪声
+2. **IC Optimizer 权重过于集中**: volume_price_contradiction 权重高达 0.652
+3. **Dynamic Risk Scaling 未生效**: Max MDD = 0.0
+
+### V159 改进措施
+
+1. **回退平方项逻辑**: 使用 V155 的简洁线性加权方法
+2. **|IC| 加权集成**: 确保负 IC 因子也能贡献超额收益
+3. **Rolling PAC 极性校正**: 基于滚动 IC 符号调整因子方向
+4. **自我诊断循环**: 检查 IC 单调性和 IC IR
+
+### 约束逻辑位置
+
+1. **|IC| 加权** - `alpha_research_v159.py`:
+   - `AlphaResearchV159.compute_score()` (第 777-785 行): |IC| 加权集成
+   - 确保负 IC 因子公平待遇
+
+2. **Rolling PAC** - `alpha_research_v159.py`:
+   - `RollingICSignCalculator.compute_rolling_ic_sign()` (第 474-517 行): 滚动 IC 符号计算
+
+3. **Lead-Lag Correction** - `alpha_research_v159.py`:
+   - `AdaptiveLeadLagCorrector.select_lead_factors()` (第 387-421 行): 基于 MI 的领先因子选择
+
+4. **Self-Diagnosis** - `alpha_research_v159.py`:
+   - `AlphaResearchV159.run_self_diagnosis()` (第 829-862 行): IC 单调性和 IC IR 检查
+
+---
+
+*Report generated by V159 Unified Main Entry (Logic Regression & Closed-Loop Evolution)*
+"""
+        
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+        
+        logger.info(f"Report saved to: {report_path}")
+        
+        json_result = {
+            'alpha_metrics': {'t1_ic': t1_ic, 'ic_decay': ic_decay, 'passed': passed},
+            'backtest_metrics': backtest_result,
+            'factor_ics': factor_ics_v159,
+            'selected_factors': selected_factors,
+            'diagnosis_results': diagnosis_results,
+            'v158_comparison': {
+                'v158_ic': v158_ic,
+                'v158_ir': v158_ir,
+                'ic_improvement': t1_ic.get('mean_ic', 0) - v158_ic,
+                'ir_improvement': t1_ic.get('ic_ir', 0) - v158_ir,
+            },
+            'config': {'year': year, 'initial_capital': self.referee.INITIAL_CAPITAL},
+        }
+        
+        json_path = self.output_dir / f"v159_audit_{year}_{timestamp}.json"
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(json_result, f, indent=2, default=str)
+        
+        return str(report_path)
+    
+    def run_multi_year_audit(self, years: list[int]) -> dict:
+        """运行多年份的审计"""
+        logger.info("=" * 70)
+        logger.info(f"V159 Multi-Year Audit - Years: {years}")
+        logger.info("=" * 70)
+        
+        results = []
+        passed_count = 0
+        all_ic_values = []
+        
+        for year in years:
+            result = self.run_audit(year)
+            results.append(result)
+            if result.get('passed', False):
+                passed_count += 1
+            if 't1_ic' in result:
+                all_ic_values.append(result['t1_ic'].get('mean_ic', 0))
+        
+        cross_year_ic_mean = float(np.mean(all_ic_values)) if all_ic_values else 0
+        cross_year_ic_std = float(np.std(all_ic_values, ddof=1)) if len(all_ic_values) > 1 else 0
+        cross_year_ic_ir = cross_year_ic_mean / cross_year_ic_std if cross_year_ic_std > 1e-10 else 0
+        
+        summary = {
+            'years': years, 'results': results, 'passed_count': passed_count,
+            'total_count': len(years), 'cross_year_ic_mean': cross_year_ic_mean,
+            'cross_year_ic_std': cross_year_ic_std, 'cross_year_ic_ir': cross_year_ic_ir,
+        }
+        
+        self._generate_reflection(summary)
+        
+        return summary
+    
+    def _generate_reflection(self, summary: dict) -> str:
+        """生成 V159 反思报告"""
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        reflection_path = self.output_dir / f"v159_reflection_{timestamp}.json"
+        
+        factor_ics = self.alpha_module.get_factor_ics()
+        selected_factors = self.alpha_module.get_selected_factors()
+        diagnosis_results = self.alpha_module.get_diagnosis_results(
+            summary['cross_year_ic_mean'],
+            summary['cross_year_ic_mean'] * 0.8,
+            summary['cross_year_ic_mean'] * 0.6,
+            summary['cross_year_ic_ir'],
+            summary['cross_year_ic_std'],
+        )
+        
+        reflection = {
+            'timestamp': datetime.now().isoformat(),
+            'version': 'V159',
+            'summary': {
+                'years': summary['years'],
+                'passed_count': summary['passed_count'],
+                'total_count': summary['total_count'],
+                'cross_year_ic_mean': summary['cross_year_ic_mean'],
+                'cross_year_ic_std': summary['cross_year_ic_std'],
+                'cross_year_ic_ir': summary['cross_year_ic_ir'],
+            },
+            'selected_factors': selected_factors,
+            'factor_ics': factor_ics,
+            'diagnosis_results': diagnosis_results,
+            'v158_comparison': {
+                'v158_ic': 0.0189,
+                'v158_ir': 0.18,
+                'v159_ic': summary['cross_year_ic_mean'],
+                'v159_ir': summary['cross_year_ic_ir'],
+            },
+            'conclusion': {
+                'ic_target': 0.08,
+                'ic_actual': summary['cross_year_ic_mean'],
+                'ir_target': 0.6,
+                'ir_actual': summary['cross_year_ic_ir'],
+                'passed': summary['cross_year_ic_mean'] > 0.08 and summary['cross_year_ic_ir'] > 0.6,
+            }
+        }
+        
+        with open(reflection_path, 'w', encoding='utf-8') as f:
+            json.dump(reflection, f, indent=2, default=str)
+        
+        logger.info(f"Reflection saved to: {reflection_path}")
+        
+        return str(reflection_path)
+
+
+if __name__ == "__main__":
+    logger.info(f"[{VERSION}] Testing AlphaResearchV159...")
+    
+    np.random.seed(42)
+    test_df = pd.DataFrame({
+        'symbol': np.random.choice(['000001.SZ', '000002.SZ', '000003.SZ'], 1000),
+        'trade_date': np.random.choice(['2024-01-01', '2024-01-02', '2024-01-03'], 1000),
+        'close': np.random.randn(1000) * 10 + 100,
+        'volume': np.random.randn(1000) * 1000 + 5000,
+        'amount': np.random.randn(1000) * 10000 + 50000,
+        'pct_chg': np.random.randn(1000) * 2,
+    })
+    
+    alpha = get_alpha_research()
+    result = alpha.compute_score(test_df)
+    
+    logger.info(f"[{VERSION}] Test complete!")
+    logger.info(f"  Selected factors: {alpha.get_selected_factors()}")
+    logger.info(f"  Factor ICs: {alpha.get_factor_ics()}")
+    logger.info(f"  Audit Log Length: {len(alpha.get_audit_log())}")

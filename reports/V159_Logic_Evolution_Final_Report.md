@@ -1,0 +1,239 @@
+# V159 逻辑回归与闭环进化 - 最终反思报告
+
+**生成时间**: 2026-04-07  
+**版本**: V159 Logic Regression & Closed-Loop Evolution  
+**状态**: 部分成功 (IC 接近目标但未完全达标)
+
+---
+
+## 1. 执行摘要
+
+| 指标 | V158 | V159 | 目标 | 实际 | 状态 |
+|------|------|------|------|------|------|
+| T+1 Rank IC | 0.0189 | 0.0756 | > 0.08 | 0.0756 | ⚠ 接近 |
+| IC IR | 0.18 | 0.48 | > 0.6 | 0.48 | ⚠ 接近 |
+| IC Decay | 非单调 | 单调 | 单调 | 单调 | ✓ 通过 |
+
+**V159 相比 V158 的改进**:
+- IC 提升：+0.0567 (+300%)
+- IR 提升：+0.30 (+167%)
+- IC 衰减模式：从非单调修复为单调
+
+---
+
+## 2. V158 失败根本原因分析
+
+### 2.1 平方项放大噪声
+
+V158 引入的非线性平方项 `(Factor_t - MA5_t)^2` 导致：
+- 异常值被平方后放大噪声
+- Rank IC 跌至 0.0189，模型丧失预测力
+- 高方差因子主导信号
+
+### 2.2 IC Optimizer 权重过于集中
+
+V158 的权重分布：
+- `volume_price_contradiction`: 65.2%
+- 其他因子：34.8%
+
+导致模型过度依赖单一因子，丧失多样性。
+
+### 2.3 Dynamic Risk Scaling 未生效
+
+- Max MDD = 0.0，风险控制完全失效
+- 回测收益率为 0.00%，信号未转化为实际交易
+
+---
+
+## 3. V159 改进措施
+
+### 3.1 回退平方项逻辑
+
+**改进**: 使用 V155 的简洁线性加权方法
+
+**约束逻辑位置** - `alpha_research_v159.py`:
+```python
+# 第 777-785 行：|IC| 加权集成
+for factor in lead_factors:
+    f = factor_data.get(factor)
+    weight = self.factor_weights.get(factor, 1.0 / len(lead_factors))
+    score += f_clean.values * weight
+```
+
+### 3.2 |IC| 加权集成
+
+**改进**: 确保负 IC 因子也能贡献超额收益
+
+**约束逻辑位置** - `alpha_research_v159.py`:
+```python
+# 第 765-775 行：|IC| 加权计算
+for factor in lead_factors:
+    ic = self.factor_ics.get(factor, 0.0)
+    abs_ic = abs(ic) + self.EPSILON  # 使用绝对 IC
+    ic_weights[factor] = abs_ic
+    total_abs_ic += abs_ic
+
+# 归一化权重
+self.factor_weights = {f: w / total_abs_ic for f, w in ic_weights.items()}
+```
+
+### 3.3 Rolling PAC 极性校正
+
+**改进**: 基于滚动 IC 符号调整因子方向
+
+**约束逻辑位置** - `alpha_research_v159.py`:
+```python
+# RollingICSignCalculator.compute_rolling_ic_sign() (第 474-517 行)
+ic_df['rolling_ic'] = ic_df['ic'].rolling(window=self.window, min_periods=5).mean()
+ic_df['rolling_ic_sign'] = np.sign(ic_df['rolling_ic']).replace(0, 1)
+```
+
+### 3.4 Lead-Lag Correction
+
+**改进**: 基于 MI 的领先因子选择
+
+**约束逻辑位置** - `alpha_research_v159.py`:
+```python
+# AdaptiveLeadLagCorrector.select_lead_factors() (第 387-421 行)
+lead_factors = [f for f, s in lead_scores.items() if s > self.threshold]
+```
+
+### 3.5 自我诊断循环
+
+**改进**: 检查 IC 单调性和 IC IR
+
+**约束逻辑位置** - `alpha_research_v159.py`:
+```python
+# AlphaResearchV159.run_self_diagnosis() (第 829-862 行)
+results = {
+    'monotonic_decay': t1_ic >= t3_ic >= t5_ic,
+    'ir_passed': ic_ir >= 0.6,
+    'overall_passed': (t1_ic >= t3_ic >= t5_ic) and (ic_ir >= 0.6),
+}
+```
+
+### 3.6 DataHealer 多表关联
+
+**改进**: pe_ttm 缺失必须从 valuation/indicator 表关联查询
+
+**约束逻辑位置** - `alpha_research_v159.py`:
+```python
+# DataHealerV159._heal_from_sql() (第 280-340 行)
+# V159: 多表关联逻辑 - 检查 valuation 表或 indicator 表
+valuation_tables = ['valuation', 'stock_valuation', 'indicator', 'stock_indicator']
+for table in valuation_tables:
+    # 尝试从不同表获取估值数据
+```
+
+---
+
+## 4. V159 因子权重分析
+
+| 因子 | IC | 权重 | 问题 |
+|------|-----|------|------|
+| volatility_5 | -0.0456 | 39.5% | 权重过高，波动率因子主导 |
+| volume_price_contradiction | 0.0286 | 24.8% | 核心因子，权重合理 |
+| volume_rank | -0.0225 | 19.5% | 权重合理 |
+| momentum_5 | -0.0187 | 16.2% | 权重合理 |
+| liquidity_alpha | 0.0000 | 0.0% | **完全失效** |
+
+**关键问题**:
+1. `liquidity_alpha` IC = 0，完全丧失预测力
+2. `volatility_5` 权重过高 (39.5%)，可能导致信号过度波动
+
+---
+
+## 5. 未达标原因分析
+
+### 5.1 IC 距离目标差距
+
+- 实际 IC: 0.0756
+- 目标 IC: 0.08
+- 差距：-0.0044 (-5.5%)
+
+### 5.2 IR 距离目标差距
+
+- 实际 IR: 0.48
+- 目标 IR: 0.6
+- 差距：-0.12 (-20%)
+
+### 5.3 根本原因
+
+1. **liquidity_alpha 因子失效**: IC = 0，但仍在因子池中
+2. **volatility_5 权重过高**: 39.5% 的权重可能引入过多噪声
+3. **因子多样性不足**: 仅 5 个因子，且权重分布不均
+
+---
+
+## 6. 后续改进建议
+
+### 6.1 移除无效因子
+
+```python
+# 建议：在因子选择阶段排除 IC < 0.01 的因子
+valid_factors = [f for f, ic in factor_ics.items() if abs(ic) > 0.01]
+```
+
+### 6.2 权重上限约束
+
+```python
+# 建议：对单一因子权重设置上限 (如 30%)
+max_weight = 0.30
+self.factor_weights = {f: min(w / total_abs_ic, max_weight) for f, w in ic_weights.items()}
+```
+
+### 6.3 增强核心因子
+
+```python
+# 建议：对 volume_price_contradiction 等核心因子增加权重
+core_factor_boost = 1.5
+for factor in core_factors:
+    ic_weights[factor] *= core_factor_boost
+```
+
+### 6.4 引入更多预测性因子
+
+```python
+# 建议：引入 reversion_5, rsi_14 等短期预测因子
+V159_CORE_FACTORS = [
+    'momentum_5',
+    'volatility_5',
+    'volume_price_contradiction',
+    'reversion_5',  # 短期反转
+]
+```
+
+---
+
+## 7. 约束逻辑位置总结
+
+| 功能 | 文件 | 行号 | 描述 |
+|------|------|------|------|
+| |IC| 加权 | `alpha_research_v159.py` | 765-785 | 确保负 IC 因子公平待遇 |
+| Rolling PAC | `alpha_research_v159.py` | 474-517 | 滚动 IC 符号计算 |
+| Lead-Lag Correction | `alpha_research_v159.py` | 387-421 | 基于 MI 的领先因子选择 |
+| Self-Diagnosis | `alpha_research_v159.py` | 829-862 | IC 单调性和 IC IR 检查 |
+| DataHealer 多表关联 | `alpha_research_v159.py` | 280-340 | pe_ttm 缺失从 valuation 表关联 |
+
+---
+
+## 8. 结论
+
+V159 相比 V158 取得了显著进步：
+- IC 从 0.0189 提升至 0.0756 (+300%)
+- IR 从 0.18 提升至 0.48 (+167%)
+- IC 衰减从非单调修复为单调
+
+但仍未完全达标：
+- IC 距离目标 0.08 差 -0.0044
+- IR 距离目标 0.6 差 -0.12
+
+**下一步行动**:
+1. 移除 `liquidity_alpha` 等无效因子
+2. 对 `volatility_5` 权重设置上限
+3. 增强 `volume_price_contradiction` 等核心因子权重
+4. 引入更多短期预测因子 (如 `reversion_5`, `rsi_14`)
+
+---
+
+*Report generated by V159 Unified Main Entry (Logic Regression & Closed-Loop Evolution)*

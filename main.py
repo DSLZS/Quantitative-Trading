@@ -77,6 +77,36 @@ from alpha_research_v153 import AlphaResearchV153, get_alpha_research as get_alp
 from alpha_research_v154 import AlphaResearchV154, get_alpha_research as get_alpha_research_v154
 from alpha_research_v155 import AlphaResearchV155, get_alpha_research as get_alpha_research_v155
 from alpha_research_v156 import AlphaResearchV156, get_alpha_research as get_alpha_research_v156
+from alpha_research_v159 import AlphaResearchV159, get_alpha_research, V159Runner
+
+# V159 get_alpha_research_v159 alias
+def get_alpha_research_v159(
+    ic_threshold: float = 0.0001,
+    n_factors: int = 8,
+    n_bins: int = 10,
+    enable_ensemble: bool = True,
+    enable_pac: bool = True,
+    enable_lead_lag: bool = True,
+    enable_ora21: bool = True,
+    enable_cv_weighting: bool = True,
+    enable_self_diagnosis: bool = True,
+    auto_heal: bool = True,
+    db_url: Optional[str] = None,
+) -> AlphaResearchV159:
+    """V159 Alpha Research 工厂函数"""
+    return get_alpha_research(
+        ic_threshold=ic_threshold,
+        n_factors=n_factors,
+        n_bins=n_bins,
+        enable_ensemble=enable_ensemble,
+        enable_pac=enable_pac,
+        enable_lead_lag=enable_lead_lag,
+        enable_ora21=enable_ora21,
+        enable_cv_weighting=enable_cv_weighting,
+        enable_self_diagnosis=enable_self_diagnosis,
+        auto_heal=auto_heal,
+        db_url=db_url,
+    )
 
 # V140 全局常量
 MAX_FACTORS = 12  # V140: 仅保留前 12 个正交因子
@@ -6657,8 +6687,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156],
-        help='Version to run (108-156, default: 155)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159],
+        help='Version to run (108-156, 159, default: 155)'
     )
     parser.add_argument(
         '--parquet',
@@ -7406,6 +7436,55 @@ def main():
             logger.info(f"  Year: {args.year}")
             logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
             logger.info(f"  Report: {result.get('report_path', 'N/A')}")
+            logger.info("=" * 70)
+            
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 159:
+        logger.info("=" * 70)
+        logger.info("V159 Unified Main Entry - Logic Regression & Closed-Loop Evolution")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV159: 选手 (ORA 2.1 + Cross-Validation Weighting + Self-Diagnosis)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - ORA 2.1 Refinement: Sigmoid 激活函数压缩非线性残差")
+        logger.info("  - Cross-Validation Weighting: 基于哈希的滚动交叉验证 (folds=3)")
+        logger.info("  - Self-Diagnosis Loop: 自动诊断并修正")
+        logger.info("  - 目标指标：T+1 Rank IC > 0.08, IC_IR > 0.6, IC 衰减单调递减")
+        logger.info("=" * 70)
+        
+        runner = V159Runner(
+            parquet_path=args.parquet,
+            output_dir=args.output,
+        )
+        
+        if args.all:
+            years = [2024]
+            logger.info(f"Running V159 audit for years: {years}")
+            summary = runner.run_multi_year_audit(years)
+            
+            logger.info("=" * 70)
+            logger.info("V159 Multi-Year Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Passed: {summary['passed_count']}/{len(years)}")
+            logger.info(f"  Cross-Year IC: {summary['cross_year_ic_mean']:.4f} ± {summary['cross_year_ic_std']:.4f}")
+            logger.info(f"  Cross-Year IC IR: {summary['cross_year_ic_ir']:.2f}")
+            logger.info(f"  Target (IC > 0.08, IR > 0.6): {'MET ✓' if summary['cross_year_ic_mean'] > 0.08 and summary['cross_year_ic_ir'] > 0.6 else 'NOT MET ✗'}")
+            logger.info("=" * 70)
+            
+        elif args.year:
+            logger.info(f"Running V159 audit for year: {args.year}")
+            result = runner.run_audit(args.year)
+            
+            logger.info("=" * 70)
+            logger.info("V159 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
             logger.info("=" * 70)
             
         else:
