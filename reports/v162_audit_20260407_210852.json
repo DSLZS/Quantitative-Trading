@@ -1,0 +1,45 @@
+{
+  "alpha_metrics": {
+    "t1_ic": {
+      "mean_ic": 0.04569986623539019,
+      "ic_std": 0.15184758047677027,
+      "ic_ir": 0.3009588041633721,
+      "num_days": 242,
+      "min_ic": -0.5433285691871677,
+      "max_ic": 0.47770813665576184
+    },
+    "ic_decay": {
+      "t1_ic": 0.04569986623539019,
+      "t3_ic": 0.0305411436803318,
+      "t5_ic": 0.02853491687671621,
+      "is_monotonic": true,
+      "decay_pattern": "T+1(0.0457) -> T+3(0.0305) -> T+5(0.0285)"
+    },
+    "passed": false
+  },
+  "backtest_metrics": {
+    "portfolio_df": "     trade_date  portfolio_value  daily_return  num_positions  transaction_cost  cumulative_return\n0    2024-01-02    -90152.000000             0             95        152.000000                  0\n1    2024-01-03   -167327.521120             0             52       -355.198880                  0\n2    2024-01-04   -156836.085546             0             55       -451.784307                  0\n3    2024-01-05   -165813.383082             0             52       -432.867596                  0\n4    2024-01-08   -172011.487342             0             50       -434.431064                  0\n..          ...              ...           ...            ...               ...                ...\n237  2024-12-25    -87342.521247             0             51       -230.781409                  0\n238  2024-12-26    -88868.220408             0             50       -221.151264                  0\n239  2024-12-27    -88655.647624             0             50       -212.572783                  0\n240  2024-12-30    -86673.661966             0             51       -208.872706                  0\n241  2024-12-31    -88192.184524             0             50       -214.950682                  0\n\n[242 rows x 6 columns]",
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "volatility": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_transaction_cost": -73106.59779857841,
+    "num_trading_days": 242,
+    "final_value": -88192.1845237771
+  },
+  "factor_ics": {
+    "volume_rank": 0.022519707492197956,
+    "momentum_5": 0.01872795684108052,
+    "volatility_5": 0.04562325573686083,
+    "volume_price_contradiction": 0.028619633579246465
+  },
+  "config": {
+    "commission_rate": 0.0003,
+    "stamp_duty_rate": 0.001,
+    "slippage_rate": 0.0005,
+    "top_n": 50,
+    "position_per_stock": 0.02,
+    "initial_capital": 100000.0
+  }
+}
