@@ -1,0 +1,104 @@
+{
+  "alpha_metrics": {
+    "t1_ic": {
+      "mean_ic": 0.05448237227840781,
+      "ic_std": 0.1747372338165222,
+      "ic_ir": 0.3117960098625314,
+      "num_days": 242,
+      "min_ic": -0.5764079043687094,
+      "max_ic": 0.5370503765948439
+    },
+    "ic_decay": {
+      "t1_ic": 0.05448237227840781,
+      "t3_ic": 0.035951270835552246,
+      "t5_ic": 0.030344146059149923,
+      "is_monotonic": true,
+      "decay_pattern": "T+1(0.0545) -> T+3(0.0360) -> T+5(0.0303)"
+    },
+    "passed": false
+  },
+  "backtest_metrics": {
+    "portfolio_df": "     trade_date  portfolio_value  daily_return  num_positions  transaction_cost  cumulative_return\n0    2024-01-02     -2081.600000             0             51         81.600000                  0\n1    2024-01-03     -2118.502605             0             50         -4.729395                  0\n2    2024-01-04     -2113.545309             0             50         -4.957296                  0\n3    2024-01-05     -1896.746285             0             55         -5.444493                  0\n4    2024-01-08     -1891.321591             0             55         -5.424694                  0\n..          ...              ...           ...            ...               ...                ...\n237  2024-12-25      -577.368751             0             50         -0.992468                  0\n238  2024-12-26      -576.648195             0             50         -0.720556                  0\n239  2024-12-27      -575.568710             0             50         -1.079485                  0\n240  2024-12-30      -574.461316             0             50         -1.107394                  0\n241  2024-12-31      -573.356052             0             50         -1.105264                  0\n\n[242 rows x 6 columns]",
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "volatility": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_transaction_cost": -488.2279010630493,
+    "num_trading_days": 242,
+    "final_value": -573.356051978193
+  },
+  "factor_ics": {},
+  "selected_factors": [],
+  "sil_stats": {
+    "ic_window": 20,
+    "min_alpha": 0.3,
+    "max_alpha": 0.9,
+    "computed_alpha": 0.6137800111887028,
+    "ic_autocorr": 0.04593337062900952
+  },
+  "icir_stats": {
+    "ic_window": 20,
+    "min_weight": 0.01,
+    "raw_weights": {
+      "volume_rank": 0.1657459902541013,
+      "momentum_5": 0.08166865467460535,
+      "volatility_5": 0.23147097322988164,
+      "volume_price_contradiction": 0.19272874027517833,
+      "liquidity_alpha": 0.12110511390976977,
+      "reversion_5": 0.08166865467460535,
+      "momentum_10": 0.18069087496360026,
+      "momentum_60": 0.1475973098833592,
+      "reversion_10": 0.18069087496360026
+    },
+    "normalized_weights": {
+      "volume_rank": 0.11981344637360203,
+      "momentum_5": 0.05903613693615689,
+      "volatility_5": 0.16732431955431662,
+      "volume_price_contradiction": 0.1393185714611311,
+      "liquidity_alpha": 0.08754372307138285,
+      "reversion_5": 0.05903613693615689,
+      "momentum_10": 0.1306167131069697,
+      "momentum_60": 0.10669423945331427,
+      "reversion_10": 0.1306167131069697
+    },
+    "factor_directions": {
+      "volume_rank": -1.0,
+      "momentum_5": -1.0,
+      "volatility_5": -1.0,
+      "volume_price_contradiction": 1.0,
+      "liquidity_alpha": -1.0,
+      "reversion_5": 1.0,
+      "momentum_10": -1.0,
+      "momentum_60": -1.0,
+      "reversion_10": 1.0
+    },
+    "total_weight": 1.3833671868287014
+  },
+  "vt_stats": {
+    "clip_std": 3.0,
+    "clipped_values": 23837,
+    "total_values": 1438846,
+    "clip_ratio": 0.01656674863049972,
+    "raw_std": 0.5134217462932519,
+    "trimmed_std": 0.931370998073858
+  },
+  "atg_stats": {
+    "percentile_base": 70,
+    "percentile_min": 30,
+    "min_trade_ratio_target": 0.05,
+    "mean_trade_ratio": 0.5276016141229086,
+    "min_trade_ratio_actual": 0.49844593489285133,
+    "dates_processed": 242
+  },
+  "v156_comparison": {
+    "v156_ic": 0.0924,
+    "v156_ir": 0.58,
+    "ic_improvement": -0.037917627721592184,
+    "ir_improvement": -0.26820399013746854
+  },
+  "config": {
+    "year": 2024,
+    "initial_capital": 100000.0
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "version": "V158",
+  "year": 2024,
+  "ic": 0.07014434539491836,
+  "ic_ir": 0.46086719910484286,
+  "ic_std": 0.15220077612631572,
+  "total_return": 1.152981621966248,
+  "annual_return": 1.2222981230907206,
+  "sharpe": 2.1344563428919137,
+  "max_drawdown": -0.17579475858946197,
+  "final_value": 215298.16219662482,
+  "selected_factors": [
+    "volume_rank",
+    "momentum_5",
+    "volatility_5",
+    "volume_price_contradiction",
+    "liquidity_alpha"
+  ],
+  "factor_ics": {
+    "volume_rank": 0.034763166459393084,
+    "momentum_5": 0.04267124559422836,
+    "volatility_5": 0.05889528920575327,
+    "volume_price_contradiction": 0.03439059374567254,
+    "liquidity_alpha": 0.029021753291333687
+  },
+  "gvs_stats": {
+    "signal_window": 5,
+    "shrink_threshold": 0.5,
+    "max_shrink_ratio": 0.5,
+    "mean_shrink_ratio": 0.9519250457777343,
+    "min_shrink_ratio": 0.5,
+    "mean_signal_vol": 0.49959031921671243
+  },
+  "atg_stats": {
+    "skewness_threshold": 0.5,
+    "turnover_limit": 0.3,
+    "high_skew_ratio": 0.7479338842975206,
+    "mean_gate_weight": 0.8291968007695055,
+    "mean_skewness": -0.7372562987676864
+  },
+  "icir_stats": {
+    "ic_window": 20,
+    "min_weight": 0.01,
+    "total_weight": 1.0,
+    "weights": {
+      "volume_rank": 0.20502013174290257,
+      "momentum_5": 0.14833546881770995,
+      "volatility_5": 0.23915176044990197,
+      "volume_price_contradiction": 0.24066031462170043,
+      "liquidity_alpha": 0.16683232436778508
+    },
+    "directions": {
+      "volume_rank": 1.0,
+      "momentum_5": 1.0,
+      "volatility_5": 1.0,
+      "volume_price_contradiction": 1.0,
+      "liquidity_alpha": 1.0
+    }
+  }
+}
