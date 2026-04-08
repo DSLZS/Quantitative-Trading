@@ -79,6 +79,7 @@ from alpha_research_v155 import AlphaResearchV155, get_alpha_research as get_alp
 from alpha_research_v156 import AlphaResearchV156, get_alpha_research as get_alpha_research_v156
 from alpha_research_v159 import AlphaResearchV159, get_alpha_research, V159Runner
 from alpha_research_v173 import AlphaResearchV173, get_alpha_research as get_alpha_research_v173, V173Runner
+from alpha_research_v174 import AlphaResearchV174, get_alpha_research as get_alpha_research_v174, V174Runner
 
 # V159 get_alpha_research_v159 alias
 def get_alpha_research_v159(
@@ -6688,8 +6689,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 173],
-        help='Version to run (108-156, 159, 173, default: 155)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 173, 174],
+        help='Version to run (108-156, 159, 173, 174, default: 155)'
     )
     parser.add_argument(
         '--parquet',
@@ -7485,6 +7486,56 @@ def main():
             
             logger.info("=" * 70)
             logger.info("V173 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
+            logger.info("=" * 70)
+            
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 174:
+        logger.info("=" * 70)
+        logger.info("V174 Unified Main Entry - Industrial-Grade Self-Healing & Cross-Cycle Validation")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV174: 选手 (SignalSmoothingV2 + Volatility-Adjusted Position + TSM/CSM)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - V173 TypeError 修复：V174Runner.__init__ 添加 parquet_path 参数")
+        logger.info("  - 跨周期 OOS 验证：同时运行 2023 年和 2024 年回测")
+        logger.info("  - Robustness Alpha (RA): 动态 alpha 根据 ATR 调整")
+        logger.info("  - SQL Healer: 主动补全 pe_ttm/pb 缺失数据")
+        logger.info("  - 衰减分析表：T+1 到 T+3 IC 衰减超过 50% 时告警")
+        logger.info("  - 目标指标：T+1 Rank IC > 0.09 (跨周期), IR > 0.55, 2023 MaxDD < 8%")
+        logger.info("=" * 70)
+        
+        runner = V174Runner(
+            parquet_path=args.parquet,
+            output_dir=args.output,
+        )
+        
+        if args.all:
+            years = [2023, 2024]
+            logger.info(f"Running V174 cross-cycle audit for years: {years}")
+            summary = runner.run_cross_cycle_audit(years)
+            
+            logger.info("=" * 70)
+            logger.info("V174 Cross-Cycle Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Validation Passed: {'YES ✓' if summary.get('validation_passed', {}).get('overall_passed', False) else 'NO ✗'}")
+            logger.info(f"  2023 MaxDD Target (<8%): {'MET ✓' if summary.get('validation_passed', {}).get('2023', {}).get('passed', False) else 'NOT MET ✗'}")
+            logger.info(f"  2024 IC/IR Target (IC>0.09, IR>0.55): {'MET ✓' if summary.get('validation_passed', {}).get('2024', {}).get('passed', False) else 'NOT MET ✗'}")
+            logger.info("=" * 70)
+            
+        elif args.year:
+            logger.info(f"Running V174 audit for year: {args.year}")
+            result = runner.run_audit(args.year)
+            
+            logger.info("=" * 70)
+            logger.info("V174 Audit Complete!")
             logger.info(f"  Year: {args.year}")
             logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
             logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
