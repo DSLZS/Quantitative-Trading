@@ -81,6 +81,7 @@ from alpha_research_v159 import AlphaResearchV159, get_alpha_research, V159Runne
 from alpha_research_v173 import AlphaResearchV173, get_alpha_research as get_alpha_research_v173, V173Runner
 from alpha_research_v174 import AlphaResearchV174, get_alpha_research as get_alpha_research_v174, V174Runner
 from alpha_research_v176 import AlphaResearchV176, get_alpha_research as get_alpha_research_v176, V176Runner, SQL_HEALER_MIN_ROWS_2023
+from alpha_research_v177 import AlphaResearchV177, get_alpha_research as get_alpha_research_v177, V177Runner, SQL_HEALER_MIN_ROWS_2023 as SQL_HEALER_MIN_ROWS_2023_V177
 
 # V159 get_alpha_research_v159 alias
 def get_alpha_research_v159(
@@ -6690,8 +6691,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 173, 174, 176],
-        help='Version to run (108-156, 159, 173, 174, 176, default: 155)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 173, 174, 176, 177],
+        help='Version to run (108-156, 159, 173, 174, 176, 177, default: 155)'
     )
     parser.add_argument(
         '--parquet',
