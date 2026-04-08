@@ -80,6 +80,7 @@ from alpha_research_v156 import AlphaResearchV156, get_alpha_research as get_alp
 from alpha_research_v159 import AlphaResearchV159, get_alpha_research, V159Runner
 from alpha_research_v173 import AlphaResearchV173, get_alpha_research as get_alpha_research_v173, V173Runner
 from alpha_research_v174 import AlphaResearchV174, get_alpha_research as get_alpha_research_v174, V174Runner
+from alpha_research_v176 import AlphaResearchV176, get_alpha_research as get_alpha_research_v176, V176Runner, SQL_HEALER_MIN_ROWS_2023
 
 # V159 get_alpha_research_v159 alias
 def get_alpha_research_v159(
@@ -6689,8 +6690,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 173, 174],
-        help='Version to run (108-156, 159, 173, 174, default: 155)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 173, 174, 176],
+        help='Version to run (108-156, 159, 173, 174, 176, default: 155)'
     )
     parser.add_argument(
         '--parquet',
@@ -7486,6 +7487,58 @@ def main():
             
             logger.info("=" * 70)
             logger.info("V173 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
+            logger.info("=" * 70)
+            
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 176:
+        logger.info("=" * 70)
+        logger.info("V176 Unified Main Entry - Self-Healing Data Repair & Nonlinear Alpha Evolution")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV176: 选手 (TushareHealerV176 + NAG 2.0 + Fund Flow + Regime Switching 2.0)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - TushareHealerV176: 检测 2023 年数据 < 500,000 行则自动从 Tushare 拉取")
+        logger.info("  - NAG 2.0 + Fund Flow: 非线性增益融合 net_main_rate 因子")
+        logger.info("  - Regime Switching 2.0: 自适应 2023(弱市)/2024(波动市) 权重")
+        logger.info("  - 跨周期 OOS 验证：同时运行 2023 年和 2024 年回测")
+        logger.info("  - 目标指标：2024 Rank IC > 0.11, 2023 Rank IC > 0.06, 2023 Data Rows > 500,000")
+        logger.info("=" * 70)
+        
+        runner = V176Runner(
+            parquet_path=args.parquet,
+            output_dir=args.output,
+        )
+        
+        if args.all:
+            years = [2023, 2024]
+            logger.info(f"Running V176 cross-cycle audit for years: {years}")
+            summary = runner.run_cross_cycle_audit(years)
+            
+            logger.info("=" * 70)
+            logger.info("V176 Cross-Cycle Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Validation Passed: {'YES ✓' if summary.get('validation_passed', {}).get('overall_passed', False) else 'NO ✗'}")
+            logger.info(f"  2023 IC Target (>0.06): {'MET ✓' if summary.get('validation_passed', {}).get('2023', {}).get('passed', False) else 'NOT MET ✗'}")
+            logger.info(f"  2023 Data Rows Target (>{SQL_HEALER_MIN_ROWS_2023}): {'MET ✓' if summary.get('validation_passed', {}).get('2023', {}).get('data_rows', 0) >= SQL_HEALER_MIN_ROWS_2023 else 'NOT MET ✗'}")
+            logger.info(f"  2024 IC/IR Target (IC>0.11, IR>0.55): {'MET ✓' if summary.get('validation_passed', {}).get('2024', {}).get('passed', False) else 'NOT MET ✗'}")
+            logger.info(f"  Fund Flow IC (2023): {summary.get('results', {}).get(2023, {}).get('factor_ics', {}).get('net_main_rate', 'N/A'):.4f}")
+            logger.info(f"  Fund Flow IC (2024): {summary.get('results', {}).get(2024, {}).get('factor_ics', {}).get('net_main_rate', 'N/A'):.4f}")
+            logger.info("=" * 70)
+            
+        elif args.year:
+            logger.info(f"Running V176 audit for year: {args.year}")
+            result = runner.run_audit(args.year)
+            
+            logger.info("=" * 70)
+            logger.info("V176 Audit Complete!")
             logger.info(f"  Year: {args.year}")
             logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
             logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
