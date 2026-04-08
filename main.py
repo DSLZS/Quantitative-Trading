@@ -82,6 +82,57 @@ from alpha_research_v173 import AlphaResearchV173, get_alpha_research as get_alp
 from alpha_research_v174 import AlphaResearchV174, get_alpha_research as get_alpha_research_v174, V174Runner
 from alpha_research_v176 import AlphaResearchV176, get_alpha_research as get_alpha_research_v176, V176Runner, SQL_HEALER_MIN_ROWS_2023
 from alpha_research_v177 import AlphaResearchV177, get_alpha_research as get_alpha_research_v177, V177Runner, SQL_HEALER_MIN_ROWS_2023 as SQL_HEALER_MIN_ROWS_2023_V177
+from alpha_research_v178 import AlphaResearchV178, get_alpha_research as get_alpha_research_v178, V178Runner, SQL_HEALER_MIN_ROWS_2023 as SQL_HEALER_MIN_ROWS_2023_V178
+
+# V178 硬性拦截校验配置
+SQL_HEALER_MIN_ROWS_2023 = 500000  # 2023 年数据最少行数
+
+
+def v178_hard_check_2023_data() -> Tuple[int, bool]:
+    """
+    V178 硬性拦截校验：检查 2023 年数据是否达到 500,000 行
+    
+    Returns:
+        Tuple[int, bool]: (数据行数，是否需要愈合)
+    """
+    from sqlalchemy import create_engine, text
+    import pandas as pd
+    
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        logger.error("[V178] DATABASE_URL not configured!")
+        return 0, True
+    
+    try:
+        engine = create_engine(db_url)
+        query = text("""
+            SELECT COUNT(*) as cnt FROM stock_daily
+            WHERE trade_date LIKE '2023%'
+        """)
+        result = pd.read_sql_query(query, engine)
+        count = result['cnt'].values[0]
+        needs_healing = count < SQL_HEALER_MIN_ROWS_2023
+        
+        if needs_healing:
+            logger.error("=" * 70)
+            logger.error("[V178] FATAL: 2023 Data Hard Check FAILED!")
+            logger.error(f"  Current Rows: {count:,}")
+            logger.error(f"  Target Rows: > {SQL_HEALER_MIN_ROWS_2023:,}")
+            logger.error(f"  Shortage: {SQL_HEALER_MIN_ROWS_2023 - count:,} rows")
+            logger.error("=" * 70)
+            logger.error("[V178] ACTION REQUIRED: Run data healing first!")
+            logger.error("  Command: python run_v178.py --heal --year 2023")
+            logger.error("=" * 70)
+        else:
+            logger.info("=" * 70)
+            logger.info("[V178] 2023 Data Hard Check PASSED!")
+            logger.info(f"  Current Rows: {count:,} >= {SQL_HEALER_MIN_ROWS_2023:,}")
+            logger.info("=" * 70)
+        
+        return int(count), needs_healing
+    except Exception as e:
+        logger.error(f"[V178] Failed to check 2023 data: {e}")
+        return 0, True
 
 # V159 get_alpha_research_v159 alias
 def get_alpha_research_v159(
@@ -6691,8 +6742,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 173, 174, 176, 177],
-        help='Version to run (108-156, 159, 173, 174, 176, 177, default: 155)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 173, 174, 176, 177, 178],
+        help='Version to run (108-156, 159, 173, 174, 176, 177, 178, default: 155)'
     )
     parser.add_argument(
         '--parquet',
