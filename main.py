@@ -78,6 +78,7 @@ from alpha_research_v154 import AlphaResearchV154, get_alpha_research as get_alp
 from alpha_research_v155 import AlphaResearchV155, get_alpha_research as get_alpha_research_v155
 from alpha_research_v156 import AlphaResearchV156, get_alpha_research as get_alpha_research_v156
 from alpha_research_v159 import AlphaResearchV159, get_alpha_research, V159Runner
+from alpha_research_v173 import AlphaResearchV173, get_alpha_research as get_alpha_research_v173, V173Runner
 
 # V159 get_alpha_research_v159 alias
 def get_alpha_research_v159(
@@ -6687,8 +6688,8 @@ def main():
         '--version',
         type=int,
         default=None,
-        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159],
-        help='Version to run (108-156, 159, default: 155)'
+        choices=[108, 109, 110, 111, 112, 113, 116, 117, 118, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 173],
+        help='Version to run (108-156, 159, 173, default: 155)'
     )
     parser.add_argument(
         '--parquet',
@@ -7436,6 +7437,57 @@ def main():
             logger.info(f"  Year: {args.year}")
             logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
             logger.info(f"  Report: {result.get('report_path', 'N/A')}")
+            logger.info("=" * 70)
+            
+        else:
+            parser.print_help()
+            logger.warning("Please specify --year or --all")
+            sys.exit(1)
+
+    elif version == 173:
+        logger.info("=" * 70)
+        logger.info("V173 Unified Main Entry - Industrial-Grade Turnover & Stability Enhancement")
+        logger.info("=" * 70)
+        logger.info("【架构强制规范】")
+        logger.info("  - BacktestReferee: 唯一裁判 (不可变，初始资金锁定 10 万)")
+        logger.info("  - AlphaResearchV173: 选手 (SignalSmoothingV2 + Volatility-Adjusted Position + TSM/CSM)")
+        logger.info("  - 废弃所有 run_vXXX.py 脚本")
+        logger.info("  - SignalSmoothingV2: EMA 平滑 (α=0.3) 降低换手率 20%")
+        logger.info("  - Volatility-Adjusted Position: ATR 动态调仓 (市场剧震时收缩仓位)")
+        logger.info("  - TSM vs CSM 差异因子：捕捉 2025 年风格切换")
+        logger.info("  - SQL Healer: 主动补全 pe_ttm/pb 缺失数据")
+        logger.info("  - 衰减分析表：T+1 到 T+3 IC 衰减超过 50% 时告警")
+        logger.info("  - 目标指标：T+1 Rank IC > 0.09, IR > 0.55, Turnover ↓20%")
+        logger.info("=" * 70)
+        
+        runner = V173Runner(
+            parquet_path=args.parquet,
+            output_dir=args.output,
+        )
+        
+        if args.all:
+            years = [2024]
+            logger.info(f"Running V173 audit for years: {years}")
+            summary = runner.run_multi_year_audit(years)
+            
+            logger.info("=" * 70)
+            logger.info("V173 Multi-Year Audit Complete!")
+            logger.info(f"  Years: {years}")
+            logger.info(f"  Passed: {summary['passed_count']}/{len(years)}")
+            logger.info(f"  Cross-Year IC: {summary['cross_year_ic_mean']:.4f} ± {summary['cross_year_ic_std']:.4f}")
+            logger.info(f"  Cross-Year IC IR: {summary['cross_year_ic_ir']:.2f}")
+            logger.info(f"  Target (IC > 0.09, IR > 0.55): {'MET ✓' if summary['cross_year_ic_mean'] > 0.09 and summary['cross_year_ic_ir'] > 0.55 else 'NOT MET ✗'}")
+            logger.info("=" * 70)
+            
+        elif args.year:
+            logger.info(f"Running V173 audit for year: {args.year}")
+            result = runner.run_audit(args.year)
+            
+            logger.info("=" * 70)
+            logger.info("V173 Audit Complete!")
+            logger.info(f"  Year: {args.year}")
+            logger.info(f"  Status: {'PASSED ✓' if result.get('passed', False) else 'FAILED ✗'}")
+            logger.info(f"  Report: {result.get('custom_report_path', 'N/A')}")
             logger.info("=" * 70)
             
         else:
