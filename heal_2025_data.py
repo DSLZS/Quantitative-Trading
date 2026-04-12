@@ -4,7 +4,7 @@ V194 数据补全脚本 - 暴力补齐 2025 年全市场数据
 【核心职责】
 1. 从 Tushare API 拉取全市场股票每日数据（不限制 symbol）
 2. 使用 wait_and_retry 机制处理频率限制
-3. 直接写入 stock_daily 表
+3. 直接写入 stock_daily 表，使用 chunksize=500 防止内存溢出
 4. 打印验收矩阵
 
 【验收标准】
@@ -29,6 +29,7 @@ load_dotenv()
 DB_URL = os.getenv('DATABASE_URL')
 TUSHARE_TOKEN = os.getenv('TUSHARE_TOKEN')
 TARGET_MIN_SYMBOLS = 5000  # 每日最少股票数
+CHUNK_SIZE = 500  # 数据库写入块大小，防止内存溢出
 
 # Tushare 配置
 ts.set_token(TUSHARE_TOKEN)
@@ -48,6 +49,7 @@ engine = create_engine(
 REQUEST_COUNT = 0
 LAST_REQUEST_TIME = time.time()
 MAX_REQUESTS_PER_MINUTE = 60
+
 
 def wait_and_retry(max_retries: int = 3, base_sleep: float = 1.0):
     """等待并重试装饰器"""
@@ -174,8 +176,12 @@ def check_existing_data(trade_date: str) -> int:
         return row[0] if row else 0
 
 
-def save_to_database(df: pd.DataFrame):
-    """保存数据到数据库"""
+def save_to_database(df: pd.DataFrame, chunksize: int = CHUNK_SIZE):
+    """
+    保存数据到数据库
+    
+    关键修复：使用 chunksize 参数分批写入，防止内存溢出
+    """
     if df is None or df.empty:
         return
     
@@ -210,11 +216,12 @@ def save_to_database(df: pd.DataFrame):
         # 删除重复
         df = df.drop_duplicates(subset=['symbol', 'trade_date'])
         
-        # 保存到数据库
+        # 保存到数据库 - 关键修复：使用 chunksize 分批写入
         with engine.connect() as conn:
-            df.to_sql('stock_daily', conn, if_exists='append', index=False, method='multi')
+            df.to_sql('stock_daily', conn, if_exists='append', index=False, 
+                     method='multi', chunksize=chunksize)
         
-        logger.info(f"保存 {len(df)} 条记录到数据库")
+        logger.info(f"保存 {len(df)} 条记录到数据库 (chunksize={chunksize})")
         
     except Exception as e:
         logger.error(f"保存数据失败：{e}")
@@ -258,8 +265,8 @@ def heal_missing_dates(trade_dates: list, target_year: int = 2025):
         df = fetch_daily_data(trade_date)
         
         if df is not None and not df.empty:
-            # 保存数据
-            save_to_database(df)
+            # 保存数据 - 使用 chunksize 防止内存溢出
+            save_to_database(df, chunksize=CHUNK_SIZE)
             healed_dates.append(trade_date)
             
             # 每 10 次请求休息一下
