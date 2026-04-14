@@ -200,13 +200,24 @@ class V195Referee:
         signals = signals.copy()
         market_data = market_data.copy()
         
-        signals['trade_date'] = pd.to_datetime(signals['trade_date'])
-        market_data['trade_date'] = pd.to_datetime(market_data['trade_date'])
+        # 转换 signals 的日期 (从字符串)
+        signals['trade_date'] = pd.to_datetime(signals['trade_date']).dt.date
         
-        # 合并数据
+        # 转换 market_data 的日期 (从 datetime 或 date)
+        if market_data['trade_date'].dtype == 'object':
+            market_data['trade_date'] = pd.to_datetime(market_data['trade_date']).dt.date
+        
+        logger.info(f"  Signals date type: {type(signals['trade_date'].iloc[0])}")
+        logger.info(f"  Market date type: {type(market_data['trade_date'].iloc[0])}")
+        
+        # 合并数据 - 使用字符串格式确保匹配
+        signals['trade_date_str'] = signals['trade_date'].astype(str)
+        market_data['trade_date_str'] = market_data['trade_date'].astype(str)
+        
         merged = signals.merge(
-            market_data[['symbol', 'trade_date', 'pct_chg']],
-            on=['symbol', 'trade_date'],
+            market_data[['symbol', 'trade_date_str', 'pct_chg']],
+            left_on=['symbol', 'trade_date_str'],
+            right_on=['symbol', 'trade_date_str'],
             how='inner'
         )
         
