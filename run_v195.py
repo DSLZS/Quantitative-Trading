@@ -34,15 +34,13 @@ def run_strategy():
     from src.strategy_v195 import (
         V195DataLoader,
         V195FactorCalculator,
-        DEFAULT_WEIGHTS,
+        generate_signals,
         VERSION
     )
     import polars as pl
     import pandas as pd  # 用于 SQL 读取
     
-    print(f"\n因子权重配置:")
-    for factor, weight in DEFAULT_WEIGHTS.items():
-        print(f"  {factor}: {weight}")
+    print(f"\n核心公式：Score = Rank(Momentum_5) × Rank(1/Volatility_5)")
     
     # 加载数据
     loader = V195DataLoader()
@@ -53,48 +51,25 @@ def run_strategy():
     
     for year in years:
         df = loader.load_year_data(year)
-        if not df.is_empty():
-            # 确保数值列类型一致
-            df = df.with_columns([
-                pl.col("close").cast(pl.Float64),
-                pl.col("pct_chg").cast(pl.Float64),
-                pl.col("volume").cast(pl.Float64),
-                pl.col("turnover_rate").cast(pl.Float64),
-                pl.col("high").cast(pl.Float64),
-                pl.col("low").cast(pl.Float64),
-            ])
+        if not df.empty:
             all_data.append(df)
     
     if not all_data:
         print("ERROR: No data loaded")
         return False
     
-    # 使用 vertical_relaxed 来处理类型差异
-    full_df = pl.concat(all_data, how="vertical_relaxed")
+    # 使用 pandas concat
+    full_df = pd.concat(all_data, ignore_index=True)
     print(f"\nTotal data: {len(full_df):,} rows")
     
     # 生成信号
-    calculator = V195FactorCalculator(DEFAULT_WEIGHTS)
-    score = calculator.compute_composite_score(full_df)
-    
-    # 创建输出 DataFrame
-    output = full_df.select(["symbol", "trade_date"]).with_columns(
-        score.alias("score"),
-        pl.lit(VERSION).alias("version")
-    )
-    
-    # 按日期和得分排序
-    output = output.sort(["trade_date", "score"], descending=[False, True])
-    
-    # 输出到 CSV
-    output_path = "signals.csv"
-    output.write_csv(output_path)
-    print(f"\nSignals saved to {output_path}")
+    output = generate_signals(full_df, output_path="signals.csv")
     
     # 输出因子日志
     print("\nFactor log:")
-    for log in calculator.factor_log:
-        print(f"  {log['factor']}: {log['formula']} (weight={log['weight']})")
+    print("  momentum_5: close / close.shift(5) - 1 (rank)")
+    print("  volatility_5: 1 / stddev(pct_chg, 5) (rank)")
+    print("  composite: Rank(Momentum_5) × Rank(1/Volatility_5) (multiplicative)")
     
     return True
 
