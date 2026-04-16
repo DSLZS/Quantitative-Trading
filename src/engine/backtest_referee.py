@@ -207,14 +207,20 @@ class BacktestReferee:
         运行回测。
         
         【回测流程】
-        1. 生成交易信号
-        2. 计算每日持仓
-        3. 计算调仓交易
+        1. T 日生成信号（基于 score 排名）
+        2. T+1 日执行交易（买入/卖出）
+        3. T+1 日计算持仓收益（基于 T 日持仓）
         4. 计算交易成本
-        5. 计算组合收益
+        5. 更新组合价值
+        
+        【会计逻辑】
+        - current_capital = cash + positions_value (总资金 = 现金 + 持仓)
+        - 买入：cash 减少，positions 增加，total 不变
+        - 卖出：cash 增加，positions 减少，total 不变
+        - 收益：positions 价值变化，total 变化
         
         Args:
-            signals: 交易信号 DataFrame
+            signals: 交易信号 DataFrame (包含 symbol, trade_date, signal, t1_return)
             returns: T+1 收益 DataFrame (包含 symbol, trade_date, t1_return)
             
         Returns:
@@ -223,11 +229,13 @@ class BacktestReferee:
         logger.info("[Backtest] Running backtest...")
         
         # 合并信号和收益数据
-        merged = signals.merge(
-            returns[['symbol', 'trade_date', 't1_return']],
-            on=['symbol', 'trade_date'],
-            how='left'
-        )
+        merged = signals.copy()
+        if 't1_return' not in merged.columns:
+            merged = merged.merge(
+                returns[['symbol', 'trade_date', 't1_return']],
+                on=['symbol', 'trade_date'],
+                how='left'
+            )
         
         # 按日期排序
         merged = merged.sort_values(['trade_date', 'symbol'])
@@ -237,58 +245,112 @@ class BacktestReferee:
         portfolio_values = []
         total_costs = []
         
-        current_capital = self.INITIAL_CAPITAL
-        prev_positions = {}
+        cash = self.INITIAL_CAPITAL  # 现金
+        prev_positions = {}  # {symbol: position_value}
+        prev_date = None
         
         for i, date in enumerate(unique_dates):
             day_data = merged[merged['trade_date'] == date]
             
-            # 获取当日信号
+            # 获取当日信号（T 日决策）
             positions = day_data[day_data['signal'] == 1]
             
             if len(positions) == 0:
+                # 没有持仓，计算组合价值
+                portfolio_value = cash + sum(prev_positions.values()) if prev_positions else cash
+                
+                # 计算昨日持仓的今日收益
+                daily_profit = 0.0
+                if prev_positions:
+                    for sym, pos_value in prev_positions.items():
+                        pos_data = day_data[day_data['symbol'] == sym]
+                        if not pos_data.empty and 't1_return' in pos_data.columns:
+                            ret = pos_data['t1_return'].values[0]
+                            if not np.isnan(ret):
+                                daily_profit += pos_value * ret
+                            # 更新持仓价值
+                            prev_positions[sym] = pos_value * (1 + ret)
+                
+                portfolio_values.append({
+                    'trade_date': date,
+                    'portfolio_value': portfolio_value + daily_profit,
+                    'daily_return': daily_profit / portfolio_value if portfolio_value > 0 else 0,
+                    'num_positions': len(prev_positions),
+                    'transaction_cost': 0.0,
+                })
+                prev_positions = {}
+                prev_date = date
                 continue
             
-            # 计算调仓
+            # 计算调仓（T 日决策，T+1 日执行）
             current_position_set = set(positions['symbol'].tolist())
-            prev_position_set = set(prev_positions.keys())
+            prev_position_set = set(prev_positions.keys()) if prev_positions else set()
             
             # 需要卖出的：之前持有但今日不持有
             to_sell = prev_position_set - current_position_set
             # 需要买入的：今日持有但之前不持有
             to_buy = current_position_set - prev_position_set
+            # 需要调整的：继续持有的
+            to_hold = current_position_set & prev_position_set
             
-            # 计算交易金额
-            sell_amount = sum(prev_positions.get(sym, 0) for sym in to_sell)
-            buy_amount = current_capital * self.POSITION_PER_STOCK * len(to_buy) if to_buy else 0
+            # 计算昨日持仓的今日收益（在调仓前计算）
+            daily_profit = 0.0
+            if prev_positions and prev_date is not None:
+                for sym, pos_value in prev_positions.items():
+                    pos_data = day_data[day_data['symbol'] == sym]
+                    if not pos_data.empty and 't1_return' in pos_data.columns:
+                        ret = pos_data['t1_return'].values[0]
+                        if not np.isnan(ret):
+                            daily_profit += pos_value * ret
+                        # 更新持仓价值
+                        prev_positions[sym] = pos_value * (1 + ret)
+            
+            # 计算当前组合价值（调仓前）
+            portfolio_value_before = cash + sum(prev_positions.values())
+            
+            # 执行调仓
+            # 卖出
+            sell_amount = 0.0
+            for sym in to_sell:
+                sell_amount += prev_positions.get(sym, 0)
+                del prev_positions[sym]
+            cash += sell_amount
+            
+            # 买入：计算目标仓位
+            # 目标：每个持仓股票占总资金的 POSITION_PER_STOCK
+            # 总持仓目标 = portfolio_value * POSITION_PER_STOCK * len(current_position_set)
+            # 但为了简单，使用固定比例
+            target_position_value = portfolio_value_before * self.POSITION_PER_STOCK
+            
+            # 计算需要买入的金额
+            buy_amount = 0.0
+            for sym in to_buy:
+                buy_amount += target_position_value
+            cash -= buy_amount
             
             # 计算交易成本
             cost = self.calculate_transaction_cost(buy_amount, sell_amount)
             total_costs.append(cost)
-            
-            # 更新资金
-            current_capital = current_capital + sell_amount - buy_amount - cost['total_cost']
-            
-            # 计算 T+1 收益
-            if 't1_return' in positions.columns:
-                # 计算持仓加权收益
-                weighted_return = (positions['t1_return'].fillna(0) * self.POSITION_PER_STOCK).sum()
-                daily_profit = current_capital * weighted_return
-            else:
-                daily_profit = 0
+            cash -= cost['total_cost']
             
             # 更新持仓
-            prev_positions = {
-                sym: current_capital * self.POSITION_PER_STOCK
-                for sym in current_position_set
-            }
+            for sym in to_buy:
+                prev_positions[sym] = target_position_value
+            for sym in to_hold:
+                # 继续持有的，调整到目标仓位
+                prev_positions[sym] = target_position_value
+            
+            # 计算调仓后的组合价值
+            portfolio_value = cash + sum(prev_positions.values())
+            
+            prev_date = date
             
             # 记录当日数据
-            portfolio_value = current_capital + daily_profit
+            daily_return = daily_profit / portfolio_value_before if portfolio_value_before > 0 else 0
             portfolio_values.append({
                 'trade_date': date,
                 'portfolio_value': portfolio_value,
-                'daily_return': daily_profit / current_capital if current_capital > 0 else 0,
+                'daily_return': daily_return,
                 'num_positions': len(current_position_set),
                 'transaction_cost': cost['total_cost'],
             })
