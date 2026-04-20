@@ -1,0 +1,68 @@
+{
+  "version": "V200_Evolution_Survival_of_Alpha",
+  "timestamp": "2026-04-20T08:34:24.524834",
+  "years": [
+    2023,
+    2024,
+    2025
+  ],
+  "year_data": {
+    "2023": {
+      "t1_ic": 0.14779470821337304,
+      "ic_ir": 1.2593494845972135,
+      "ic_std": 0.11735797728987299,
+      "annual_return": 0.5596998584606452,
+      "sharpe": 1.5754402357844501,
+      "max_drawdown": -0.18276203589004364,
+      "volatility": 0.3121004957185859,
+      "total_return": 0.532430101730875,
+      "final_value": 3358.1787583507507
+    },
+    "2024": {
+      "t1_ic": 0.2736009076675235,
+      "ic_ir": 1.7340514792114992,
+      "ic_std": 0.15778130634964435,
+      "annual_return": -0.2935941007223528,
+      "sharpe": -0.19940407742676547,
+      "max_drawdown": -0.6057788046157679,
+      "volatility": 0.662126947643108,
+      "total_return": -0.2837836591130318,
+      "final_value": 4.033519185040633
+    },
+    "2025": {
+      "t1_ic": 0.08700121636178511,
+      "ic_ir": 0.7203434468713741,
+      "ic_std": 0.12077741074712686,
+      "annual_return": 0.9930949442402479,
+      "sharpe": 2.3864113036353114,
+      "max_drawdown": -0.2314484007809218,
+      "volatility": 0.3092296098049186,
+      "total_return": 0.9446012445923544,
+      "final_value": 2596.57136662701
+    }
+  },
+  "mission_passed": false,
+  "core_factors": [
+    "reversion_5",
+    "volume_rank",
+    "volume_price_contradiction",
+    "liquidity_alpha",
+    "volatility_5",
+    "volatility_20",
+    "volatility_skew",
+    "liquidity_mkt_neutral",
+    "beta_adj_factor",
+    "vol_adj_momentum"
+  ],
+  "config": {
+    "RISK_FILTER_HIGH_VOL_THRESHOLD": 0.75,
+    "RISK_FILTER_LOW_LIQ_THRESHOLD": 0.25,
+    "RISK_FILTER_PENALTY_SCALE": 2.5,
+    "RISK_FILTER_BETA_PENALTY": 0.6,
+    "IR_LOOKBACK_WINDOW": 20,
+    "IR_MIN_WEIGHT": 0.02,
+    "IR_VOLATILITY_PENALTY": 0.3,
+    "VOL_ADAPTIVE_SCALE": 0.5,
+    "VOL_ADAPTIVE_EXPONENT": 1.5
+  }
+}
