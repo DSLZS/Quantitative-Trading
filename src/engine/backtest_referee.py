@@ -105,6 +105,60 @@ class BacktestReferee:
         logger.info(f"  Initial Capital: {self.INITIAL_CAPITAL:,.0f}")
         logger.info("=" * 70)
     
+    def _compute_t1_returns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        计算 T+1 收益率 (V202: Referee 职责，解耦 AlphaModel)
+        
+        【原理】
+        t1_return = (T+1 日 close - T 日 close) / T 日 close
+        
+        【严禁】
+        - AlphaModel 严禁计算此列（保持解耦）
+        - Referee 必须在接收到 score 后自行计算
+        
+        Args:
+            df: 包含 symbol, trade_date, close 的数据
+            
+        Returns:
+            包含 t1_return 列的 DataFrame
+        """
+        result = df.copy()
+        
+        if 'close' not in result.columns:
+            logger.error("[T+1 Return] close column not found, cannot compute t1_return")
+            result['t1_return'] = 0.0
+            return result
+        
+        if 'symbol' not in result.columns or 'trade_date' not in result.columns:
+            logger.error("[T+1 Return] symbol or trade_date column not found")
+            result['t1_return'] = 0.0
+            return result
+        
+        # 按股票分组，计算 T+1 收益率
+        # t1_return = close.shift(-1) / close - 1
+        # 但这是未来函数！我们需要用 shift(1) 来计算前一日收益率
+        
+        # 正确方法：对每个股票，计算次日收益率
+        # t1_return[t] = (close[t+1] - close[t]) / close[t]
+        # 使用 groupby + shift(-1) 但只在回测中使用，不在 AlphaModel 中使用
+        
+        result = result.sort_values(['symbol', 'trade_date']).reset_index(drop=True)
+        
+        # 计算前向收益率（T 日买入，T+1 日卖出）
+        result['close_next'] = result.groupby('symbol')['close'].shift(-1)
+        result['t1_return'] = (result['close_next'] - result['close']) / result['close']
+        
+        # 清理临时列
+        if 'close_next' in result.columns:
+            result = result.drop(columns=['close_next'])
+        
+        # 填充最后一日的 NaN（因为没有 T+1 数据）
+        result['t1_return'] = result['t1_return'].fillna(0)
+        
+        logger.debug(f"[T+1 Return] Computed for {len(result)} rows")
+        
+        return result
+    
     def validate_signal_input(self, df: pd.DataFrame) -> bool:
         """
         验证输入信号格式。
@@ -629,19 +683,23 @@ class BacktestReferee:
         if not self.validate_signal_input(score_df):
             return {'error': 'Invalid signal format', 'passed': False}
         
-        # 3. 计算 T+1 IC
-        logger.info("[Step 3] Calculating T+1 IC...")
+        # 3. 计算 T+1 收益率 (V202: Referee 自行计算，解耦 AlphaModel)
+        logger.info("[Step 3] Computing T+1 returns (Referee responsibility)...")
+        score_df = self._compute_t1_returns(score_df)
+        
+        # 4. 计算 T+1 IC
+        logger.info("[Step 4] Calculating T+1 IC...")
         t1_ic = self.calculate_t1_ic(score_df, score_column='score')
         
-        # 4. 计算 IC Decay
-        logger.info("[Step 4] Calculating IC Decay...")
+        # 5. 计算 IC Decay
+        logger.info("[Step 5] Calculating IC Decay...")
         ic_decay = self.calculate_ic_decay(score_df, score_column='score')
         
-        # 5. 生成交易信号
-        logger.info("[Step 5] Generating trading signals...")
+        # 6. 生成交易信号
+        logger.info("[Step 6] Generating trading signals...")
         signals = self.generate_signals(score_df, score_column='score')
         
-        # 6. 准备收益数据
+        # 7. 准备收益数据
         returns = score_df[['symbol', 'trade_date', 't1_return']].copy()
         
         # 7. 运行回测

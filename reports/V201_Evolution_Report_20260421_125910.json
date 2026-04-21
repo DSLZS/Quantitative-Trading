@@ -1,0 +1,79 @@
+{
+  "version": "V201_MultiSource_Fusion",
+  "timestamp": "2026-04-21T12:59:10.977477",
+  "years": [
+    2020,
+    2022,
+    2024
+  ],
+  "year_data": {
+    "2020": {
+      "t1_ic": 0.12188680131264125,
+      "ic_ir": 1.1901377188455258,
+      "ic_std": 0.10241403106766132,
+      "annual_return": 1.5939242280941452,
+      "sharpe": 3.865283145632937,
+      "max_drawdown": -0.11909277386063355,
+      "volatility": 0.2554612510725938,
+      "total_return": 1.5071083126688452,
+      "final_value": 7706.625419416077
+    },
+    "2022": {
+      "t1_ic": 0.15691321135658065,
+      "ic_ir": 1.0838573458558352,
+      "ic_std": 0.14477293709965022,
+      "annual_return": 0.21975389462942285,
+      "sharpe": 0.8985435107655528,
+      "max_drawdown": -0.19158392122139983,
+      "volatility": 0.25822756193123686,
+      "total_return": 0.2101764935203756,
+      "final_value": 2872.1117331898217
+    },
+    "2024": {
+      "t1_ic": 0.2166314539355418,
+      "ic_ir": 1.2230359282689272,
+      "ic_std": 0.17712599354473568,
+      "annual_return": -0.5597830411335227,
+      "sharpe": -0.8797175735167999,
+      "max_drawdown": -0.7505765923767003,
+      "volatility": 0.6755114889871165,
+      "total_return": -0.5452141154076232,
+      "final_value": 0.029165949352416856
+    }
+  },
+  "cross_year_stats": {
+    "sharpe_mean": 1.2947030276272302,
+    "sharpe_std": 1.9572880435750788,
+    "sharpe_cv": 1.5117660203221672
+  },
+  "mission_passed": false,
+  "core_factors": [
+    "reversion_5",
+    "volume_rank",
+    "volume_price_contradiction",
+    "liquidity_alpha",
+    "volatility_5",
+    "volatility_20",
+    "volatility_skew",
+    "liquidity_mkt_neutral",
+    "beta_adj_factor",
+    "vol_adj_momentum",
+    "industry_neutral_score",
+    "fund_flow_signal",
+    "index_mkt_state"
+  ],
+  "config": {
+    "RISK_FILTER_HIGH_VOL_THRESHOLD": 0.6,
+    "RISK_FILTER_LOW_LIQ_THRESHOLD": 0.35,
+    "RISK_FILTER_PENALTY_SCALE": 4.0,
+    "RISK_FILTER_BETA_PENALTY": 0.3,
+    "IR_LOOKBACK_WINDOW": 20,
+    "IR_MIN_WEIGHT": 0.02,
+    "ALPHA_DECAY_WINDOW": 10,
+    "ALPHA_DECAY_THRESHOLD": 0.15,
+    "ALPHA_DECAY_RATE": 0.7,
+    "INDEX_SYMBOL": "000905.SH",
+    "INDEX_MA20_THRESHOLD": 0.02
+  },
+  "elapsed_minutes": 132.13174435297648
+}
