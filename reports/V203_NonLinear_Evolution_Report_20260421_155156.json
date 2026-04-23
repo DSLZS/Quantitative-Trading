@@ -1,0 +1,77 @@
+{
+  "version": "V203_NonLinear_Evolution",
+  "timestamp": "2026-04-21T15:51:56.929441",
+  "years": [
+    2020,
+    2022,
+    2024
+  ],
+  "year_data": {
+    "2020": {
+      "t1_ic": 0.0,
+      "ic_ir": 0.0,
+      "ic_std": 0.0,
+      "annual_return": 0.6708335785626416,
+      "sharpe": 1.3677510932380845,
+      "max_drawdown": -0.1398510352970187,
+      "volatility": 0.43542743174561804,
+      "total_return": 0.6404813402458185,
+      "final_value": NaN
+    },
+    "2022": {
+      "t1_ic": 0.0,
+      "ic_ir": 0.0,
+      "ic_std": 0.0,
+      "annual_return": 0.24221165575651105,
+      "sharpe": 0.6302674730657026,
+      "max_drawdown": -0.3174688547982485,
+      "volatility": 0.5148167876926921,
+      "total_return": 0.23156596749419434,
+      "final_value": NaN
+    },
+    "2024": {
+      "t1_ic": 0.0,
+      "ic_ir": 0.0,
+      "ic_std": 0.0,
+      "annual_return": -0.553730744484801,
+      "sharpe": -1.0204520145747111,
+      "max_drawdown": -0.5392112678565113,
+      "volatility": 0.5502392245655613,
+      "total_return": -0.5392112678565113,
+      "final_value": NaN
+    }
+  },
+  "cross_year_stats": {
+    "sharpe_mean": 0.3258555172430253,
+    "sharpe_std": 0.9984583116576992,
+    "sharpe_cv": 3.0641135682015843,
+    "annual_return_mean": 0.11977149661145055,
+    "max_drawdown_mean": 0.33217705265059283,
+    "ic_mean": 0.0,
+    "ic_std": 0.0
+  },
+  "mission_passed": false,
+  "critical_failures": [],
+  "performance_warnings": [],
+  "core_features": {
+    "interaction_kernel": true,
+    "market_adapter": true,
+    "orthogonalization": true,
+    "market_state": {
+      "market_state": "BEAR",
+      "current_weights": {
+        "reversion_5": 0.35,
+        "volatility_20": 0.25,
+        "momentum_10": 0.05,
+        "liquidity_mkt_neutral": 0.15,
+        "volume_price_kernel": 0.1,
+        "vol_reversion_kernel": 0.1,
+        "fund_flow_signal": 0.0
+      },
+      "industry_neutral_enabled": true,
+      "orthogonalization_enabled": true,
+      "interaction_kernel_enabled": true
+    }
+  },
+  "elapsed_minutes": 21.929910576343538
+}

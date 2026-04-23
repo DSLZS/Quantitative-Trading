@@ -1,0 +1,99 @@
+{
+  "version": "V204_Ensemble_IC_Repair",
+  "timestamp": "2026-04-21T19:27:17.874559",
+  "years": [
+    2020,
+    2022,
+    2024
+  ],
+  "year_data": {
+    "2020": {
+      "t1_ic": 0.013904326680847921,
+      "ic_ir": 0.11334712379196067,
+      "ic_std": 0.12267030883261025,
+      "annual_return": -0.1658767836120859,
+      "sharpe": -0.7262683464234927,
+      "max_drawdown": -0.19847124811352782,
+      "volatility": 0.2172119454862734,
+      "total_return": -0.16045608924531973,
+      "final_value": 50632.01300306659
+    },
+    "2022": {
+      "t1_ic": 0.03782461136852984,
+      "ic_ir": 0.28970422577688887,
+      "ic_std": 0.13056285688307448,
+      "annual_return": -0.2675077148887448,
+      "sharpe": -1.1491023390905508,
+      "max_drawdown": -0.32264168295997386,
+      "volatility": 0.24452024266017447,
+      "total_return": -0.25840291674532223,
+      "final_value": 43769.02902792465
+    },
+    "2024": {
+      "t1_ic": 0.0012350481593494558,
+      "ic_ir": 0.006605927645834842,
+      "ic_std": 0.18696059441828372,
+      "annual_return": -0.22906251612265383,
+      "sharpe": -0.7257604608297268,
+      "max_drawdown": -0.3343713125466834,
+      "volatility": 0.2975315707186232,
+      "total_return": -0.22106265011184123,
+      "final_value": 47391.85324623558
+    }
+  },
+  "cross_year_stats": {
+    "sharpe_mean": -0.8670437154479235,
+    "sharpe_std": 0.1994456732468336,
+    "sharpe_cv": 0.23002954717663568,
+    "annual_return_mean": -0.22081567154116152,
+    "max_drawdown_mean": 0.28516141454006166,
+    "ic_mean": 0.01765466206957574,
+    "ic_std": 0.015171196296614403
+  },
+  "mission_passed": false,
+  "critical_failures": [],
+  "performance_warnings": [],
+  "core_features": {
+    "ensemble_logic": true,
+    "significance_screening": true,
+    "robust_standardization": true,
+    "ic_defense_mode": true,
+    "t1_data_check": true,
+    "model_state": {
+      "market_state": "BEAR",
+      "current_weights": {
+        "reversion": 0.35,
+        "volatility": 0.25,
+        "momentum": 0.05,
+        "liquidity": 0.15,
+        "volume_price": 0.05,
+        "vol_reversion": 0.05,
+        "fund_flow": 0.1
+      },
+      "industry_neutral_enabled": true,
+      "orthogonalization_enabled": true,
+      "interaction_kernel_enabled": true,
+      "significance_screening_enabled": true,
+      "ic_defense_mode": true,
+      "current_ic_estimate": 0.0012350481593494558,
+      "factor_significance": {
+        "vol_reversion_kernel": {
+          "ic_contribution": 0.4061620009954839,
+          "p_value": 0.00019999999999997797,
+          "enabled": true
+        },
+        "volume_price_kernel": {
+          "ic_contribution": 0.9792966927797061,
+          "p_value": 0.00019999999999997797,
+          "enabled": true
+        },
+        "liquidity_momentum_kernel": {
+          "ic_contribution": 0.05178067905604898,
+          "p_value": 1.2466233553848287,
+          "enabled": "False"
+        }
+      }
+    }
+  },
+  "elapsed_minutes": 5.467100699742635
+}
