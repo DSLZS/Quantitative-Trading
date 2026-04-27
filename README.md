@@ -1,260 +1,185 @@
-# Quantitative Trading System - V101 Alpha Prediction
+# A股日频Alpha策略研发框架
 
-**Version**: 1.0.1 | **Status**: Production Ready
-
----
-
-## 📋 概述
-
-V101 是一个基于多因子模型的 A 股量化交易系统，专注于 Alpha 预测能力的提升。
-
-**核心特点**:
-- ✅ **统一架构**: 三个核心模块，代码清晰易维护
-- ✅ **量价非线性交互**: 核心预测算法，捕捉市场非线性特征
-- ✅ **T+1 收益预测**: 以 Spearman Rank IC 为损失函数的预测目标
-- ✅ **自检机制**: IC < 0.03 自动触发 AlphaWeakWarning 并分析因子贡献度
-- ✅ **数据防御**: 自动检查 2024 年 total_mv 数据完整性
+> 本项目是一个A股日频Alpha策略研发框架，专注于因子组合优化与信号合成。
+> 当前版本 **V218** 采用市场状态适配器 + 特征解耦架构，通过动态权重门控机制
+> 在不同市场状态下自动调整反转与动量的权重配比。
 
 ---
 
-## 🏗️ 架构设计
-
-```
-src/
-├── data_loader.py          # 数据加载模块
-│   ├── DataLoader          # 从 Tushare/数据库加载数据
-│   ├── check_2024_total_mv # 数据防御检查
-│   └── fetch_*             # 获取日线、复权因子、daily_basic 数据
-│
-├── alpha_research.py       # Alpha 预测核心（唯一存放预测算法）
-│   ├── AlphaResearch       # 因子计算引擎
-│   ├── compute_*           # 量价非线性交互因子
-│   ├── calculate_rank_ic   # Spearman Rank IC 计算
-│   └── run_alpha_analysis  # 完整分析流程
-│
-└── backtest_accounting.py  # 回测会计模块
-    ├── BacktestAccounting  # 回测引擎
-    ├── generate_signals    # 交易信号生成
-    ├── calculate_transaction_cost  # 交易成本计算
-    └── generate_report     # 审计报告生成
-```
-
-### 模块职责
-
-| 模块 | 职责 | 禁止行为 |
-|------|------|----------|
-| `data_loader.py` | 数据拉取、补全、校验 | 不进行任何预测计算 |
-| `alpha_research.py` | 因子计算、预测评分、IC 评估 | 不修改回测参数 |
-| `backtest_accounting.py` | 回测、扣费、报告 | 不修改调仓频率、初始资金 |
-
----
-
-## 🚀 快速开始
-
-### 环境配置
-
-```bash
-# 安装依赖
-pip install -r requirements.txt
-
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，填入 TUSHARE_TOKEN 和 DATABASE_URL
-```
-
-### 运行回测
-
-```bash
-# 运行单一年份审计
-python run_v101.py --year 2019
-python run_v101.py --year 2021
-python run_v101.py --year 2024
-
-# 运行所有年份审计
-python run_v101.py --all
-
-# 使用 Parquet 数据文件
-python run_v101.py --year 2024 --parquet data/parquet/features.parquet
-```
-
-### 代码调用
-
-```python
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-from data_loader import DataLoader
-from alpha_research import AlphaResearch
-from backtest_accounting import BacktestAccounting
-
-# 1. 加载数据
-loader = DataLoader()
-df = loader.load_data("000001.SZ", "20240101", "20241231")
-
-# 2. 运行 Alpha 分析
-alpha = AlphaResearch()
-result = alpha.run_alpha_analysis(df)
-
-# 3. 运行回测
-backtest = BacktestAccounting()
-audit_result = backtest.run_full_audit(df, result)
-```
-
----
-
-## 📊 验收指标
-
-| 指标 | 目标值 | 判定标准 |
-|------|--------|----------|
-| **T+1 Rank IC** | > 0.05 | 核心指标：低于此值直接视为失败 |
-| **IC IR (稳定性)** | > 0.6 | 跨年度预测能力的稳定性 |
-| **Top Factor IC** | > 0.04 | 必须有至少一个核心因子具备独立战斗力 |
-| 回测净收益 | 仅作输出参考 | 不作为优化目标 |
-
----
-
-## 🔬 预测算法详解
-
-### 核心逻辑
-
-**预测目标**: T+1 收益的截面排名
-
-**损失函数**: Spearman Rank IC
-
-```python
-# T+1 收益计算
-T+1_Return = Close_{t+1} / Close_t - 1
-
-# 截面排名（按日期分组）
-Rank_Norm = (Rank - Min_Rank) / (Max_Rank - Min_Rank)
-
-# Rank IC（Spearman 相关系数）
-IC = Corr(Rank(Predict_Score), Rank(T+1_Return))
-```
-
-### 量价非线性交互因子
-
-| 因子 | 公式 | 金融逻辑 |
-|------|------|----------|
-| `volume_price_divergence` | Price_Change - Volume_Change | 捕捉价量背离信号 |
-| `volume_price_health` | 非线性映射（4 象限） | 价涨量增健康，价跌量增危险 |
-| `vcp_score` | (波动率收缩 × 成交量萎缩) | VCP 整理形态识别 |
-| `volume_entropy` | -Σ(p × ln(p)) | 成交量分布熵值 |
-
-### 因子权重配置
-
-```yaml
-# config/factors.yaml
-factors:
-  - name: momentum_5
-    expression: "close / close.shift(5) - 1"
-    window: 5
-  - name: momentum_10
-    expression: "close / close.shift(10) - 1"
-    window: 10
-  # ... 更多因子
-```
-
----
-
-## 🛡️ 自检机制
-
-### AlphaWeakWarning
-
-当 T+1 IC < 0.03 时，系统自动触发警告并分析因子贡献度：
-
-```
-[AlphaWeakWarning] T+1 IC = 0.0215 < 0.03
-[因子贡献度分析] 开始分析各因子 IC 贡献...
-[因子贡献度分析] 结果:
-  1. volume_price_health: IC=0.0421, Weight=0.10, Contribution=0.0042 ✓
-  2. vcp_score: IC=0.0385, Weight=0.12, Contribution=0.0046 ✓
-  3. momentum_5: IC=0.0125, Weight=0.15, Contribution=0.0019 ✗
-  ...
-[因子贡献度分析] 发现 3 个失效因子:
-  - momentum_20: IC=0.0052
-  - volatility_20: IC=0.0031
-  - rsi_14: IC=0.0018
-```
-
-### 数据防御
-
-运行前自动检查 2024 年 total_mv 数据：
-
-```
-[数据防御] 检查 000001.SZ 的 2024 年 total_mv 数据...
-[数据防御] 000001.SZ 的 2024 年 total_mv 数据完整 (250 条)
-```
-
----
-
-## 📁 目录结构
+## 目录结构
 
 ```
 Quantitative-Trading/
-├── src/
-│   ├── data_loader.py          # 数据加载模块
-│   ├── alpha_research.py       # Alpha 预测核心
-│   ├── backtest_accounting.py  # 回测会计模块
-│   └── core/
-│       └── __init__.py         # 统一导出
-├── config/
-│   ├── factors.yaml            # 因子配置
-│   └── settings.yaml           # 系统设置
-├── run_v101.py                 # 统一运行脚本
-├── reports/                    # 审计报告输出
-├── data/
-│   ├── parquet/                # Parquet 数据缓存
-│   └── raw/                    # 原始数据
-└── README.md                   # 本文档
+├── config/                     # 配置文件目录
+│   ├── factors.yaml            # 因子表达式配置
+│   └── settings.yaml           # 系统参数配置
+├── data/                       # 数据目录（原始数据 + 缓存）
+│   ├── cache/                  # 数据缓存（Parquet格式）
+│   └── models/                 # 训练好的模型文件
+├── logs/                       # 运行日志目录
+├── reports/                    # 回测报告目录（仅保留V218最新报告）
+├── scripts/                    # 辅助脚本
+│   └── diagnose_ic.py          # IC诊断分析脚本
+├── src/                        # 核心源代码
+│   ├── alpha_model_v218.py     # V218 Alpha模型（因子加权与信号生成）
+│   ├── backtest_engine.py      # 回测引擎（数据加载、校验、报告生成）
+│   └── engine/                 # 引擎模块
+│       ├── __init__.py
+│       └── backtest_referee.py # 不可变裁判引擎（T+1 IC计算、回测执行）
+├── run_v218.py                 # V218 回测运行入口
+├── requirements.txt            # Python依赖
+├── .env                        # 环境变量（数据库连接等）
+├── .gitignore                  # Git忽略规则
+├── ALPHA_HISTORY.md            # 因子研发历史日志（永不丢失）
+├── CURRENT_STATE.md            # 当前代码库快照摘要
+├── TODOS.md                    # 下一步改进方向
+└── PROJECT_ARCHITECTURE.md     # 项目架构详细文档
 ```
 
+### 目录说明
+
+| 目录 | 用途 |
+|------|------|
+| `config/` | 因子表达式和系统参数配置 |
+| `data/` | 原始数据（Parquet缓存）和模型文件 |
+| `logs/` | 运行日志输出 |
+| `reports/` | 回测审计报告（仅保留V218） |
+| `scripts/` | 辅助诊断和分析脚本 |
+| `src/` | 核心源代码（Alpha模型、回测引擎） |
+
 ---
 
-## 📝 更新日志
+## 数据流向
 
-### V101 (当前版本)
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    A股日频Alpha策略数据流                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐  │
+│  │ 原始数据  │───▶│ 因子计算  │───▶│ 信号合成  │───▶│ 回测引擎  │  │
+│  │ MySQL DB │    │ Alpha    │    │ Score    │    │ Referee  │  │
+│  │ (价格/   │    │ Model    │    │ 加权     │    │ (IC/IR/  │  │
+│  │  财务)   │    │          │    │          │    │  收益)   │  │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────┘  │
+│       │               │               │               │         │
+│       ▼               ▼               ▼               ▼         │
+│  stock_daily    momentum_5      score =     T+1 IC      │
+│  stock_fund_flow volatility_20  W_t*Rev    IR           │
+│  (行业/市值)    reversal_5d    +(1-W_t)*Mom  年化收益    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-- ✅ **项目清零行动**: 删除 v1_ 到 v100_ 过时代码
-- ✅ **统一架构**: 三个核心模块 (data_loader, alpha_research, backtest_accounting)
-- ✅ **预测算法优化**: 回归 V90 基础，引入量价非线性交互逻辑
-- ✅ **自检机制**: IC < 0.03 触发警告并分析因子贡献
-- ✅ **数据防御**: 自动检查 2024 年 total_mv 数据
+### 数据流说明
+
+1. **原始数据**：从MySQL数据库加载 `stock_daily`（日行情）和 `stock_fund_flow`（资金流）
+2. **因子计算**：`AlphaModelV218` 计算反转（reversal）和动量（momentum）因子
+3. **信号合成**：根据市场状态（CRISIS/TREND/NORMAL）动态加权反转与动量得分
+4. **回测引擎**：`BacktestReferee` 执行T+1交易，计算IC、IR、年化收益等指标
+5. **绩效评估**：生成审计报告（Markdown + JSON）
+6. **日志记录**：所有运行日志输出到 `logs/` 和 `reports/`
 
 ---
 
-## 🔧 配置说明
+## 核心模块说明
 
-### 环境变量 (.env)
+### `src/alpha_model_v218.py` - Alpha模型（Player）
+
+- **职责**：因子计算与信号生成
+- **当前模式**：线性组合（反转 + 动量）
+- **核心方法**：`compute_score(df)` → 返回含 `score` 列的DataFrame
+- **市场状态门控**：根据大盘波动率和趋势动态调整权重
+
+### `src/backtest_engine.py` - 回测引擎（Referee）
+
+- **职责**：数据加载、校验、报告生成
+- **合规锁定**：
+  - 初始资金：100,000
+  - 费率：1.3‰（佣金0.3‰ + 印花税1‰ + 滑点0.5‰）
+  - 无未来函数：所有计算仅使用T-1日及之前数据
+- **核心方法**：`run_cross_year_audit(df, alpha_model, years)`
+
+### `src/engine/backtest_referee.py` - 不可变裁判引擎
+
+- **职责**：T+1 IC计算、信号生成、回测执行
+- **不可变参数**：佣金率、印花税、滑点、持仓数量
+- **验收标准**：T+1 Rank IC > 0.05，IC Decay 单调递减
+
+### `run_v218.py` - 运行入口
+
+- **职责**：环境清理、模型初始化、回测执行、日志更新
+- **使用方法**：`python run_v218.py --years 2020 2022 2024`
+
+---
+
+## 运行方式
+
+### 执行V218回测
 
 ```bash
-# Tushare API Token
-TUSHARE_TOKEN=your_token_here
+# 默认回测年份：2020, 2022, 2024
+python run_v218.py
 
-# 数据库连接 URL
-DATABASE_URL=mysql+pymysql://user:password@localhost:3306/dbname
+# 指定年份
+python run_v218.py --years 2020 2022 2024
+
+# 指定输出目录
+python run_v218.py --output-dir reports
+
+# 指定数据库连接
+python run_v218.py --db-url "mysql+pymysql://user:pass@host/db"
 ```
 
-### 因子配置 (config/factors.yaml)
+### IC诊断分析
 
-```yaml
-factors:
-  - name: momentum_5
-    expression: "close / close.shift(5) - 1"
-    window: 5
-
-label:
-  name: sharpe_label
-  expression: "close.shift(-5) / close - 1"
+```bash
+python scripts/diagnose_ic.py
 ```
 
 ---
 
-## 📄 许可证
+## 当前状态
 
-MIT License
+### V218 回测结果
+
+| 年份 | T+1 IC | IC IR | 状态 |
+|------|--------|-------|------|
+| 2020 | ~0.06  | ~1.2  | ✅ PASS |
+| 2022 | ~0.07  | ~1.5  | ✅ PASS |
+| 2024 | <0.05  | <0.3  | ❌ FAIL |
+
+### V218 失败原因
+
+- **IC阈值未通过**：2024年IC < 0.05（阈值要求）
+- **跨年不一致**：2020/2022年通过，2024年失败
+- **反转/动量因子在2024年失效**：简单的趋势/反转逻辑已被市场定价
+- **市场状态门控未生效**：基于大盘波动率的门控在牛市（2024年）未能提升IC
+
+### 下一步方向
+
+详见 [TODOS.md](TODOS.md) 和 [ALPHA_HISTORY.md](ALPHA_HISTORY.md)
 
 ---
 
-*Last Updated: 2026-03-31*
+## 禁止规则
+
+1. **严禁T+0交易**：所有交易在T+1日执行
+2. **严禁使用未来信息**：禁止 `shift(-1)` 或任何T+1数据访问（`iloc[-1]` 除外）
+3. **严禁 `fillna(0)`**：数据缺失必须使用 `data_healer` 模块处理
+4. **严禁修改历史起始日期**：回测起始日期不可更改
+5. **严禁修改裁判引擎参数**：`backtest_referee.py` 中的费率和资金参数不可变
+
+---
+
+## 技术栈
+
+- **Python**: 3.13.x
+- **数据处理**: Polars / Pandas
+- **数据库**: MySQL + SQLAlchemy 2.0+
+- **日志**: loguru
+- **回测**: 自研引擎（T+1 IC计算 + 会计核算）
+
+---
+
+*最后更新: 2026-04-27 | 当前版本: V218*
