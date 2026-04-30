@@ -1,0 +1,24 @@
+# audit_config.yaml
+# 量化交易项目半自动化审计配置
+
+# 文件路径及匹配规则
+core_code_glob: "src/alpha_model_v*.py"
+history_file: "ALPHA_HISTORY.md"
+current_state_file: "CURRENT_STATE.md"
+todos_file: "TODOS.md"
+report_dir: "reports"
+git_diff_commits: 5
+
+deepseek:
+  api_url: "https://api.deepseek.com/v1/chat/completions"
+  model: "deepseek-reasoner"
+  max_tokens: 16000
+  temperature: 0.3
+
+trading_rules:
+  - "所有交易均为 T+1 执行，严禁 T+0"
+  - "禁止使用未来函数（如 shift(-1)）"
+  - "费率固定：佣金 0.03% + 印花税 0.1% + 滑点 0.05%"
+  - "初始资金 100,000 元，持仓数量 50 只"
+  - "因子数量控制在 2~3 个以内，避免线性叠加过拟合"
+  - "严禁修改 src/engine/backtest_referee.py 中的裁判参数"

@@ -1,0 +1,27 @@
+Version,Core_Logic,2020_IC,2022_IC,2024_IC,Turn_Over,Failure_Reason,Timestamp
+V220,LightGBM Non-linear Model + DataHealer (no fillna(0)),0.0342,0.0527,0.0363,15.00%,IC below threshold,2026-04-28 17:18:25
+V221,V221: LightGBM Winsorize + Dynamic Weights + DataHealer (no fillna(0)),0.0241,0.0300,0.0192,15.00%,IC below threshold,2026-04-28 17:51:04
+V221,V221: LightGBM Winsorize + Dynamic Weights + DataHealer (no fillna(0)),-0.0361,-0.0257,-0.0292,15.00%,IC below threshold,2026-04-28 17:57:19
+V222,V222: Dynamic Weight Linear (Reversal + Volatility + Momentum),0.0234,0.0314,0.0140,15.00%,IC below threshold,2026-04-28 20:09:26
+V222,V222: Dynamic Weight Linear (Reversal + Volatility + Momentum),0.0085,0.0144,0.0019,15.00%,IC below threshold,2026-04-28 20:31:35
+V222,V222: Dynamic Weight Linear (Reversal + Volatility + Momentum),0.0006,0.0066,-0.0077,15.00%,IC below threshold,2026-04-28 21:14:38
+V225,"Smart Adapter with State Gating (Rev 5d/10d, Mom 20d/60d, Vol Gate + Clipped Rank)",0.0056,0.0045,-0.0020,15.00%,"IC below threshold - Avg IC=0.0027, 2024 IC=-0.0020",2026-04-29 10:44:38
+V225,"Smart Adapter with State Gating (Rev 5d/10d, Mom 20d/60d, Vol Gate + Clipped Rank)",0.0078,-0.0075,0.0040,15.00%,"IC below threshold - Avg IC=0.0014, 2024 IC=0.0040",2026-04-29 10:50:31
+V225,"Smart Adapter with State Gating (Rev 5d/10d, Mom 20d/60d, Vol Gate + Clipped Rank)",0.0303,0.0458,0.0243,15.00%,"IC below threshold - Avg IC=0.0334, 2024 IC=0.0243",2026-04-29 10:59:18
+V225,Smart Adapter with State Gating,0.0000,0.0000,0.0000,0.00%,"Runtime error: cannot insert trade_date, already exists",2026-04-29 11:09:04
+V225,Smart Adapter with State Gating,0.0000,0.0000,0.0000,0.00%,Runtime error: DataFrame.reset_index() got an unexpected keyword argument 'name'. Did you mean 'names'?,2026-04-29 11:12:54
+V225,Smart Adapter with State Gating,0.0000,0.0000,0.0000,0.00%,"Runtime error: Length mismatch: Expected axis has 26 elements, new values have 2 elements",2026-04-29 11:16:37
+V225,Smart Adapter with State Gating,0.0000,0.0000,0.0000,0.00%,Runtime error: Per-column arrays must each be 1-dimensional,2026-04-29 11:22:00
+V225,Smart Adapter with State Gating,0.0000,0.0000,0.0000,0.00%,Runtime error: 'numpy.float64' object has no attribute 'replace',2026-04-29 11:27:49
+V225,"Smart Adapter with State Gating (Rev 5d/10d, Mom 20d/60d, Vol Gate + Clipped Rank)",0.0000,0.0000,0.0000,15.00%,"IC below threshold - Avg IC=0.0000, 2024 IC=0.0000",2026-04-29 11:50:17
+V225,"Smart Adapter with State Gating (Rev 5d/10d, Mom 20d/60d, Vol Gate + Clipped Rank)",0.0064,0.0000,0.0000,15.00%,"IC below threshold - Avg IC=0.0021, 2024 IC=0.0000",2026-04-29 11:54:51
+V225,"Smart Adapter with State Gating (Rev 5d/10d, Mom 20d/60d, Vol Gate + Clipped Rank)",0.0064,-0.0148,0.0016,15.00%,"IC below threshold - Avg IC=-0.0022, 2024 IC=0.0016",2026-04-29 12:00:37
+V225,"Smart Adapter with State Gating (Rev 5d/10d, Mom 20d/60d, Vol Gate + Clipped Rank)",0.0072,0.0300,-0.0001,15.00%,"IC below threshold - Avg IC=0.0124, 2024 IC=-0.0001",2026-04-29 12:11:22
+V226,Focused 3-Factor Overnight/Intraday Reversal (Overnight 40% + Intraday-Vol 35% + Multiday 25%),0.0104,0.0307,0.0017,15.00%,"IC below threshold - Avg IC=0.0143, 2024 IC=0.0017",2026-04-29 14:33:45
+V227,Extreme Reversal with Volume Confirmation (Oversold 50% + VolSurg 25% + LowVol 25%),0.0363,0.0574,0.0255,15.00%,"IC below threshold - Avg IC=0.0397, 2024 IC=0.0255",2026-04-29 14:41:48
+V227,Extreme Reversal with Volume Confirmation (Oversold 50% + VolSurg 25% + LowVol 25%),0.0363,0.0574,0.0255,15.00%,"IC below threshold - Avg IC=0.0397, 2024 IC=0.0255",2026-04-29 15:59:00
+V228,Momentum-Confirmed Reversal (Oversold 40% + VolSurg 30% + MomConfirm 30%),0.0240,0.0428,0.0152,15.00%,"IC below threshold - Avg IC=0.0273, 2024 IC=0.0152",2026-04-29 16:01:15
+V229,Industry-Relative Reversal (Oversold 35% + IndRel 35% + LowVol 30%),0.0451,0.0659,0.0388,15.00%,"IC below threshold - Avg IC=0.0499, 2024 IC=0.0388",2026-04-29 16:33:00
+V230,LightGBM ≤5 Features,0.0000,0.0000,0.0000,0.00%,Runtime error: Dataset.__init__() got an unexpected keyword argument 'feature_names'. Did you mean 'feature_name'?,2026-04-29 16:40:26
+V230,"LightGBM ≤5 Features (ret_5d, vol_20d, net_main_rate, industry_rel_20d, volume_surge)",0.0165,0.0240,0.0215,15.00%,"IC below threshold - Avg IC=0.0207, 2024 IC=0.0215",2026-04-29 16:49:32
+V231,Volatility Prediction (Oversold 30% + IndRel 40% + LowVol 30%),-0.3468,-0.2777,-0.2183,15.00%,IC below threshold or return below threshold - Avg Vol IC=-0.2809,2026-04-29 17:37:32

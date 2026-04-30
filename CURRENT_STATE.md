@@ -1,8 +1,8 @@
 # CURRENT_STATE.md - 代码库快照摘要
 
-> **最后更新**: 2026-04-27  
-> **当前版本**: V218  
-> **状态**: ❌ V218未通过IC阈值（2024年IC < 0.05）
+> **最后更新**: 2026-04-29  
+> **当前版本**: V227  
+> **状态**: ❌ V227未通过IC阈值（2020=0.0363, 2022=0.0574, 2024=0.0255）
 
 ---
 
@@ -10,43 +10,54 @@
 
 | 项目 | 值 |
 |------|-----|
-| **最后成功编译版本** | V218 |
-| **编译时间** | 2026-04-27 |
-| **当前因子公式** | `score = W_t * score_rev + (1 - W_t) * score_mom` |
-| **权重计算** | `W_t = sigmoid(1.5 * volatility_norm + 1.0 * trend_strength)` |
-| **市场状态分类** | CRISIS / TREND / NORMAL |
+| **当前活跃版本** | V227 |
+| **编译时间** | 2026-04-29 |
+| **当前因子公式** | 极端超卖(50%) + 放量下跌(25%) + 低波动(25%) |
+| **特征标准化** | 截面百分位排名 (percentile rank) |
+| **最终输出** | `rank(pct=True)` 排名百分比 |
 
 ---
 
-## 当前因子公式
+## 当前因子公式（V227 - Extreme Reversal with Volume Confirmation）
 
-### 反转得分 (Score_Rev)
+### 特征工程（3个因子）
 ```
-score_rev = 0.4 * reversal_5d_rank + 0.3 * reversal_10d_rank + 0.3 * reversal_20d_rank
-```
+反转特征:   ret_5d = close / close.shift(5) - 1
+f_extreme_os = -ret_5d (跌幅越大信号越强)
 
-### 动量得分 (Score_Mom)
-```
-score_mom = 0.5 * momentum_20d_rank + 0.3 * mid_momentum_rank + 0.2 * volatility_adjusted_momentum
-```
+量价特征:   vol_ratio = volume / volume.rolling(5).mean()
+            is_down_day = (close < open).astype(float)
+f_vol_surge = vol_ratio * is_down_day (下跌日放量)
 
-### 最终得分
-```
-final_score = W_t * score_rev + (1 - W_t) * score_mom
+波动率特征: vol_20d = close.pct_change().rolling(20).std()
+f_low_vol = -vol_20d (低波动=正信号)
 ```
 
-### 市场状态判定
+### 固定权重方案
+```python
+W_EXTREME_OS = 0.50    # 极端超卖 (核心信号)
+W_VOL_SURGE = 0.25     # 放量下跌确认
+W_LOW_VOL = 0.25       # 低波动率
 ```
-volatility_20 = std(ret_20)
-trend_20 = ma(close, 20) / close
 
-if volatility_20 > threshold_high and trend_20 < 0.95:
-    state = CRISIS  # 高波动 + 下跌 -> 反转策略
-elif volatility_20 < threshold_low and trend_20 > 1.05:
-    state = TREND   # 低波动 + 上涨 -> 动量策略
-else:
-    state = NORMAL  # 正常区间
+### 得分计算
+```python
+score_raw = W_EXTREME_OS * f_extreme_os_rank + W_VOL_SURGE * f_vol_surge_rank + W_LOW_VOL * f_low_vol_rank
+score = score_raw.groupby('trade_date').rank(pct=True)
 ```
+
+---
+
+## V227 回测结果
+
+| 年份 | T+1 IC | IC IR | 年化收益 | 最大回撤 | 状态 |
+|------|--------|-------|----------|----------|------|
+| 2020 | 0.0363 | 0.29 | 60.13% | -17.92% | ❌ |
+| 2022 | 0.0574 | 0.45 | 25.80% | -35.74% | ❌ (IR<0.60) |
+| 2024 | 0.0255 | 0.12 | -55.37% | -53.92% | ❌ |
+| **平均** | **0.0397** | - | - | - | ❌ |
+
+**关键发现**: 2022 IC=0.0574 首次超过 0.05 阈值！但 IC IR 未达标(0.45 < 0.60)
 
 ---
 
@@ -57,28 +68,6 @@ else:
 | 表名 | 用途 | 关键字段 |
 |------|------|----------|
 | `stock_daily` | 日行情数据 | trade_date, symbol, open, high, low, close, pre_close, pct_chg, volume, amount, turnover_rate, industry_code, total_mv, is_st |
-| `stock_fund_flow` | 资金流数据 | trade_date, symbol, net_main_amount, net_main_rate |
-
-### CSV/Parquet字段需求
-
-| 字段 | 类型 | 用途 |
-|------|------|------|
-| trade_date | int (YYYYMMDD) | 交易日期 |
-| symbol | str | 股票代码 |
-| open | float | 开盘价 |
-| high | float | 最高价 |
-| low | float | 最低价 |
-| close | float | 收盘价 |
-| pre_close | float | 前收盘价 |
-| pct_chg | float | 涨跌幅 |
-| volume | float | 成交量 |
-| amount | float | 成交额 |
-| turnover_rate | float | 换手率 |
-| industry_code | str | 行业代码 |
-| total_mv | float | 总市值 |
-| is_st | bool | 是否ST |
-| net_main_amount | float | 主力净流入 |
-| net_main_rate | float | 主力净流入占比 |
 
 ---
 
@@ -104,27 +93,17 @@ else:
 
 | 问题 | 描述 | 影响 |
 |------|------|------|
-| **2024年IC为负** | 反转/动量因子在2024年失去预测能力 | V218未通过 |
-| **门控失效** | 市场状态门控在牛市未生效 | 策略选择性失效 |
-| **线性局限** | 线性组合可能已达到极限 | 需要非线性方法 |
+| **IC 强度不足** | 2020/2024 IC < 0.05 | 无法达到目标阈值 |
+| **2024年收益 -55.37%** | 权重在牛市环境中方向错误 | 大幅亏损 |
+| **IC IR 全部不达标** | 所有年份 IC IR < 0.60 | V227未通过 |
 
 ### 🟡 待优化问题
 
 | 问题 | 描述 | 优先级 |
 |------|------|--------|
-| **因子库单一** | 仅使用价格和成交量因子 | 高 |
-| **市场状态粗糙** | 仅用波动率和趋势划分 | 中 |
-| **无行业控制** | 未进行行业中性化 | 低 |
-| **无市值控制** | 未控制市值效应 | 低 |
-
-### 🟢 改进建议
-
-| 建议 | 描述 | 预期效果 |
-|------|------|----------|
-| 引入LightGBM | 使用非线性模型合成因子 | 提升2024年IC |
-| 另类数据 | 集成新闻舆情、分析师预期 | 增加alpha来源 |
-| 波动率调整动量 | 动量/波动率比值 | 改善动量因子稳定性 |
-| 截面离散度 | 截面收益率离散度 | 捕捉市场情绪 |
+| **2024年持续失效** | 从V218到V227，2024年IC始终无法达标 | 高 |
+| **线性组合性能上限** | 线性方法可能无法捕捉复杂市场模式 | 中 |
+| **OHLCV因子信息饱和** | 200+轮迭代后价格/成交量因子可能已达上限 | 高 |
 
 ---
 
@@ -134,36 +113,29 @@ else:
 
 | 文件 | 用途 | 状态 |
 |------|------|------|
-| `src/alpha_model_v218.py` | Alpha模型（Player） | ✅ 保留 |
-| `src/backtest_engine.py` | 回测引擎（Referee） | ✅ 保留 |
+| `src/alpha_model_v227.py` | V227 Alpha模型（当前版本） | ✅ 当前版本 |
+| `src/data_healer.py` | 数据修复模块 | ✅ 保留 |
+| `src/backtest_engine.py` | 回测引擎 | ✅ 保留 |
 | `src/engine/backtest_referee.py` | 不可变裁判引擎 | ✅ 保留 |
-| `src/engine/__init__.py` | 模块初始化 | ✅ 保留 |
-| `run_v218.py` | 运行入口 | ✅ 保留 |
-| `config/factors.yaml` | 因子配置 | ✅ 保留 |
-| `config/settings.yaml` | 系统配置 | ✅ 保留 |
-
-### 辅助文件
-
-| 文件 | 用途 | 状态 |
-|------|------|------|
-| `scripts/diagnose_ic.py` | IC诊断 | ✅ 保留 |
-| `README.md` | 项目文档 | ✅ 已更新 |
-| `ALPHA_HISTORY.md` | 历史日志 | ✅ 已创建 |
-| `CURRENT_STATE.md` | 当前快照 | ✅ 本文件 |
-| `TODOS.md` | 改进方向 | ✅ 已创建 |
-| `PROJECT_ARCHITECTURE.md` | 架构文档 | ✅ 已创建 |
+| `run_v227.py` | V227 运行入口 | ✅ 当前版本 |
 
 ---
 
-## 环境要求
+## V227 vs 历史版本对比
 
-| 项目 | 值 |
-|------|-----|
-| Python | 3.13.x |
-| 数据库 | MySQL 8.0+ |
-| 内存 | 建议 16GB+ |
-| 磁盘 | 建议 50GB+（数据缓存） |
+### 各版本 IC 对比
 
----
+| 版本 | 2020 IC | 2022 IC | 2024 IC | Avg IC | 状态 |
+|------|---------|---------|---------|--------|------|
+| V225R2 (资金流) | 0.0303 | 0.0458 | 0.0243 | 0.0334 | ❌ |
+| V226 | 0.0104 | 0.0307 | 0.0017 | 0.0143 | ❌ |
+| **V227** | **0.0363** | **0.0574** | **0.0255** | **0.0397** | ❌ |
 
-*本文件由AI Assistant于2026-04-27生成，作为代码库的快照摘要。*
+### 结论
+- V227 是当前最佳版本：2022 IC 首次突破 0.05 阈值
+- 但 2024 年仍然失效，是系统性盲区
+- OHLCV 因子可能已饱和，需要引入另类数据
+
+**目标**：IC ≥ 0.05 且 IC IR ≥ 0.60
+
+*本文件由AI Assistant于2026-04-29更新，反映V227版本状态。*
