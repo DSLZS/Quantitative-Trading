@@ -25,3 +25,4 @@ V229,Industry-Relative Reversal (Oversold 35% + IndRel 35% + LowVol 30%),0.0451,
 V230,LightGBM ≤5 Features,0.0000,0.0000,0.0000,0.00%,Runtime error: Dataset.__init__() got an unexpected keyword argument 'feature_names'. Did you mean 'feature_name'?,2026-04-29 16:40:26
 V230,"LightGBM ≤5 Features (ret_5d, vol_20d, net_main_rate, industry_rel_20d, volume_surge)",0.0165,0.0240,0.0215,15.00%,"IC below threshold - Avg IC=0.0207, 2024 IC=0.0215",2026-04-29 16:49:32
 V231,Volatility Prediction (Oversold 30% + IndRel 40% + LowVol 30%),-0.3468,-0.2777,-0.2183,15.00%,IC below threshold or return below threshold - Avg Vol IC=-0.2809,2026-04-29 17:37:32
+V232,Market State Adaptive (OS+IndRel+LowVol+Mom with State Weights),0.0414,0.0645,0.0369,15.00%,"IC below threshold - Avg IC=0.0476, 2024 IC=0.0369",2026-04-30 11:55:02

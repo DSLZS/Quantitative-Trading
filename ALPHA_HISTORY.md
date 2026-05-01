@@ -622,3 +622,68 @@ V224A 失败记录 (2026-04-28):
   - 平均 Vol IC: -0.2809
 - **状态**: FAIL
 - **教训**: 2024年收益-55.37%低于-10%; 
+
+## V232 (H5: 市场状态自适应) - 2026-04-30
+- **假设**: 根据不同市场状态（牛/熊/震荡）动态调整因子权重，可以改善2024年表现
+- **因子数量**: 4 (极端超卖 + 行业相对弱势 + 低波动 + 动量)
+- **权重配置**:
+  - 牛市: OS=0.25, IndRel=0.30, LowVol=0.25, Mom=0.20
+  - 熊市: OS=0.40, IndRel=0.35, LowVol=0.25, Mom=0.00
+  - 震荡: OS=0.35, IndRel=0.35, LowVol=0.30, Mom=0.00
+- **结果** (IC/IC IR 数字):
+  - 2020: T+1 IC=0.0414, IC IR=0.33, 年化=62.13%, MaxDD=-17.64%
+  - 2022: T+1 IC=0.0645, IC IR=0.55, 年化=19.19%, MaxDD=-31.03%
+  - 2024: T+1 IC=0.0369, IC IR=0.19, 年化=-55.37%, MaxDD=-53.92%
+  - 平均 IC: 0.0476
+- **状态**: FAIL
+- **教训**: 2024年因子失效; 平均IC未达0.05; 
+
+## V233 (Index Enhancement) - 2026-04-30
+- **Hypothesis**: Maximize excess return vs CSI 300
+- **Factors**: OS(0.35) + IndRel(0.35) + LowVol(0.30), no momentum
+- **Portfolio**: Top 100 stocks by score, equal-weighted
+- **Results**:
+  - 2020: Excess=-242.47%, IR=-17.65  - 2022: Excess=-237.37%, IR=-15.15  - 2024: Excess=-344.85%, IR=-12.24
+  - Avg Excess: -274.90%, Avg IR: -15.01
+- **Status**: FAIL
+- **Lessons**: 2020 excess <= 5%; 2022 excess <= 5%; 2024 excess <= 0; 
+
+## V233 (Index Enhancement) - 2026-04-30
+- **Hypothesis**: Maximize excess return vs CSI 300
+- **Factors**: OS(0.35) + IndRel(0.35) + LowVol(0.30), no momentum
+- **Portfolio**: Top 100 stocks by score, equal-weighted
+- **Results**:
+  - 2020: Excess=-242.47%, IR=-17.65  - 2022: Excess=-237.37%, IR=-15.15  - 2024: Excess=-344.85%, IR=-12.24
+  - Avg Excess: -274.90%, Avg IR: -15.01
+- **Status**: FAIL
+- **Lessons**: 2020 excess <= 5%; 2022 excess <= 5%; 2024 excess <= 0; 
+
+## V233 (Index Enhancement) - 2026-05-01
+- **Hypothesis**: Maximize excess return vs CSI 300
+- **Factors**: OS(0.35) + IndRel(0.35) + LowVol(0.30), no momentum
+- **Portfolio**: Top 100 stocks by score, equal-weighted
+- **Results**:
+  - 2020: Excess=-43.49%, IR=-1.15  - 2022: Excess=7.98%, IR=0.22  - 2024: Excess=11.69%, IR=0.22
+  - Avg Excess: -7.94%, Avg IR: -0.24
+- **Status**: FAIL
+- **Lessons**: 2020 excess <= 5%; 
+
+## V234 (Data-Driven Factors) - 2026-05-01
+- **Hypothesis**: Use IC-mined factors for stable alpha
+- **Factors**: ['atr_pct_14', 'vol_ma_5', 'mom_120', 'vol_ratio_5_20', 'pv_corr_20']
+- **All factors**: NEGATIVE direction (low value = good stock)
+- **Portfolio**: Bottom 100 stocks by score, equal-weighted
+- **Results**:
+  - 2020: Excess=-58.60%, IR=-1.59  - 2022: Excess=-51.33%, IR=-1.55  - 2024: Excess=-72.57%, IR=-1.81
+  - Avg Excess: -60.83%, Avg IR: -1.65
+- **Status**: FAIL
+
+## V235 (Value + Reversal) - 2026-05-01
+- **Hypothesis**: Fundamental factors (value proxy) + reversal generate stable alpha
+- **Factors**: Value(1/PB proxy via price_to_ma250), Reversal(-ret_5d)
+- **Weights**: Value=0.5, Reversal=0.5
+- **Portfolio**: Top 50 stocks, equal-weighted
+- **Results**:
+  - 2020: Excess=-74.37%, IR=-2.35  - 2022: Excess=4.42%, IR=0.13  - 2024: Excess=-22.24%, IR=-0.45
+  - Avg Excess: -30.73%, Avg IR: -0.89
+- **Status**: FAIL
