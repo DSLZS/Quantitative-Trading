@@ -1,8 +1,26 @@
 # A股日频Alpha策略研发框架
 
 > 本项目是一个A股日频Alpha策略研发框架，专注于因子组合优化与信号合成。
-> 当前版本 **V218** 采用市场状态适配器 + 特征解耦架构，通过动态权重门控机制
-> 在不同市场状态下自动调整反转与动量的权重配比。
+> 
+> **项目状态**: ⏸️ 已归档 (2026-05-01)  
+> **最终版本**: V229 (最佳基线)  
+> **总迭代次数**: 235轮 (V1-V235)  
+> **结论**: 基于OHLCV日频数据的因子组合无法在A股产生稳定、可交易的超额收益
+
+---
+
+## 项目状态
+
+本项目经过235轮迭代后已停止。核心发现：
+
+| 指标 | 结果 |
+|------|------|
+| OHLCV因子IC上限 | ~0.04-0.05 |
+| 最佳版本 | V229 (行业相对反转) |
+| 2024年超额收益 | 所有版本均为负 |
+| 停止原因 | 日频价量因子已被市场充分定价 |
+
+**建议方向**: 另类数据（新闻情绪、分析师预期）、低频策略、微观结构数据
 
 ---
 
@@ -17,23 +35,29 @@ Quantitative-Trading/
 │   ├── cache/                  # 数据缓存（Parquet格式）
 │   └── models/                 # 训练好的模型文件
 ├── logs/                       # 运行日志目录
-├── reports/                    # 回测报告目录（仅保留V218最新报告）
+├── reports/                    # 回测报告目录
+│   ├── README.md               # 报告命名规范
+│   ├── V235_Cross_Year_Report_*.md    # 最终跨年度报告
+│   └── V235_Final_Conclusion.md       # V235最终结论
 ├── scripts/                    # 辅助脚本
-│   └── diagnose_ic.py          # IC诊断分析脚本
+│   ├── check_db.py             # 数据库检查
+│   └── fetch_constituents.py   # 成分股获取
 ├── src/                        # 核心源代码
-│   ├── alpha_model_v218.py     # V218 Alpha模型（因子加权与信号生成）
-│   ├── backtest_engine.py      # 回测引擎（数据加载、校验、报告生成）
+│   ├── alpha_model_v229.py     # V229 Alpha模型（最佳基线）
+│   ├── backtest_engine.py      # 回测引擎
+│   ├── data_healer.py          # 数据缺失值处理
 │   └── engine/                 # 引擎模块
 │       ├── __init__.py
-│       └── backtest_referee.py # 不可变裁判引擎（T+1 IC计算、回测执行）
-├── run_v218.py                 # V218 回测运行入口
+│       └── backtest_referee.py # 不可变裁判引擎
+├── run_v229.py                 # V229 回测运行入口
 ├── requirements.txt            # Python依赖
 ├── .env                        # 环境变量（数据库连接等）
 ├── .gitignore                  # Git忽略规则
 ├── ALPHA_HISTORY.md            # 因子研发历史日志（永不丢失）
 ├── CURRENT_STATE.md            # 当前代码库快照摘要
-├── TODOS.md                    # 下一步改进方向
-└── PROJECT_ARCHITECTURE.md     # 项目架构详细文档
+├── FINAL_PROJECT_SUMMARY.md    # 项目最终总结报告
+├── PROJECT_ARCHITECTURE.md     # 项目架构详细文档
+└── ROADMAP.md                  # 未来路线图（如继续项目）
 ```
 
 ### 目录说明
@@ -43,9 +67,9 @@ Quantitative-Trading/
 | `config/` | 因子表达式和系统参数配置 |
 | `data/` | 原始数据（Parquet缓存）和模型文件 |
 | `logs/` | 运行日志输出 |
-| `reports/` | 回测审计报告（仅保留V218） |
-| `scripts/` | 辅助诊断和分析脚本 |
-| `src/` | 核心源代码（Alpha模型、回测引擎） |
+| `reports/` | 回测审计报告 |
+| `scripts/` | 辅助脚本 |
+| `src/` | 核心源代码（Alpha模型、回测引擎、数据处理） |
 
 ---
 
@@ -74,8 +98,8 @@ Quantitative-Trading/
 ### 数据流说明
 
 1. **原始数据**：从MySQL数据库加载 `stock_daily`（日行情）和 `stock_fund_flow`（资金流）
-2. **因子计算**：`AlphaModelV218` 计算反转（reversal）和动量（momentum）因子
-3. **信号合成**：根据市场状态（CRISIS/TREND/NORMAL）动态加权反转与动量得分
+2. **因子计算**：`AlphaModel` 计算反转（reversal）和动量（momentum）因子
+3. **信号合成**：根据市场状态动态加权反转与动量得分
 4. **回测引擎**：`BacktestReferee` 执行T+1交易，计算IC、IR、年化收益等指标
 5. **绩效评估**：生成审计报告（Markdown + JSON）
 6. **日志记录**：所有运行日志输出到 `logs/` 和 `reports/`
@@ -84,14 +108,14 @@ Quantitative-Trading/
 
 ## 核心模块说明
 
-### `src/alpha_model_v218.py` - Alpha模型（Player）
+### `src/alpha_model_v229.py` - Alpha模型（最佳基线）
 
 - **职责**：因子计算与信号生成
-- **当前模式**：线性组合（反转 + 动量）
+- **策略**：极端超卖 + 行业相对弱势 + 低波动
 - **核心方法**：`compute_score(df)` → 返回含 `score` 列的DataFrame
-- **市场状态门控**：根据大盘波动率和趋势动态调整权重
+- **因子权重**：OS(0.35) + IndRel(0.35) + LowVol(0.30)
 
-### `src/backtest_engine.py` - 回测引擎（Referee）
+### `src/backtest_engine.py` - 回测引擎
 
 - **职责**：数据加载、校验、报告生成
 - **合规锁定**：
@@ -106,44 +130,42 @@ Quantitative-Trading/
 - **不可变参数**：佣金率、印花税、滑点、持仓数量
 - **验收标准**：T+1 Rank IC > 0.05，IC Decay 单调递减
 
-### `run_v218.py` - 运行入口
+### `src/data_healer.py` - 数据处理模块
+
+- **职责**：缺失值处理（前向填充 + 行业中位数兜底）
+- **核心方法**：`heal(df, columns)` → 修复缺失值
+
+### `run_v229.py` - 运行入口
 
 - **职责**：环境清理、模型初始化、回测执行、日志更新
-- **使用方法**：`python run_v218.py --years 2020 2022 2024`
+- **使用方法**：`python run_v229.py --years 2020 2022 2024`
 
 ---
 
 ## 运行方式
 
-### 执行V218回测
+### 执行V229回测
 
 ```bash
 # 默认回测年份：2020, 2022, 2024
-python run_v218.py
+python run_v229.py
 
 # 指定年份
-python run_v218.py --years 2020 2022 2024
+python run_v229.py --years 2020 2022 2024
 
 # 指定输出目录
-python run_v218.py --output-dir reports
+python run_v229.py --output-dir reports
 
 # 指定数据库连接
-python run_v218.py --db-url "mysql+pymysql://user:pass@host/db"
+python run_v229.py --db-url "mysql+pymysql://user:pass@host/db"
 ```
-
-### IC诊断分析
-
-```bash
-python scripts/diagnose_ic.py
-```
-
 
 ---
 
 ## 禁止规则
 
 1. **严禁T+0交易**：所有交易在T+1日执行
-2. **严禁使用未来信息**：禁止 `shift(-1)` 或任何T+1数据访问（`iloc[-1]` 除外）
+2. **严禁使用未来信息**：禁止 `shift(-1)` 或任何T+1数据访问
 3. **严禁 `fillna(0)`**：数据缺失必须使用 `data_healer` 模块处理
 4. **严禁修改历史起始日期**：回测起始日期不可更改
 5. **严禁修改裁判引擎参数**：`backtest_referee.py` 中的费率和资金参数不可变
@@ -160,4 +182,17 @@ python scripts/diagnose_ic.py
 
 ---
 
-*最后更新: 2026-04-27 | 当前版本: V218*
+## 项目总结
+
+经过235轮迭代（2026-03-14 至 2026-05-01），我们得出以下结论：
+
+> **基于OHLCV日频数据的因子组合无法在A股产生稳定、可交易的超额收益。**
+>
+> OHLCV因子信息上限约为IC=0.04，对应年化超额收益约5-10%，扣除交易成本后净收益接近于零。
+> 2024年牛市中的系统性失效表明：日频价量因子已被市场充分定价，alpha空间已被压缩至极低水平。
+
+详细内容请参阅 `FINAL_PROJECT_SUMMARY.md`
+
+---
+
+*最后更新: 2026-05-01 | 项目状态: ⏸️ 已归档 | 最终版本: V229*
